@@ -4,12 +4,14 @@ This directory contains Singularity definition files (.def) for building custom 
 
 ## Why Custom Definitions?
 
-The public Docker images (etcd, MinIO, Milvus) don't include Singularity `%startscript` sections, which are required for `singularity instance start` to work properly. These definition files:
+The public Docker images (etcd, MinIO, Milvus) are built from definition files to:
 
 1. Bootstrap from the official Docker images
-2. Add appropriate `%startscript` sections for background service execution
-3. Configure proper command-line argument handling
+2. Add proper `%startscript` sections (for future compatibility)
+3. Ensure the correct binary paths are used
 4. Maintain compatibility with the original Docker image behavior
+
+**Note:** Due to limitations in Apptainer 1.4.5 with `singularity instance start` and startscripts from Docker-based images, the deployment uses `singularity exec` in background mode instead. The startscripts are included for future compatibility when this limitation is resolved.
 
 ## Available Definitions
 
@@ -52,35 +54,38 @@ singularity build $RAG_IMAGES_DIR/etcd.sif etcd.def
 
 ## Using Built Images
 
-Once built, these images work with `singularity instance start`:
+Once built, these images are used with `singularity exec` in background mode:
 
 ```bash
-# Start etcd instance
-singularity instance start \
+# Start etcd
+singularity exec \
   --bind /data/etcd:/etcd-data \
   etcd.sif \
-  etcd-instance \
-  --data-dir=/etcd-data \
-  --listen-client-urls=http://0.0.0.0:2379
+  /usr/local/bin/etcd \
+    --data-dir=/etcd-data \
+    --listen-client-urls=http://0.0.0.0:2379 \
+  > etcd.log 2>&1 &
 
-# Start MinIO instance
-singularity instance start \
+# Start MinIO
+singularity exec \
   --env MINIO_ROOT_USER=minioadmin \
   --env MINIO_ROOT_PASSWORD=minioadmin \
   --bind /data/minio:/data \
   minio.sif \
-  minio-instance \
-  server /data --address :9000
+  /usr/bin/minio server /data --address :9000 \
+  > minio.log 2>&1 &
 
-# Start Milvus instance
-singularity instance start \
+# Start Milvus
+singularity exec \
   --env ETCD_ENDPOINTS=localhost:2379 \
   --env MINIO_ADDRESS=localhost:9000 \
   --bind /data/milvus:/var/lib/milvus \
   milvus.sif \
-  milvus-instance \
-  run standalone
+  /usr/bin/milvus run standalone \
+  > milvus.log 2>&1 &
 ```
+
+See `deploy/singularity/test/` for complete orchestration examples.
 
 ## Notes
 

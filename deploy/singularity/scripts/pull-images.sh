@@ -55,12 +55,13 @@ pull_image() {
     fi
 
     echo "    Pulling from $docker_uri..."
-    if singularity pull "$OUTPUT_DIR/$sif_name" "docker://$docker_uri" 2>&1 | grep -v "^INFO:"; then
+    if singularity pull "$OUTPUT_DIR/$sif_name" "docker://$docker_uri" > /dev/null 2>&1; then
         echo "    ✅ Pulled successfully"
         ls -lh "$OUTPUT_DIR/$sif_name" | awk '{print "       Size:", $5}'
         SUCCESS=$((SUCCESS + 1))
     else
         echo "    ❌ Pull failed"
+        echo "       Run manually to see error: singularity pull $OUTPUT_DIR/$sif_name docker://$docker_uri"
         FAILED=$((FAILED + 1))
     fi
 
