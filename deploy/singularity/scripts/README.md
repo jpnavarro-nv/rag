@@ -5,10 +5,17 @@ This directory contains scripts for managing Singularity deployment of NVIDIA RA
 ## Scripts
 
 ### Image Management
-- `build-custom-images.sh` - Build custom images with Singularity startscripts (required for infrastructure services)
-- `pull-all-images.sh` - Pull all required container images (local testing only)
-- `pull-minimal-images.sh` - Pull minimal set of images for testing (local testing only)
-- `update-images.sh` - Update existing images to latest versions (to be added)
+
+**Main Script:**
+- `setup-images.sh` - **PRIMARY SCRIPT** - Orchestrates building and pulling all required images
+  - Usage: `./setup-images.sh [minimal|all]`
+  - Builds infrastructure images (etcd, MinIO, Milvus) from definition files
+  - Pulls pre-built images (RAG server, NIMs, frontend)
+  - Provides unified progress tracking
+
+**Helper Scripts:**
+- `build-images.sh` - Build infrastructure images with custom startscripts (called by setup-images.sh)
+- `pull-images.sh` - Pull pre-built images from registries (called by setup-images.sh)
 
 ### Service Orchestration
 - `start-all-services.sh` - Start all RAG services
@@ -21,13 +28,33 @@ This directory contains scripts for managing Singularity deployment of NVIDIA RA
 - `cleanup.sh` - Clean up stopped instances and temporary files
 - `backup.sh` - Backup vector database and configurations
 
-## Usage
+## Quick Start
 
-All scripts should be executed from this directory:
+### Setup All Images (Recommended)
 
 ```bash
 cd deploy/singularity/scripts
-./script-name.sh
+
+# Set output directory
+export RAG_IMAGES_DIR=/path/to/images
+
+# Setup minimal image set (for testing)
+./setup-images.sh minimal
+
+# Or setup complete image set (for production)
+./setup-images.sh all
+```
+
+### Manual Usage
+
+If you need to run build or pull separately:
+
+```bash
+# Build only infrastructure images
+./build-images.sh
+
+# Pull only pre-built images
+./pull-images.sh minimal  # or 'all'
 ```
 
 ## Environment Variables

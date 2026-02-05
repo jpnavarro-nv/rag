@@ -5,17 +5,15 @@ This document describes all container images required for self-hosted deployment
 ## Quick Start
 
 ```bash
-# Set environment variables
-export RAG_IMAGES_DIR=/gaia/nvidia/partner/rag/containers/images
-export APPTAINER_CACHEDIR=/gaia/nvidia/partner/rag/containers/cache
+# Set environment variables (adjust paths for your environment)
+export RAG_IMAGES_DIR=/scratch/rag/containers/images
+export APPTAINER_CACHEDIR=/scratch/rag/containers/cache
 export NGC_API_KEY="your-key-here"
 
-# Pull minimal images (for testing)
+# Setup all images (builds + pulls)
 cd deploy/singularity/scripts
-./pull-minimal-images.sh
-
-# Or pull all images (for full deployment)
-./pull-all-images.sh
+./setup-images.sh minimal    # For testing
+# ./setup-images.sh all      # For production
 ```
 
 ---
