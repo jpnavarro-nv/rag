@@ -36,6 +36,14 @@ This deployment method converts the Docker-based RAG Blueprint to Singularity co
    apptainer --version
    ```
 
+   > **Note**: Both commands typically point to the same binary. Singularity was renamed to Apptainer in 2021 under the Linux Foundation. If you see `apptainer version X.Y.Z`, that's correct! The version number should be 1.1.0 or higher (e.g., `1.4.5` ✅).
+   >
+   > Example output on HPC systems:
+   > ```
+   > apptainer version 1.4.5-2.el8
+   > ```
+   > This indicates Apptainer 1.4.5, built for Enterprise Linux 8 (RHEL/CentOS/Rocky/AlmaLinux).
+
 3. NVIDIA GPU with driver 525.60.13 or later
    ```bash
    nvidia-smi
@@ -46,7 +54,19 @@ This deployment method converts the Docker-based RAG Blueprint to Singularity co
    export NGC_API_KEY="nvapi-..."
    ```
 
-5. Ensure you meet [the hardware requirements](./support-matrix.md)
+5. Configure Apptainer cache directory
+
+   **Important**: Configure a dedicated cache directory to avoid downloading images to your current working directory.
+
+   ```bash
+   # Set cache location (adjust path for your environment)
+   export APPTAINER_CACHEDIR=/scratch/apptainer-cache
+   mkdir -p $APPTAINER_CACHEDIR
+   ```
+
+   > **Note**: Without this configuration, cache files will be created in the current directory. Each container image is 5-10 GB. Ensure the cache location has at least 100 GB of free space.
+
+6. Ensure you meet [the hardware requirements](./support-matrix.md)
 
 ## Quick Start
 
