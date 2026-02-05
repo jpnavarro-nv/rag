@@ -22,11 +22,16 @@ echo ""
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
-# Check NGC authentication
-if [ -z "$APPTAINER_DOCKER_USERNAME" ] || [ -z "$APPTAINER_DOCKER_PASSWORD" ]; then
+# Configure NGC authentication from NGC_API_KEY if available
+if [ -n "$NGC_API_KEY" ]; then
+    export APPTAINER_DOCKER_USERNAME='$oauthtoken'
+    export APPTAINER_DOCKER_PASSWORD="$NGC_API_KEY"
+    echo "✅ Using NGC_API_KEY for authentication"
+    echo ""
+elif [ -z "$APPTAINER_DOCKER_USERNAME" ] || [ -z "$APPTAINER_DOCKER_PASSWORD" ]; then
     echo "⚠️  Warning: NGC credentials not found"
-    echo "   Set APPTAINER_DOCKER_USERNAME and APPTAINER_DOCKER_PASSWORD"
-    echo "   or run: singularity remote login"
+    echo "   Set NGC_API_KEY or APPTAINER_DOCKER_USERNAME/PASSWORD"
+    echo "   Example: export NGC_API_KEY='your-key-here'"
     echo ""
 fi
 
