@@ -22,16 +22,20 @@ echo ""
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
 
-# Configure NGC authentication from NGC_API_KEY if available
-if [ -n "$NGC_API_KEY" ]; then
-    export APPTAINER_DOCKER_USERNAME='$oauthtoken'
-    export APPTAINER_DOCKER_PASSWORD="$NGC_API_KEY"
-    echo "✅ Using NGC_API_KEY for authentication"
+# Configure NGC authentication
+if [ -z "$NGC_API_KEY" ]; then
+    echo "⚠️  Warning: NGC_API_KEY not set"
+    echo "   Export it before running: export NGC_API_KEY='your-key-here'"
+    echo "   Continuing without authentication..."
     echo ""
-elif [ -z "$APPTAINER_DOCKER_USERNAME" ] || [ -z "$APPTAINER_DOCKER_PASSWORD" ]; then
-    echo "⚠️  Warning: NGC credentials not found"
-    echo "   Set NGC_API_KEY or APPTAINER_DOCKER_USERNAME/PASSWORD"
-    echo "   Example: export NGC_API_KEY='your-key-here'"
+else
+    echo "✅ NGC_API_KEY found, logging into nvcr.io..."
+    echo "$NGC_API_KEY" | singularity registry login --username '$oauthtoken' --password-stdin docker://nvcr.io > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo "✅ Logged into NGC registry"
+    else
+        echo "❌ Login failed, pulls may fail"
+    fi
     echo ""
 fi
 
