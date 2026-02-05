@@ -15,6 +15,10 @@ minio:
   useSSL: false
   bucketName: a-bucket
 
+# Message Queue - Use embedded RocksMQ instead of Kafka for standalone mode
+mq:
+  type: rocksmq
+
 # Proxy is the main entry point for clients - bind to all interfaces
 proxy:
   grpc:
