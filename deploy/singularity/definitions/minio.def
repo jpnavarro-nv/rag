@@ -1,0 +1,28 @@
+Bootstrap: docker
+From: minio/minio:RELEASE.2023-03-20T20-16-18Z
+
+%help
+    MinIO High Performance Object Storage
+    Official image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+
+    This custom Singularity definition adds a %startscript to enable
+    'singularity instance start' for background service execution.
+
+    Usage:
+        singularity instance start \
+          --env MINIO_ROOT_USER=minioadmin \
+          --env MINIO_ROOT_PASSWORD=minioadmin \
+          --bind /data/minio:/data \
+          minio.sif \
+          minio-instance \
+          server /data --address :9000 --console-address :9001
+
+%labels
+    Author NVIDIA RAG Blueprint - Singularity Deployment
+    Version RELEASE.2023-03-20T20-16-18Z
+    Description MinIO object storage with Singularity startscript
+
+%startscript
+    # This script is executed when using 'singularity instance start'
+    # All arguments passed to instance start are available as $@
+    exec /usr/bin/minio "$@"

@@ -1,0 +1,28 @@
+Bootstrap: docker
+From: quay.io/coreos/etcd:v3.6.5
+
+%help
+    etcd distributed reliable key-value store
+    Official image: quay.io/coreos/etcd:v3.6.5
+
+    This custom Singularity definition adds a %startscript to enable
+    'singularity instance start' for background service execution.
+
+    Usage:
+        singularity instance start \
+          --bind /data/etcd:/etcd-data \
+          etcd.sif \
+          etcd-instance \
+          --data-dir=/etcd-data \
+          --listen-client-urls=http://0.0.0.0:2379 \
+          --advertise-client-urls=http://localhost:2379
+
+%labels
+    Author NVIDIA RAG Blueprint - Singularity Deployment
+    Version v3.6.5
+    Description etcd key-value store with Singularity startscript
+
+%startscript
+    # This script is executed when using 'singularity instance start'
+    # All arguments passed to instance start are available as $@
+    exec /usr/local/bin/etcd "$@"

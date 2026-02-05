@@ -2,12 +2,13 @@
 
 This directory contains scripts for managing Singularity deployment of NVIDIA RAG Blueprint.
 
-## Scripts (to be added)
+## Scripts
 
 ### Image Management
-- `pull-all-images.sh` - Pull all required container images
-- `pull-minimal-images.sh` - Pull minimal set of images for testing
-- `update-images.sh` - Update existing images to latest versions
+- `build-custom-images.sh` - Build custom images with Singularity startscripts (required for infrastructure services)
+- `pull-all-images.sh` - Pull all required container images (local testing only)
+- `pull-minimal-images.sh` - Pull minimal set of images for testing (local testing only)
+- `update-images.sh` - Update existing images to latest versions (to be added)
 
 ### Service Orchestration
 - `start-all-services.sh` - Start all RAG services

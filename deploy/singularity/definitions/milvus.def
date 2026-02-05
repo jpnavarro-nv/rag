@@ -1,0 +1,30 @@
+Bootstrap: docker
+From: milvusdb/milvus:v2.4.17
+
+%help
+    Milvus Vector Database
+    Official image: milvusdb/milvus:v2.4.17
+
+    This custom Singularity definition adds a %startscript to enable
+    'singularity instance start' for background service execution.
+
+    Usage:
+        singularity instance start \
+          --env ETCD_ENDPOINTS=localhost:2379 \
+          --env MINIO_ADDRESS=localhost:9000 \
+          --env MINIO_ACCESS_KEY=minioadmin \
+          --env MINIO_SECRET_KEY=minioadmin \
+          --bind /data/milvus:/var/lib/milvus \
+          milvus.sif \
+          milvus-instance \
+          run standalone
+
+%labels
+    Author NVIDIA RAG Blueprint - Singularity Deployment
+    Version v2.4.17
+    Description Milvus vector database with Singularity startscript
+
+%startscript
+    # This script is executed when using 'singularity instance start'
+    # All arguments passed to instance start are available as $@
+    exec /usr/bin/milvus "$@"
