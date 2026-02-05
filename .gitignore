@@ -79,4 +79,5 @@ coverage/
 .pytest_cache/
 cover/
 *.log
-# Workbench Project Layout
+# Workbench Project Layout# Temporary test scripts
+deploy/singularity/scripts/pull-*.sh
