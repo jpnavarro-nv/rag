@@ -1,0 +1,57 @@
+# Milvus Standalone Configuration
+# Based on defaults from milvusdb/milvus Docker image
+
+etcd:
+  endpoints:
+    - localhost:2379
+
+minio:
+  address: localhost
+  port: 9000
+  accessKeyID: minioadmin
+  secretAccessKey: minioadmin
+  useSSL: false
+  bucketName: "a-bucket"
+
+# Root Coordinator
+rootCoord:
+  address: localhost
+  port: 19530
+
+# Data Coordinator
+dataCoord:
+  address: localhost
+  port: 13333
+
+# Query Coordinator
+queryCoord:
+  address: localhost
+  port: 19531
+
+# Index Coordinator
+indexCoord:
+  address: localhost
+  port: 31000
+
+# Data Node
+dataNode:
+  address: localhost
+  port: 21124
+
+# Query Node
+queryNode:
+  address: localhost
+  port: 21123
+
+# Index Node
+indexNode:
+  address: localhost
+  port: 21121
+
+# Proxy (main entry point for clients)
+proxy:
+  port: 19530
+
+# Knowhere GPU configuration
+gpu:
+  memPoolSize: 2048;4096

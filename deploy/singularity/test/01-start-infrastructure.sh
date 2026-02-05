@@ -121,13 +121,16 @@ fi
 
 # Start if not running
 if [ -z "$MILVUS_PID" ]; then
-    # Milvus needs etcd and minio endpoints (from vectordb.yaml)
+    # Milvus needs etcd and minio endpoints plus a config file to avoid port conflicts
+    MILVUS_CONFIG="$(dirname $0)/../../singularity/configs/milvus.yaml"
+
     singularity exec \
       --nv \
       --env ETCD_ENDPOINTS=$ETCD_HOST:$ETCD_PORT \
       --env MINIO_ADDRESS=$MINIO_HOST:$MINIO_PORT \
       --env "KNOWHERE_GPU_MEM_POOL_SIZE=2048;4096" \
       --bind $RAG_RUNTIME_DIR/milvus-data:/var/lib/milvus \
+      --bind $MILVUS_CONFIG:/milvus/configs/milvus.yaml:ro \
       $RAG_IMAGES_DIR/milvus.sif \
       milvus run standalone \
         > $RAG_LOGS_DIR/milvus.log 2>&1 &
