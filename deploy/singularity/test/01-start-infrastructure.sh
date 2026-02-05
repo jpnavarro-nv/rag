@@ -156,6 +156,7 @@ if [ -z "$MILVUS_PID" ]; then
     sleep 1
     if ps -p $MILVUS_PID > /dev/null; then
         echo "   ✅ Milvus started (port $MILVUS_PORT, PID $MILVUS_PID)"
+        echo "   ⏳ Waiting for Milvus to initialize (this may take 10-15 seconds)..."
     else
         echo "   ❌ Milvus failed to start"
         echo "   Check logs: tail -20 $RAG_LOGS_DIR/milvus.log"
@@ -163,7 +164,8 @@ if [ -z "$MILVUS_PID" ]; then
     fi
 fi
 
-sleep 3
+# Wait for Milvus to fully initialize - Proxy needs time to start
+sleep 15
 
 # ==============================================================================
 # Verify services are running

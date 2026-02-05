@@ -36,6 +36,7 @@ dataNode:
 
 # Proxy is the main entry point for clients
 proxy:
+  address: 0.0.0.0
   port: 19530
   internalPort: 19529
 
