@@ -17,6 +17,7 @@ minio:
   rootPath: files
   useIAM: false
   cloudProvider: aws
+  region: us-east-1
 
 # Message Queue - Use embedded RocksMQ instead of Kafka for standalone mode
 mq:
