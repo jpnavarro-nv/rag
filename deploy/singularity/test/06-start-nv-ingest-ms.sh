@@ -16,7 +16,8 @@ source "$(dirname "$0")/00-config.sh"
 NVINGEST_PORT=${NVINGEST_PORT:-7670}
 NVINGEST_BROKER_PORT=${NVINGEST_BROKER_PORT:-7671}
 NVINGEST_HOST=${NVINGEST_HOST:-localhost}
-NVINGEST_GPU_ID=${NVINGEST_GPU_ID:-0}
+# GPU 3: Vision & Ingestion (paired with VLM which NV-Ingest calls for captioning)
+NVINGEST_GPU_ID=${NVINGEST_GPU_ID:-3}
 
 # Redis configuration
 REDIS_HOST=${REDIS_HOST:-localhost}

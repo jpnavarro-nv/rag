@@ -65,25 +65,47 @@ Access URLs:
 **Minimum**: 3-4 GPUs (44GB VRAM), 48 CPUs, 192GB RAM
 **Recommended**: 4x A100 (40GB), 64 CPUs, 256GB RAM
 
-## 🎮 GPU Configuration Strategy
+## 🎮 GPU Configuration Strategy (Optimized for 4 GPUs)
 
-GPU configuration matches the official Docker Compose deployment:
+This deployment uses an **optimized 4-GPU distribution** that improves upon Docker Compose's default (which overloads GPU 0 with 8 services).
 
-**Services WITH GPU access (`--nv` flag)**:
-- ✅ **Milvus** (01) - Vector database GPU indexing/search
-- ✅ **NIM Models** (05) - All 8 models with CUDA_VISIBLE_DEVICES
-- ✅ **NV-Ingest** (06) - Ray-based document processing
+### GPU Distribution
 
-**Services WITHOUT GPU access (CPU-only)**:
+| GPU | Services | Load | Purpose |
+|-----|----------|------|---------|
+| **GPU 0** | Embedding, Ranking, Milvus | Medium (3) | **Embedding & Retrieval** |
+| **GPU 1** | LLM (49B) | Heavy (1) | **LLM Generation** |
+| **GPU 2** | Page/Graphic/Table YOLOX, OCR | Light (4) | **Document Processing** |
+| **GPU 3** | VLM, NV-Ingest | Medium (2) | **Vision & Ingestion** |
+
+### Services WITH GPU access (`--nv` flag):
+- ✅ **Milvus** (01) - GPU 0 - Vector database GPU indexing/search
+- ✅ **Embedding NIM** (05) - GPU 0 - 1B embedding model
+- ✅ **Ranking NIM** (05) - GPU 0 - 1B reranking model
+- ✅ **LLM NIM** (05) - GPU 1 - 49B generation model
+- ✅ **VLM NIM** (05) - GPU 3 - 8B vision-language model
+- ✅ **Page Elements** (05) - GPU 2 - YOLOX layout detection
+- ✅ **Graphic Elements** (05) - GPU 2 - YOLOX graphics detection
+- ✅ **Table Structure** (05) - GPU 2 - YOLOX table detection
+- ✅ **PaddleOCR** (05) - GPU 2 - OCR model
+- ✅ **NV-Ingest** (06) - GPU 3 - Ray-based document processor
+
+### Services WITHOUT GPU (CPU-only):
 - ⭕ **etcd** (01) - Coordination service
 - ⭕ **MinIO** (01) - Object storage
 - ⭕ **Redis** (04) - Message queue
-- ⭕ **RAG Server** (03) - Orchestrator, delegates GPU to NIMs
-- ⭕ **Ingestor Server** (07) - API server, delegates GPU to NV-Ingest
+- ⭕ **RAG Server** (03) - Orchestrator API
+- ⭕ **Ingestor Server** (07) - Ingestion API
 
-**Default GPU Assignment** (configurable via env vars):
-- GPU 0: Embedding, Ranking, OCR, YOLOX models, Milvus
-- GPU 1: LLM, VLM
+### Why This Distribution?
+
+**Docker Default Problem**: GPU 0 gets 8 services (overloaded!)
+
+**Our Solution**:
+- ✅ Balances load across 4 GPUs (max 4 services per GPU)
+- ✅ Groups related services (embed+rank+milvus, all doc processing)
+- ✅ Isolates heavy LLM model on dedicated GPU
+- ✅ Pairs VLM with NV-Ingest (VLM is called for image captioning)
 
 ## 🐛 Troubleshooting
 

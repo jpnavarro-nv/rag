@@ -216,6 +216,10 @@ if [ -z "$MILVUS_PID" ]; then
         cp "$(dirname "$0")/../configs/milvus.yaml" "$MILVUS_CONFIG_DIR/milvus.yaml"
     fi
 
+    # Milvus uses GPU for CAGRA indexing and GPU-accelerated search
+    # Part of 4-GPU strategy: GPU 0 (Embedding & Retrieval) with Embedding/Ranking NIMs
+    # No CUDA_VISIBLE_DEVICES needed - Singularity --nv exposes all GPUs,
+    # Milvus internally manages GPU selection via KNOWHERE_GPU_MEM_POOL_SIZE
     singularity exec \
       --nv \
       --env ETCD_ENDPOINTS=$ETCD_HOST:$ETCD_PORT \

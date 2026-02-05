@@ -24,15 +24,33 @@ GRAPHIC_ELEMENTS_PORT=${GRAPHIC_ELEMENTS_PORT:-8003}
 TABLE_STRUCTURE_PORT=${TABLE_STRUCTURE_PORT:-8006}
 PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
 
-# GPU assignment (customize based on your available GPUs)
+# ==============================================================================
+# GPU Distribution Strategy for 4 GPUs (Optimized)
+# ==============================================================================
+# GPU 0: Embedding & Retrieval (3 services: Embedding, Ranking, Milvus)
+# GPU 1: LLM Generation (1 service: LLM - 49B model)
+# GPU 2: Document Processing (4 services: YOLOX x3, PaddleOCR)
+# GPU 3: Vision & Ingestion (2 services: VLM, NV-Ingest)
+#
+# This balances load and groups related services, avoiding Docker's
+# default which overloads GPU 0 with 8 services.
+# ==============================================================================
+
+# GPU 0: Embedding & Retrieval
 EMBEDDING_GPU_ID=${EMBEDDING_MS_GPU_ID:-0}
 RANKING_GPU_ID=${RANKING_MS_GPU_ID:-0}
+
+# GPU 1: LLM Generation
 LLM_GPU_ID=${LLM_MS_GPU_ID:-1}
-VLM_GPU_ID=${VLM_MS_GPU_ID:-1}
-PAGE_ELEMENTS_GPU_ID=${YOLOX_MS_GPU_ID:-0}
-GRAPHIC_ELEMENTS_GPU_ID=${YOLOX_GRAPHICS_MS_GPU_ID:-0}
-TABLE_STRUCTURE_GPU_ID=${YOLOX_TABLE_MS_GPU_ID:-0}
-PADDLE_OCR_GPU_ID=${OCR_MS_GPU_ID:-0}
+
+# GPU 2: Document Processing
+PAGE_ELEMENTS_GPU_ID=${YOLOX_MS_GPU_ID:-2}
+GRAPHIC_ELEMENTS_GPU_ID=${YOLOX_GRAPHICS_MS_GPU_ID:-2}
+TABLE_STRUCTURE_GPU_ID=${YOLOX_TABLE_MS_GPU_ID:-2}
+PADDLE_OCR_GPU_ID=${OCR_MS_GPU_ID:-2}
+
+# GPU 3: Vision & Ingestion
+VLM_GPU_ID=${VLM_MS_GPU_ID:-3}
 
 # ==============================================================================
 # Healthcheck Functions
