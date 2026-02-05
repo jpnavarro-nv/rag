@@ -81,9 +81,9 @@ if [ -z "$MINIO_PID" ]; then
       --env MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD \
       --bind $RAG_RUNTIME_DIR/minio-data:/data \
       $RAG_IMAGES_DIR/minio.sif \
-      /usr/bin/minio server /data \
-        --address :$MINIO_PORT \
+      minio server /data \
         --console-address :$MINIO_CONSOLE_PORT \
+        --address :$MINIO_PORT \
         > $RAG_LOGS_DIR/minio.log 2>&1 &
 
     MINIO_PID=$!
