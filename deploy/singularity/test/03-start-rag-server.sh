@@ -91,7 +91,6 @@ echo ""
 echo "Starting RAG Server..."
 
 singularity exec \
-  --nv \
   --env NGC_API_KEY=$NGC_API_KEY \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
   --env APP_VECTORSTORE_URL=http://$MILVUS_HOST:$MILVUS_PORT \
