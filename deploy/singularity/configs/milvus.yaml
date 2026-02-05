@@ -23,6 +23,10 @@ mq:
 rocksmq:
   path: /var/lib/milvus/rdb_data
 
+# Local storage path for QueryNode cache (mmap, chunk cache, disk indexes)
+localStorage:
+  path: /var/lib/milvus/data/
+
 # Component ports (must be different to avoid conflicts in standalone mode)
 rootCoord:
   address: 0.0.0.0
@@ -38,9 +42,6 @@ queryCoord:
 
 queryNode:
   port: 21123
-  # Local cache directory for query data
-  localStorage:
-    path: /var/lib/milvus/query_node_cache
 
 indexNode:
   port: 21121
