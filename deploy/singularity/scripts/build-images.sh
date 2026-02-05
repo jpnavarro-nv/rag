@@ -57,7 +57,7 @@ echo ""
 
 build_image "etcd.def" "etcd.sif" "etcd v3.6.5 - Key-value store" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
 build_image "minio.def" "minio.sif" "MinIO - Object storage" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
-build_image "milvus.def" "milvus.sif" "Milvus v2.4.17 - Vector database" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+build_image "milvus.def" "milvus.sif" "Milvus v2.6.2-gpu - Vector database" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
 
 # Summary
 echo "=== Build Summary ==="

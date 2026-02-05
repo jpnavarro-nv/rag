@@ -88,12 +88,11 @@ SUCCESS=0
 FAILED=0
 
 # ==============================================================================
-# Core RAG Services (always pulled)
+# Core RAG Services (always pulled for minimal setup)
 # ==============================================================================
 echo "=== Core RAG Services ==="
 echo ""
 
-# From deploy/helm/nvidia-blueprint-rag/values.yaml and docker-compose files
 pull_image "nvcr.io/nvidia/blueprint/rag-server:2.3.0" \
     "rag-server.sif" \
     "RAG Server v2.3.0"
@@ -102,57 +101,74 @@ pull_image "nvcr.io/nvidia/blueprint/ingestor-server:2.3.0" \
     "ingestor-server.sif" \
     "Ingestor Server v2.3.0"
 
-pull_image "nvcr.io/nvidia/blueprint/rag-frontend:2.3.0" \
-    "frontend.sif" \
-    "Frontend UI v2.3.0"
-
 # ==============================================================================
-# Optional NIMs and Tools (only for 'all')
+# Full Ingestion Pipeline (only for 'all')
 # ==============================================================================
 if [ "$IMAGE_SET" = "all" ]; then
     echo ""
-    echo "=== NIMs (Language Models) ==="
+    echo "=== Message Queue ==="
+    echo ""
+
+    pull_image "redis/redis-stack:7.2.0-v18" \
+        "redis.sif" \
+        "Redis Stack v7.2.0" \
+        "false"
+
+    echo ""
+    echo "=== NIMs - Language Models ==="
     echo ""
 
     pull_image "nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:1.14.0" \
-        "nim-llama-3.3-nemotron-49b.sif" \
+        "nim-llm.sif" \
         "NIM LLM - Llama 3.3 Nemotron 49B"
 
     pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-embedqa-1b-v2:1.10.1" \
-        "nim-llama-3.2-embedqa-1b.sif" \
+        "nemoretriever-embedding.sif" \
         "NIM Embedding - Llama 3.2 EmbedQA 1B"
 
     pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2:1.8.0" \
-        "nim-llama-3.2-rerankqa-1b.sif" \
+        "nemoretriever-ranking.sif" \
         "NIM Reranking - Llama 3.2 RerankQA 1B"
 
-    pull_image "nvcr.io/nvidia/nemo-microservices/llama-3.2-nemoretriever-1b-vlm-embed-v1:1.7.0" \
-        "nim-llama-3.2-vlm-embed-1b.sif" \
-        "NIM VLM Embedding - Llama 3.2 1B"
-
     pull_image "nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:1.3.1" \
-        "nim-llama-3.1-nano-vl-8b.sif" \
-        "NIM VL - Llama 3.1 Nemotron Nano 8B"
+        "vlm.sif" \
+        "NIM VLM - Llama 3.1 Nemotron Nano VL 8B"
 
     echo ""
-    echo "=== Ingestion Services ==="
+    echo "=== NIMs - Document Processing ==="
+    echo ""
+
+    pull_image "nvcr.io/nim/nvidia/nemoretriever-page-elements-v2:1.5.0" \
+        "page-elements.sif" \
+        "NIM Page Elements (YOLOX) v2"
+
+    pull_image "nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1:1.5.0" \
+        "graphic-elements.sif" \
+        "NIM Graphic Elements (YOLOX) v1"
+
+    pull_image "nvcr.io/nim/nvidia/nemoretriever-table-structure-v1:1.5.0" \
+        "table-structure.sif" \
+        "NIM Table Structure (YOLOX) v1"
+
+    pull_image "nvcr.io/nim/baidu/paddleocr:1.5.0" \
+        "paddle.sif" \
+        "NIM PaddleOCR v1.5.0"
+
+    echo ""
+    echo "=== NV-Ingest Runtime ==="
     echo ""
 
     pull_image "nvcr.io/nvidia/nemo-microservices/nv-ingest:25.9.0" \
         "nv-ingest.sif" \
-        "NV Ingest Service"
+        "NV-Ingest Microservice v25.9.0"
 
-    pull_image "nvcr.io/nim/baidu/paddleocr:1.5.0" \
-        "paddleocr.sif" \
-        "PaddleOCR NIM"
+    echo ""
+    echo "=== Optional/Extras ==="
+    echo ""
 
-    pull_image "nvcr.io/nvidia/nemo-microservices/nemoretriever-ocr-v1:1.1.0" \
-        "nemoretriever-ocr.sif" \
-        "NeMo Retriever OCR"
-
-    pull_image "nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1:1.5.0" \
-        "nemoretriever-graphic-elements.sif" \
-        "NeMo Retriever Graphic Elements"
+    pull_image "nvcr.io/nvidia/blueprint/rag-frontend:2.3.0" \
+        "frontend.sif" \
+        "Frontend UI v2.3.0 (optional)"
 fi
 
 # ==============================================================================
