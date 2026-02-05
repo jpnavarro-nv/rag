@@ -2,12 +2,17 @@
 
 This directory contains configuration files for Singularity/Apptainer deployment.
 
-## Files (to be added)
+## Files
 
-- `rag.env.template` - Environment variables template
-- Network and service configuration files
+- `milvus.yaml` - Milvus configuration defining component ports to avoid conflicts
 
-**Note:** Milvus and MinIO configurations are handled via environment variables only, matching the docker-compose approach. No custom config files needed.
+**Note:** The milvus.yaml file is required to properly configure internal component ports. Without it, Milvus components will conflict on port 19530. The configuration sets:
+- RootCoord: 53100
+- DataCoord: 13333
+- QueryCoord: 19531
+- Proxy (client): 19530
+
+MinIO configuration is handled via environment variables, matching the docker-compose approach.
 
 ## Usage
 

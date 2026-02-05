@@ -121,14 +121,16 @@ fi
 
 # Start if not running
 if [ -z "$MILVUS_PID" ]; then
-    # Milvus configuration matches docker-compose exactly
-    # Only 3 env vars needed: ETCD_ENDPOINTS, MINIO_ADDRESS, KNOWHERE_GPU_MEM_POOL_SIZE
+    # Milvus needs custom config to set component ports correctly
+    MILVUS_CONFIG_DIR="$(cd "$(dirname "$0")/../configs" && pwd)"
+
     singularity exec \
       --nv \
       --env ETCD_ENDPOINTS=$ETCD_HOST:$ETCD_PORT \
       --env MINIO_ADDRESS=$MINIO_HOST:$MINIO_PORT \
       --env "KNOWHERE_GPU_MEM_POOL_SIZE=2048;4096" \
       --bind $RAG_RUNTIME_DIR/milvus-data:/var/lib/milvus \
+      --bind $MILVUS_CONFIG_DIR/milvus.yaml:/milvus/configs/milvus.yaml:ro \
       $RAG_IMAGES_DIR/milvus.sif \
       milvus run standalone \
         > $RAG_LOGS_DIR/milvus.log 2>&1 &

@@ -1,0 +1,52 @@
+# Minimal Milvus configuration for Singularity deployment
+# Based on default config from milvusdb/milvus:v2.5.3-gpu
+
+# etcd configuration
+etcd:
+  endpoints: localhost:2379
+  rootPath: by-dev
+
+# MinIO/S3 configuration
+minio:
+  address: localhost
+  port: 9010
+  accessKeyID: minioadmin
+  secretAccessKey: minioadmin
+  useSSL: false
+  bucketName: a-bucket
+
+# Component ports (must be different to avoid conflicts)
+rootCoord:
+  port: 53100
+
+dataCoord:
+  port: 13333
+
+queryCoord:
+  port: 19531
+
+queryNode:
+  port: 21123
+
+indexNode:
+  port: 21121
+
+dataNode:
+  port: 21124
+
+# Proxy is the main entry point for clients
+proxy:
+  port: 19530
+  internalPort: 19529
+
+# Logging
+log:
+  level: info
+  format: text
+
+# Storage
+common:
+  storageType: remote
+
+localStorage:
+  path: /var/lib/milvus/data/
