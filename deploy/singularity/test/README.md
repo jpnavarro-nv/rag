@@ -65,6 +65,26 @@ Access URLs:
 **Minimum**: 3-4 GPUs (44GB VRAM), 48 CPUs, 192GB RAM
 **Recommended**: 4x A100 (40GB), 64 CPUs, 256GB RAM
 
+## 🎮 GPU Configuration Strategy
+
+GPU configuration matches the official Docker Compose deployment:
+
+**Services WITH GPU access (`--nv` flag)**:
+- ✅ **Milvus** (01) - Vector database GPU indexing/search
+- ✅ **NIM Models** (05) - All 8 models with CUDA_VISIBLE_DEVICES
+- ✅ **NV-Ingest** (06) - Ray-based document processing
+
+**Services WITHOUT GPU access (CPU-only)**:
+- ⭕ **etcd** (01) - Coordination service
+- ⭕ **MinIO** (01) - Object storage
+- ⭕ **Redis** (04) - Message queue
+- ⭕ **RAG Server** (03) - Orchestrator, delegates GPU to NIMs
+- ⭕ **Ingestor Server** (07) - API server, delegates GPU to NV-Ingest
+
+**Default GPU Assignment** (configurable via env vars):
+- GPU 0: Embedding, Ranking, OCR, YOLOX models, Milvus
+- GPU 1: LLM, VLM
+
 ## 🐛 Troubleshooting
 
 Check logs: `$RAG_LOGS_DIR/` (default: `$RAG_BASE_DIR/logs/`)
