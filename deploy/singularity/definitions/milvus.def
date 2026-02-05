@@ -1,9 +1,9 @@
 Bootstrap: docker
-From: milvusdb/milvus:v2.4.17
+From: milvusdb/milvus:v2.5.3-gpu
 
 %help
     Milvus Vector Database
-    Official image: milvusdb/milvus:v2.4.17
+    Official image: milvusdb/milvus:v2.5.3-gpu
 
     This custom Singularity definition adds a %startscript to enable
     'singularity instance start' for background service execution.
@@ -21,8 +21,8 @@ From: milvusdb/milvus:v2.4.17
 
 %labels
     Author NVIDIA RAG Blueprint - Singularity Deployment
-    Version v2.4.17
-    Description Milvus vector database with Singularity startscript
+    Version v2.5.3
+    Description Milvus vector database with GPU support and Singularity startscript
 
 %startscript
     # This script is executed when using 'singularity instance start'
