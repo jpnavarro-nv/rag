@@ -80,9 +80,6 @@ coverage/
 cover/
 *.log
 # Workbench Project Layout
-# Temporary test scripts (local development only)
+# Temporary legacy pull scripts (deprecated)
 deploy/singularity/scripts/pull-minimal-images.sh
 deploy/singularity/scripts/pull-all-images.sh
-
-# Test scripts (local development only)
-deploy/singularity/test/
