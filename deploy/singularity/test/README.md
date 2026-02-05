@@ -1,123 +1,77 @@
-# RAG Singularity Test Scripts
+# RAG Stack Startup Scripts - Complete Guide
 
-**⚠️ These are TEST scripts - NOT for production use**
+Complete set of scripts to deploy the NVIDIA RAG Blueprint on HPC clusters using Singularity/Apptainer.
 
-Test scripts for validating minimal RAG Blueprint deployment with Singularity.
+## 📋 Overview
 
-## Prerequisites
+This deployment implements **Opção 2 (Complete Local)** - all services run locally on the compute node including infrastructure, NIMs, and ingestion pipeline.
 
-- All minimal images pulled (`pull-minimal-images.sh` completed)
-- NGC_API_KEY exported
-- Sufficient permissions on compute node
-
-## Directory Structure
-
-```
-rag-singularity-test/
-├── 00-config.sh                 # Configuration (edit this for your paths)
-├── 01-start-infrastructure.sh   # Start etcd, MinIO, Milvus
-├── 02-test-connectivity.sh      # Test services are responding
-├── 03-start-rag-server.sh       # Start RAG server
-└── 99-stop-all.sh               # Stop all services
-```
-
-## Quick Start
-
-### 1. Edit Configuration
+## 🚀 Quick Start Sequence
 
 ```bash
-nano 00-config.sh
-# Adjust paths if needed (defaults should work)
-```
+# Full Stack (all services)
+./01-start-infrastructure.sh  # etcd, MinIO, Milvus
+./04-start-redis.sh           # Redis
+./05-start-nim-models.sh      # 8 NIM models (5-10 min)
+./06-start-nv-ingest-ms.sh    # NV-Ingest processor
+./07-start-ingest-server.sh   # Ingestion API (8082)
+./03-start-rag-server.sh      # Query API (8081)
+./08-validate-all-services.sh # Validate all
 
-### 2. Start Infrastructure
-
-```bash
+# Query-Only (minimal)
 ./01-start-infrastructure.sh
-```
-
-**Expected:**
-- etcd starts on port 2379
-- MinIO starts on port 9010 (console 9011)
-- Milvus starts on port 19530
-
-**Check logs:**
-```bash
-tail -f $RAG_BASE_DIR/logs/etcd.log
-tail -f $RAG_BASE_DIR/logs/minio.log
-tail -f $RAG_BASE_DIR/logs/milvus.log
-```
-
-### 3. Test Connectivity
-
-```bash
-./02-test-connectivity.sh
-```
-
-**Expected:** All services responding
-
-### 4. Start RAG Server
-
-```bash
-export NGC_API_KEY="your-key"
 ./03-start-rag-server.sh
 ```
 
-**Expected:** RAG server starts on port 8081
+## 📝 Script Reference
 
-### 5. Test RAG Server
+| Script | Purpose | Dependencies | Runtime | Ports |
+|--------|---------|--------------|---------|-------|
+| 00-config.sh | Configuration | - | - | - |
+| 01-start-infrastructure.sh | etcd, MinIO, Milvus | None | ~60s | 2379, 9010, 19530 |
+| 02-test-connectivity.sh | Connectivity test | 01 | <5s | - |
+| 03-start-rag-server.sh | RAG query API | 01 | ~30s | 8081 |
+| 04-start-redis.sh | Redis queue | None | ~5s | 6379 |
+| 05-start-nim-models.sh | 8 NIM models | GPU | 5-10min | 9080, 1976, 8999, 8997, 8000-8011 |
+| 06-start-nv-ingest-ms.sh | Document processor | 04, 05 | ~60s | 7670, 7671 |
+| 07-start-ingest-server.sh | Ingestion API | 01, 04, 05, 06 | ~30s | 8082 |
+| 08-validate-all-services.sh | Full validation | All | ~30s | - |
+| 99-stop-all.sh | Stop all | - | ~10s | - |
 
+## 🔍 Validation Results
+
+Expected output from `08-validate-all-services.sh`:
+
+✅ **15 Services Operational**:
+- Infrastructure: etcd, MinIO, Milvus (3)
+- Redis (1)
+- NIMs: Embedding, Ranking, LLM, VLM, OCR, YOLOX x3 (8)
+- NV-Ingest (1)
+- Applications: Ingestor, RAG Server (2)
+
+## 🌐 Remote Access
+
+SSH tunnel from laptop to compute node:
 ```bash
-# Health check
-curl http://localhost:8081/health
-
-# API docs
-curl http://localhost:8081/docs
+ssh -L 8081:localhost:8081 -L 8082:localhost:8082 login-node ssh -L 8081:localhost:8081 -L 8082:localhost:8082 compute-node
 ```
 
-### 6. Stop Everything
+Access URLs:
+- RAG Server: http://localhost:8081/docs
+- Ingestor: http://localhost:8082/docs
 
-```bash
-./99-stop-all.sh
-```
+## 📊 Resource Requirements
 
-## Troubleshooting
+**Minimum**: 3-4 GPUs (44GB VRAM), 48 CPUs, 192GB RAM
+**Recommended**: 4x A100 (40GB), 64 CPUs, 256GB RAM
 
-### Check running instances
-```bash
-singularity instance list
-```
+## 🐛 Troubleshooting
 
-### Check logs
-```bash
-ls -lh /gaia/nvidia/partner/rag/logs/
-tail -f /gaia/nvidia/partner/rag/logs/*.log
-```
+Check logs: `$RAG_LOGS_DIR/` (default: `$RAG_BASE_DIR/logs/`)
 
-### Stop individual instance
-```bash
-singularity instance stop <instance-name>
-```
+Common issues:
+1. NIMs not loading: Check GPU memory with `nvidia-smi`
+2. Port conflicts: Use `lsof -i :PORT` to find conflicts
+3. Milvus auth errors: Verify `region: us-east-1` in milvus.yaml
 
-### Force stop all
-```bash
-singularity instance stop -a
-```
-
-## Notes
-
-- **Uses `singularity exec` in background** instead of `singularity instance start` due to Apptainer 1.4.5 limitations with startscripts
-- Process PIDs are saved in `$RAG_RUNTIME_DIR/pids/` for management
-- These scripts use `localhost` networking (single node)
-- For multi-node, adjust `00-config.sh` with proper hostnames
-- Milvus can take 30-60s to fully start
-- RAG server uses NVIDIA API catalog (cloud) for models initially
-- Full local NIM deployment requires additional NIMs
-
-## Next Steps After Validation
-
-1. Test basic RAG query
-2. Add ingestor-server
-3. Add local NIMs (instead of API catalog)
-4. Create production-ready orchestration
-5. Commit final versions to git repo
+For details, see full README or script comments.
