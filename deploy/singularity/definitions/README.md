@@ -72,16 +72,18 @@ singularity exec \
   --env MINIO_ROOT_PASSWORD=minioadmin \
   --bind /data/minio:/data \
   minio.sif \
-  /usr/bin/minio server /data --address :9000 \
+  minio server /data --console-address :9011 --address :9010 \
   > minio.log 2>&1 &
 
 # Start Milvus
 singularity exec \
+  --nv \
   --env ETCD_ENDPOINTS=localhost:2379 \
-  --env MINIO_ADDRESS=localhost:9000 \
+  --env MINIO_ADDRESS=localhost:9010 \
+  --env "KNOWHERE_GPU_MEM_POOL_SIZE=2048;4096" \
   --bind /data/milvus:/var/lib/milvus \
   milvus.sif \
-  /usr/bin/milvus run standalone \
+  milvus run standalone \
   > milvus.log 2>&1 &
 ```
 

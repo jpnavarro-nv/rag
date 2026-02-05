@@ -121,21 +121,13 @@ fi
 
 # Start if not running
 if [ -z "$MILVUS_PID" ]; then
-    # Milvus needs etcd and minio endpoints
-    # Use environment variables to set component ports to avoid conflicts
+    # Milvus configuration matches docker-compose exactly
+    # Only 3 env vars needed: ETCD_ENDPOINTS, MINIO_ADDRESS, KNOWHERE_GPU_MEM_POOL_SIZE
     singularity exec \
       --nv \
       --env ETCD_ENDPOINTS=$ETCD_HOST:$ETCD_PORT \
       --env MINIO_ADDRESS=$MINIO_HOST:$MINIO_PORT \
       --env "KNOWHERE_GPU_MEM_POOL_SIZE=2048;4096" \
-      --env ROOT_COORD_ADDRESS=localhost \
-      --env ROOT_COORD_PORT=19530 \
-      --env DATA_COORD_ADDRESS=localhost \
-      --env DATA_COORD_PORT=13333 \
-      --env QUERY_COORD_ADDRESS=localhost \
-      --env QUERY_COORD_PORT=19531 \
-      --env INDEX_COORD_ADDRESS=localhost \
-      --env INDEX_COORD_PORT=31000 \
       --bind $RAG_RUNTIME_DIR/milvus-data:/var/lib/milvus \
       $RAG_IMAGES_DIR/milvus.sif \
       milvus run standalone \

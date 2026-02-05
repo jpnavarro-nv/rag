@@ -1,9 +1,11 @@
 Bootstrap: docker
-From: minio/minio:RELEASE.2023-03-20T20-16-18Z
+From: minio/minio:RELEASE.2025-02-28T09-55-16Z
 
 %help
     MinIO High Performance Object Storage
-    Official image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    Official image: minio/minio:RELEASE.2025-02-28T09-55-16Z
+
+    Matches version from docker-compose (deploy/workbench/compose.yaml)
 
     This custom Singularity definition adds a %startscript to enable
     'singularity instance start' for background service execution.
@@ -15,11 +17,11 @@ From: minio/minio:RELEASE.2023-03-20T20-16-18Z
           --bind /data/minio:/data \
           minio.sif \
           minio-instance \
-          server /data --address :9000 --console-address :9001
+          server /data --console-address :9011 --address :9010
 
 %labels
     Author NVIDIA RAG Blueprint - Singularity Deployment
-    Version RELEASE.2023-03-20T20-16-18Z
+    Version RELEASE.2025-02-28T09-55-16Z
     Description MinIO object storage with Singularity startscript
 
 %startscript

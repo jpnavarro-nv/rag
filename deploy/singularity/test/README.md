@@ -38,14 +38,14 @@ nano 00-config.sh
 
 **Expected:**
 - etcd starts on port 2379
-- MinIO starts on port 9000 (console 9001)
+- MinIO starts on port 9010 (console 9011)
 - Milvus starts on port 19530
 
 **Check logs:**
 ```bash
-tail -f /gaia/nvidia/partner/rag/logs/etcd.log
-tail -f /gaia/nvidia/partner/rag/logs/minio.log
-tail -f /gaia/nvidia/partner/rag/logs/milvus.log
+tail -f $RAG_BASE_DIR/logs/etcd.log
+tail -f $RAG_BASE_DIR/logs/minio.log
+tail -f $RAG_BASE_DIR/logs/milvus.log
 ```
 
 ### 3. Test Connectivity

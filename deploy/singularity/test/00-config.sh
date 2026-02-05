@@ -18,8 +18,8 @@ mkdir -p $RAG_LOGS_DIR
 export ETCD_HOST=localhost
 export ETCD_PORT=2379
 export MINIO_HOST=localhost
-export MINIO_PORT=9000
-export MINIO_CONSOLE_PORT=9001
+export MINIO_PORT=9010
+export MINIO_CONSOLE_PORT=9011
 export MILVUS_HOST=localhost
 export MILVUS_PORT=19530
 
