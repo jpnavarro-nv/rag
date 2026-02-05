@@ -19,22 +19,45 @@ fi
 
 # Check if infrastructure is running
 echo "Checking infrastructure..."
-if ! singularity instance list | grep -q "etcd-instance"; then
-    echo "❌ etcd is not running. Run 01-start-infrastructure.sh first"
+
+# Check etcd
+if [ ! -f $RAG_RUNTIME_DIR/pids/etcd.pid ]; then
+    echo "❌ etcd PID file not found. Run 01-start-infrastructure.sh first"
     exit 1
 fi
-
-if ! singularity instance list | grep -q "minio-instance"; then
-    echo "❌ MinIO is not running. Run 01-start-infrastructure.sh first"
+ETCD_PID=$(cat $RAG_RUNTIME_DIR/pids/etcd.pid)
+if ! ps -p $ETCD_PID > /dev/null 2>&1; then
+    echo "❌ etcd is not running (stale PID $ETCD_PID). Run 01-start-infrastructure.sh"
     exit 1
 fi
+echo "   ✅ etcd running (PID $ETCD_PID)"
 
-if ! singularity instance list | grep -q "milvus-instance"; then
-    echo "❌ Milvus is not running. Run 01-start-infrastructure.sh first"
+# Check MinIO
+if [ ! -f $RAG_RUNTIME_DIR/pids/minio.pid ]; then
+    echo "❌ MinIO PID file not found. Run 01-start-infrastructure.sh first"
     exit 1
 fi
+MINIO_PID=$(cat $RAG_RUNTIME_DIR/pids/minio.pid)
+if ! ps -p $MINIO_PID > /dev/null 2>&1; then
+    echo "❌ MinIO is not running (stale PID $MINIO_PID). Run 01-start-infrastructure.sh"
+    exit 1
+fi
+echo "   ✅ MinIO running (PID $MINIO_PID)"
 
-echo "✅ Infrastructure is running"
+# Check Milvus
+if [ ! -f $RAG_RUNTIME_DIR/pids/milvus.pid ]; then
+    echo "❌ Milvus PID file not found. Run 01-start-infrastructure.sh first"
+    exit 1
+fi
+MILVUS_PID=$(cat $RAG_RUNTIME_DIR/pids/milvus.pid)
+if ! ps -p $MILVUS_PID > /dev/null 2>&1; then
+    echo "❌ Milvus is not running (stale PID $MILVUS_PID). Run 01-start-infrastructure.sh"
+    exit 1
+fi
+echo "   ✅ Milvus running (PID $MILVUS_PID)"
+
+echo ""
+echo "✅ All infrastructure services are running"
 echo ""
 
 # ==============================================================================
