@@ -81,3 +81,6 @@ cover/
 *.log
 # Workbench Project Layout# Temporary test scripts
 deploy/singularity/scripts/pull-*.sh
+
+# Test scripts (local development only)
+deploy/singularity/test/
