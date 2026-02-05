@@ -128,11 +128,13 @@ if [ -z "$MILVUS_PID" ]; then
     # Ensure config directory exists with all required files
     if [ ! -d "$MILVUS_CONFIG_DIR" ] || [ ! -f "$MILVUS_CONFIG_DIR/milvus.yaml" ]; then
         echo "   Setting up Milvus config directory..."
-        mkdir -p "$MILVUS_CONFIG_DIR"
         # Extract default configs from container
         singularity exec $RAG_IMAGES_DIR/milvus.sif \
           tar czf /tmp/milvus-configs.tar.gz -C /milvus configs/ > /dev/null 2>&1
+        # Extract to runtime dir (creates configs/ subdirectory)
         tar xzf /tmp/milvus-configs.tar.gz -C "$RAG_RUNTIME_DIR" > /dev/null 2>&1
+        # Rename to milvus-configs for consistency
+        mv "$RAG_RUNTIME_DIR/configs" "$MILVUS_CONFIG_DIR"
         rm -f /tmp/milvus-configs.tar.gz
         # Overwrite with our custom config
         cp "$(dirname "$0")/../configs/milvus.yaml" "$MILVUS_CONFIG_DIR/milvus.yaml"
