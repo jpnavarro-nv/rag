@@ -15,30 +15,11 @@ minio:
   useSSL: false
   bucketName: a-bucket
 
-# Component ports (must be different to avoid conflicts)
-rootCoord:
-  port: 53100
-
-dataCoord:
-  port: 13333
-
-queryCoord:
-  port: 19531
-
-queryNode:
-  port: 21123
-
-indexNode:
-  port: 21121
-
-dataNode:
-  port: 21124
-
-# Proxy is the main entry point for clients
+# Proxy is the main entry point for clients - bind to all interfaces
 proxy:
-  address: 0.0.0.0
+  grpc:
+    serverAddress: 0.0.0.0
   port: 19530
-  internalPort: 19529
 
 # Logging
 log:
@@ -48,6 +29,3 @@ log:
 # Storage
 common:
   storageType: remote
-
-localStorage:
-  path: /var/lib/milvus/data/
