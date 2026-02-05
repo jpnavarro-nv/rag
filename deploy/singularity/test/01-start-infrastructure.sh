@@ -18,25 +18,41 @@ echo ""
 # ==============================================================================
 echo "[1/3] Starting etcd..."
 
-singularity exec \
-  --bind $RAG_RUNTIME_DIR/etcd-data:/etcd-data \
-  $RAG_IMAGES_DIR/etcd.sif \
-  /usr/local/bin/etcd \
-    --data-dir=/etcd-data \
-    --listen-client-urls=http://0.0.0.0:$ETCD_PORT \
-    --advertise-client-urls=http://$ETCD_HOST:$ETCD_PORT \
-    > $RAG_LOGS_DIR/etcd.log 2>&1 &
+# Check if already running
+if [ -f $RAG_RUNTIME_DIR/pids/etcd.pid ]; then
+    EXISTING_PID=$(cat $RAG_RUNTIME_DIR/pids/etcd.pid)
+    if ps -p $EXISTING_PID > /dev/null 2>&1; then
+        echo "   ⊘  etcd already running (PID $EXISTING_PID)"
+        ETCD_PID=$EXISTING_PID
+    else
+        echo "   ⚠️  Stale PID file found, starting fresh..."
+        rm -f $RAG_RUNTIME_DIR/pids/etcd.pid
+    fi
+fi
 
-ETCD_PID=$!
-echo $ETCD_PID > $RAG_RUNTIME_DIR/pids/etcd.pid
+# Start if not running
+if [ -z "$ETCD_PID" ]; then
+    singularity exec \
+      --bind $RAG_RUNTIME_DIR/etcd-data:/etcd-data \
+      $RAG_IMAGES_DIR/etcd.sif \
+      /usr/local/bin/etcd \
+        --data-dir=/etcd-data \
+        --listen-client-urls=http://0.0.0.0:$ETCD_PORT \
+        --advertise-client-urls=http://$ETCD_HOST:$ETCD_PORT \
+        > $RAG_LOGS_DIR/etcd.log 2>&1 &
 
-# Verify process started
-sleep 1
-if ps -p $ETCD_PID > /dev/null; then
-    echo "   ✅ etcd started (port $ETCD_PORT, PID $ETCD_PID)"
-else
-    echo "   ❌ etcd failed to start"
-    exit 1
+    ETCD_PID=$!
+    echo $ETCD_PID > $RAG_RUNTIME_DIR/pids/etcd.pid
+
+    # Verify process started
+    sleep 1
+    if ps -p $ETCD_PID > /dev/null; then
+        echo "   ✅ etcd started (port $ETCD_PORT, PID $ETCD_PID)"
+    else
+        echo "   ❌ etcd failed to start"
+        echo "   Check logs: tail -20 $RAG_LOGS_DIR/etcd.log"
+        exit 1
+    fi
 fi
 
 sleep 2
@@ -46,26 +62,42 @@ sleep 2
 # ==============================================================================
 echo "[2/3] Starting MinIO..."
 
-singularity exec \
-  --env MINIO_ROOT_USER=$MINIO_ROOT_USER \
-  --env MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD \
-  --bind $RAG_RUNTIME_DIR/minio-data:/data \
-  $RAG_IMAGES_DIR/minio.sif \
-  /usr/bin/minio server /data \
-    --address :$MINIO_PORT \
-    --console-address :$MINIO_CONSOLE_PORT \
-    > $RAG_LOGS_DIR/minio.log 2>&1 &
+# Check if already running
+if [ -f $RAG_RUNTIME_DIR/pids/minio.pid ]; then
+    EXISTING_PID=$(cat $RAG_RUNTIME_DIR/pids/minio.pid)
+    if ps -p $EXISTING_PID > /dev/null 2>&1; then
+        echo "   ⊘  MinIO already running (PID $EXISTING_PID)"
+        MINIO_PID=$EXISTING_PID
+    else
+        echo "   ⚠️  Stale PID file found, starting fresh..."
+        rm -f $RAG_RUNTIME_DIR/pids/minio.pid
+    fi
+fi
 
-MINIO_PID=$!
-echo $MINIO_PID > $RAG_RUNTIME_DIR/pids/minio.pid
+# Start if not running
+if [ -z "$MINIO_PID" ]; then
+    singularity exec \
+      --env MINIO_ROOT_USER=$MINIO_ROOT_USER \
+      --env MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD \
+      --bind $RAG_RUNTIME_DIR/minio-data:/data \
+      $RAG_IMAGES_DIR/minio.sif \
+      /usr/bin/minio server /data \
+        --address :$MINIO_PORT \
+        --console-address :$MINIO_CONSOLE_PORT \
+        > $RAG_LOGS_DIR/minio.log 2>&1 &
 
-# Verify process started
-sleep 1
-if ps -p $MINIO_PID > /dev/null; then
-    echo "   ✅ MinIO started (port $MINIO_PORT, console $MINIO_CONSOLE_PORT, PID $MINIO_PID)"
-else
-    echo "   ❌ MinIO failed to start"
-    exit 1
+    MINIO_PID=$!
+    echo $MINIO_PID > $RAG_RUNTIME_DIR/pids/minio.pid
+
+    # Verify process started
+    sleep 1
+    if ps -p $MINIO_PID > /dev/null; then
+        echo "   ✅ MinIO started (port $MINIO_PORT, console $MINIO_CONSOLE_PORT, PID $MINIO_PID)"
+    else
+        echo "   ❌ MinIO failed to start"
+        echo "   Check logs: tail -20 $RAG_LOGS_DIR/minio.log"
+        exit 1
+    fi
 fi
 
 sleep 2
@@ -75,28 +107,44 @@ sleep 2
 # ==============================================================================
 echo "[3/3] Starting Milvus standalone..."
 
-# Milvus needs etcd and minio endpoints
-singularity exec \
-  --env ETCD_ENDPOINTS=$ETCD_HOST:$ETCD_PORT \
-  --env MINIO_ADDRESS=$MINIO_HOST:$MINIO_PORT \
-  --env MINIO_ACCESS_KEY=$MINIO_ROOT_USER \
-  --env MINIO_SECRET_KEY=$MINIO_ROOT_PASSWORD \
-  --bind $RAG_RUNTIME_DIR/milvus-data:/var/lib/milvus \
-  --bind $RAG_RUNTIME_DIR/milvus-logs:/var/log/milvus \
-  $RAG_IMAGES_DIR/milvus.sif \
-  /usr/bin/milvus run standalone \
-    > $RAG_LOGS_DIR/milvus.log 2>&1 &
+# Check if already running
+if [ -f $RAG_RUNTIME_DIR/pids/milvus.pid ]; then
+    EXISTING_PID=$(cat $RAG_RUNTIME_DIR/pids/milvus.pid)
+    if ps -p $EXISTING_PID > /dev/null 2>&1; then
+        echo "   ⊘  Milvus already running (PID $EXISTING_PID)"
+        MILVUS_PID=$EXISTING_PID
+    else
+        echo "   ⚠️  Stale PID file found, starting fresh..."
+        rm -f $RAG_RUNTIME_DIR/pids/milvus.pid
+    fi
+fi
 
-MILVUS_PID=$!
-echo $MILVUS_PID > $RAG_RUNTIME_DIR/pids/milvus.pid
+# Start if not running
+if [ -z "$MILVUS_PID" ]; then
+    # Milvus needs etcd and minio endpoints
+    singularity exec \
+      --env ETCD_ENDPOINTS=$ETCD_HOST:$ETCD_PORT \
+      --env MINIO_ADDRESS=$MINIO_HOST:$MINIO_PORT \
+      --env MINIO_ACCESS_KEY=$MINIO_ROOT_USER \
+      --env MINIO_SECRET_KEY=$MINIO_ROOT_PASSWORD \
+      --bind $RAG_RUNTIME_DIR/milvus-data:/var/lib/milvus \
+      --bind $RAG_RUNTIME_DIR/milvus-logs:/var/log/milvus \
+      $RAG_IMAGES_DIR/milvus.sif \
+      /usr/bin/milvus run standalone \
+        > $RAG_LOGS_DIR/milvus.log 2>&1 &
 
-# Verify process started
-sleep 1
-if ps -p $MILVUS_PID > /dev/null; then
-    echo "   ✅ Milvus started (port $MILVUS_PORT, PID $MILVUS_PID)"
-else
-    echo "   ❌ Milvus failed to start"
-    exit 1
+    MILVUS_PID=$!
+    echo $MILVUS_PID > $RAG_RUNTIME_DIR/pids/milvus.pid
+
+    # Verify process started
+    sleep 1
+    if ps -p $MILVUS_PID > /dev/null; then
+        echo "   ✅ Milvus started (port $MILVUS_PORT, PID $MILVUS_PID)"
+    else
+        echo "   ❌ Milvus failed to start"
+        echo "   Check logs: tail -20 $RAG_LOGS_DIR/milvus.log"
+        exit 1
+    fi
 fi
 
 sleep 3
