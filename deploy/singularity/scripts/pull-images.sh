@@ -93,73 +93,66 @@ FAILED=0
 echo "=== Core RAG Services ==="
 echo ""
 
-pull_image "nvcr.io/ohlfw0olaadg/ea-participants/nemo-retriever-embedding-microservice:24.08" \
-    "nemo-retriever-embedding-microservice.sif" \
-    "NeMo Retriever Embedding NIM"
-
-pull_image "nvcr.io/ohlfw0olaadg/ea-participants/nemo-retriever-ranking-microservice:24.08" \
-    "nemo-retriever-ranking-microservice.sif" \
-    "NeMo Retriever Ranking NIM"
-
-pull_image "nvcr.io/ohlfw0olaadg/ea-participants/nemo-retriever-reranking-microservice:24.08" \
-    "nemo-retriever-reranking-microservice.sif" \
-    "NeMo Retriever Reranking NIM"
-
-pull_image "nvcr.io/nvidia/rag-playground-rag-server:24.12" \
+# From deploy/helm/nvidia-blueprint-rag/values.yaml and docker-compose files
+pull_image "nvcr.io/nvidia/blueprint/rag-server:2.3.0" \
     "rag-server.sif" \
-    "RAG Server"
+    "RAG Server v2.3.0"
 
-pull_image "nvcr.io/nvidia/rag-playground-ingest-server:24.12" \
+pull_image "nvcr.io/nvidia/blueprint/ingestor-server:2.3.0" \
     "ingestor-server.sif" \
-    "Ingestor Server"
+    "Ingestor Server v2.3.0"
 
-pull_image "nvcr.io/nvidia/rag-playground-ui:24.12" \
+pull_image "nvcr.io/nvidia/blueprint/rag-frontend:2.3.0" \
     "frontend.sif" \
-    "Frontend UI"
+    "Frontend UI v2.3.0"
 
 # ==============================================================================
-# Optional Components (only for 'all')
+# Optional NIMs and Tools (only for 'all')
 # ==============================================================================
 if [ "$IMAGE_SET" = "all" ]; then
     echo ""
-    echo "=== Optional NIMs ==="
+    echo "=== NIMs (Language Models) ==="
     echo ""
 
-    pull_image "nvcr.io/nim/nvidia/llama-3_1-8b-instruct:1.2.2" \
-        "nim-llama-3_1-8b-instruct.sif" \
-        "NIM LLM - Llama 3.1 8B"
+    pull_image "nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:1.14.0" \
+        "nim-llama-3.3-nemotron-49b.sif" \
+        "NIM LLM - Llama 3.3 Nemotron 49B"
 
-    pull_image "nvcr.io/nim/nvidia/llama-3_1-70b-instruct:1.2.2" \
-        "nim-llama-3_1-70b-instruct.sif" \
-        "NIM LLM - Llama 3.1 70B"
+    pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-embedqa-1b-v2:1.10.1" \
+        "nim-llama-3.2-embedqa-1b.sif" \
+        "NIM Embedding - Llama 3.2 EmbedQA 1B"
 
-    pull_image "nvcr.io/nim/nvidia/mistral-nemo-12b-instruct:1.1.0" \
-        "nim-mistral-nemo-12b-instruct.sif" \
-        "NIM LLM - Mistral NeMo 12B"
+    pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2:1.8.0" \
+        "nim-llama-3.2-rerankqa-1b.sif" \
+        "NIM Reranking - Llama 3.2 RerankQA 1B"
 
-    pull_image "nvcr.io/nim/nvidia/nv-embedqa-e5-v5:1.0.1" \
-        "nim-nv-embedqa-e5-v5.sif" \
-        "NIM Embedding - E5 v5"
+    pull_image "nvcr.io/nvidia/nemo-microservices/llama-3.2-nemoretriever-1b-vlm-embed-v1:1.7.0" \
+        "nim-llama-3.2-vlm-embed-1b.sif" \
+        "NIM VLM Embedding - Llama 3.2 1B"
 
-    pull_image "nvcr.io/nim/nvidia/nv-rerankqa-mistral-4b-v3:1.0.1" \
-        "nim-nv-rerankqa-mistral-4b-v3.sif" \
-        "NIM Reranking - Mistral 4B"
-
-    pull_image "nvcr.io/nim/nvidia/arctic-embed-l:1.0.0" \
-        "nim-arctic-embed-l.sif" \
-        "NIM Embedding - Arctic"
+    pull_image "nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:1.3.1" \
+        "nim-llama-3.1-nano-vl-8b.sif" \
+        "NIM VL - Llama 3.1 Nemotron Nano 8B"
 
     echo ""
-    echo "=== Optional Tools ==="
+    echo "=== Ingestion Services ==="
     echo ""
 
-    pull_image "nvcr.io/nvidia/rag-playground-evaluation:24.12" \
-        "evaluation.sif" \
-        "Evaluation Tools"
+    pull_image "nvcr.io/nvidia/nemo-microservices/nv-ingest:25.9.0" \
+        "nv-ingest.sif" \
+        "NV Ingest Service"
 
-    pull_image "nvcr.io/nvidia/rag-playground-notebook:24.12" \
-        "notebook.sif" \
-        "Jupyter Notebook"
+    pull_image "nvcr.io/nim/baidu/paddleocr:1.5.0" \
+        "paddleocr.sif" \
+        "PaddleOCR NIM"
+
+    pull_image "nvcr.io/nvidia/nemo-microservices/nemoretriever-ocr-v1:1.1.0" \
+        "nemoretriever-ocr.sif" \
+        "NeMo Retriever OCR"
+
+    pull_image "nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1:1.5.0" \
+        "nemoretriever-graphic-elements.sif" \
+        "NeMo Retriever Graphic Elements"
 fi
 
 # ==============================================================================
