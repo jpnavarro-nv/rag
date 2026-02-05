@@ -6,6 +6,31 @@ set -e
 # Load configuration
 source "$(dirname "$0")/00-config.sh"
 
+# ==============================================================================
+# Healthcheck Functions
+# ==============================================================================
+
+# Wait for RAG Server to be ready
+wait_for_rag_server() {
+    local host=$1
+    local port=$2
+    local max_attempts=30
+    local attempt=1
+
+    echo "   ⏳ Waiting for RAG Server to be ready..."
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s "http://${host}:${port}/health" > /dev/null 2>&1; then
+            echo "   ✅ RAG Server is ready"
+            return 0
+        fi
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+
+    echo "   ❌ RAG Server failed to become ready after $((max_attempts * 2))s"
+    return 1
+}
+
 echo "=== Starting RAG Server ==="
 echo ""
 
@@ -88,14 +113,18 @@ echo $RAG_SERVER_PID > $RAG_RUNTIME_DIR/pids/rag-server.pid
 # Verify process started
 sleep 2
 if ps -p $RAG_SERVER_PID > /dev/null; then
-    echo "✅ RAG Server started (port 8081, PID $RAG_SERVER_PID)"
+    echo "✅ RAG Server process started (port 8081, PID $RAG_SERVER_PID)"
 else
     echo "❌ RAG Server failed to start"
     echo "Check logs: $RAG_LOGS_DIR/rag-server.log"
     exit 1
 fi
 
-sleep 3
+# Wait for RAG Server to be ready
+if ! wait_for_rag_server localhost 8081; then
+    echo "Check logs: tail -50 $RAG_LOGS_DIR/rag-server.log"
+    exit 1
+fi
 
 echo ""
 echo "=== Running Processes ==="

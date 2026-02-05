@@ -10,6 +10,74 @@ source "$(dirname "$0")/00-config.sh"
 # Create PID directory
 mkdir -p $RAG_RUNTIME_DIR/pids
 
+# ==============================================================================
+# Healthcheck Functions
+# ==============================================================================
+
+# Wait for etcd to be ready
+wait_for_etcd() {
+    local host=$1
+    local port=$2
+    local max_attempts=30
+    local attempt=1
+
+    echo "   ⏳ Waiting for etcd to be ready..."
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s "http://${host}:${port}/health" > /dev/null 2>&1; then
+            echo "   ✅ etcd is ready"
+            return 0
+        fi
+        sleep 1
+        attempt=$((attempt + 1))
+    done
+
+    echo "   ❌ etcd failed to become ready after ${max_attempts}s"
+    return 1
+}
+
+# Wait for MinIO to be ready
+wait_for_minio() {
+    local host=$1
+    local port=$2
+    local max_attempts=30
+    local attempt=1
+
+    echo "   ⏳ Waiting for MinIO to be ready..."
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s "http://${host}:${port}/minio/health/live" > /dev/null 2>&1; then
+            echo "   ✅ MinIO is ready"
+            return 0
+        fi
+        sleep 1
+        attempt=$((attempt + 1))
+    done
+
+    echo "   ❌ MinIO failed to become ready after ${max_attempts}s"
+    return 1
+}
+
+# Wait for Milvus to be ready
+wait_for_milvus() {
+    local host=$1
+    local port=$2
+    local max_attempts=60
+    local attempt=1
+
+    echo "   ⏳ Waiting for Milvus to be ready (may take 30-60s)..."
+    while [ $attempt -le $max_attempts ]; do
+        # Check if Milvus health endpoint responds
+        if curl -s "http://${host}:9091/healthz" > /dev/null 2>&1; then
+            echo "   ✅ Milvus is ready"
+            return 0
+        fi
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+
+    echo "   ❌ Milvus failed to become ready after $((max_attempts * 2))s"
+    return 1
+}
+
 echo "=== Starting RAG Infrastructure Services ==="
 echo ""
 
@@ -47,15 +115,19 @@ if [ -z "$ETCD_PID" ]; then
     # Verify process started
     sleep 1
     if ps -p $ETCD_PID > /dev/null; then
-        echo "   ✅ etcd started (port $ETCD_PORT, PID $ETCD_PID)"
+        echo "   ✅ etcd process started (port $ETCD_PORT, PID $ETCD_PID)"
     else
         echo "   ❌ etcd failed to start"
         echo "   Check logs: tail -20 $RAG_LOGS_DIR/etcd.log"
         exit 1
     fi
-fi
 
-sleep 2
+    # Wait for etcd to be ready
+    if ! wait_for_etcd $ETCD_HOST $ETCD_PORT; then
+        echo "   Check logs: tail -20 $RAG_LOGS_DIR/etcd.log"
+        exit 1
+    fi
+fi
 
 # ==============================================================================
 # 2. Start MinIO (object storage)
@@ -92,15 +164,19 @@ if [ -z "$MINIO_PID" ]; then
     # Verify process started
     sleep 1
     if ps -p $MINIO_PID > /dev/null; then
-        echo "   ✅ MinIO started (port $MINIO_PORT, console $MINIO_CONSOLE_PORT, PID $MINIO_PID)"
+        echo "   ✅ MinIO process started (port $MINIO_PORT, console $MINIO_CONSOLE_PORT, PID $MINIO_PID)"
     else
         echo "   ❌ MinIO failed to start"
         echo "   Check logs: tail -20 $RAG_LOGS_DIR/minio.log"
         exit 1
     fi
-fi
 
-sleep 2
+    # Wait for MinIO to be ready
+    if ! wait_for_minio $MINIO_HOST $MINIO_PORT; then
+        echo "   Check logs: tail -20 $RAG_LOGS_DIR/minio.log"
+        exit 1
+    fi
+fi
 
 # ==============================================================================
 # 3. Start Milvus (vector database)
@@ -157,17 +233,19 @@ if [ -z "$MILVUS_PID" ]; then
     # Verify process started
     sleep 1
     if ps -p $MILVUS_PID > /dev/null; then
-        echo "   ✅ Milvus started (port $MILVUS_PORT, PID $MILVUS_PID)"
-        echo "   ⏳ Waiting for Milvus to initialize (this may take 10-15 seconds)..."
+        echo "   ✅ Milvus process started (port $MILVUS_PORT, PID $MILVUS_PID)"
     else
         echo "   ❌ Milvus failed to start"
         echo "   Check logs: tail -20 $RAG_LOGS_DIR/milvus.log"
         exit 1
     fi
-fi
 
-# Wait for Milvus to fully initialize - Proxy needs time to start
-sleep 15
+    # Wait for Milvus to fully initialize
+    if ! wait_for_milvus $MILVUS_HOST 9091; then
+        echo "   Check logs: tail -50 $RAG_LOGS_DIR/milvus.log"
+        exit 1
+    fi
+fi
 
 # ==============================================================================
 # Verify services are running
