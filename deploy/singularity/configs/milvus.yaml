@@ -19,6 +19,28 @@ minio:
 mq:
   type: rocksmq
 
+# Component ports (must be different to avoid conflicts in standalone mode)
+rootCoord:
+  address: 0.0.0.0
+  port: 53100
+
+dataCoord:
+  address: 0.0.0.0
+  port: 13333
+
+queryCoord:
+  address: 0.0.0.0
+  port: 19531
+
+queryNode:
+  port: 21123
+
+indexNode:
+  port: 21121
+
+dataNode:
+  port: 21124
+
 # Proxy is the main entry point for clients - bind to all interfaces
 proxy:
   grpc:
