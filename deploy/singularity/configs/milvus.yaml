@@ -19,6 +19,10 @@ minio:
 mq:
   type: rocksmq
 
+# RocksMQ data path (inside the mounted /var/lib/milvus directory)
+rocksmq:
+  path: /var/lib/milvus/rdb_data
+
 # Component ports (must be different to avoid conflicts in standalone mode)
 rootCoord:
   address: 0.0.0.0
