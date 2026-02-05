@@ -38,6 +38,9 @@ queryCoord:
 
 queryNode:
   port: 21123
+  # Local cache directory for query data
+  localStorage:
+    path: /var/lib/milvus/query_node_cache
 
 indexNode:
   port: 21121
