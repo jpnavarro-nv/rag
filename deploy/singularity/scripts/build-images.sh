@@ -59,6 +59,30 @@ build_image "etcd.def" "etcd.sif" "etcd v3.6.5 - Key-value store" && SUCCESS=$((
 build_image "minio.def" "minio.sif" "MinIO - Object storage" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
 build_image "milvus.def" "milvus.sif" "Milvus v2.6.2-gpu - Vector database" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
 
+echo ""
+echo "=== NIM Models - Language ==="
+echo ""
+
+build_image "nemoretriever-embedding.def" "nemoretriever-embedding.sif" "NIM Embedding v1.10.1" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+build_image "nemoretriever-ranking.def" "nemoretriever-ranking.sif" "NIM Ranking v1.8.0" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+build_image "nim-llm.def" "nim-llm.sif" "NIM LLM v1.14.0 (49B model)" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+build_image "vlm.def" "vlm.sif" "NIM VLM v1.3.1 (8B model)" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+
+echo ""
+echo "=== NIM Models - Document Processing ==="
+echo ""
+
+build_image "page-elements.def" "page-elements.sif" "NIM Page Elements v1.5.0" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+build_image "graphic-elements.def" "graphic-elements.sif" "NIM Graphic Elements v1.5.0" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+build_image "table-structure.def" "table-structure.sif" "NIM Table Structure v1.5.0" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+build_image "paddle.def" "paddle.sif" "NIM PaddleOCR v1.5.0" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+
+echo ""
+echo "=== NV-Ingest Runtime ==="
+echo ""
+
+build_image "nv-ingest.def" "nv-ingest.sif" "NV-Ingest v25.9.0" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+
 # Summary
 echo "=== Build Summary ==="
 echo "✅ Success: $SUCCESS"

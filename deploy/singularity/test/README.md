@@ -11,16 +11,18 @@ This deployment implements **Opção 2 (Complete Local)** - all services run loc
 ```bash
 # Full Stack (all services)
 ./01-start-infrastructure.sh  # etcd, MinIO, Milvus
-./04-start-redis.sh           # Redis
-./05-start-nim-models.sh      # 8 NIM models (5-10 min)
+./02-test-connectivity.sh     # (Optional) Test infrastructure
+./03-start-redis.sh           # Redis message queue
+./04-start-nim-models.sh      # Launch 8 NIMs (non-blocking)
+./05-wait-nim-models.sh       # Wait for NIMs ready (5-10 min)
 ./06-start-nv-ingest-ms.sh    # NV-Ingest processor
 ./07-start-ingest-server.sh   # Ingestion API (8082)
-./03-start-rag-server.sh      # Query API (8081)
-./08-validate-all-services.sh # Validate all
+./08-start-rag-server.sh      # Query API (8081)
+./09-validate-all-services.sh # Validate all
 
 # Query-Only (minimal)
 ./01-start-infrastructure.sh
-./03-start-rag-server.sh
+./08-start-rag-server.sh
 ```
 
 ## 📝 Script Reference
@@ -30,12 +32,13 @@ This deployment implements **Opção 2 (Complete Local)** - all services run loc
 | 00-config.sh | Configuration | - | - | - |
 | 01-start-infrastructure.sh | etcd, MinIO, Milvus | None | ~60s | 2379, 9010, 19530 |
 | 02-test-connectivity.sh | Connectivity test | 01 | <5s | - |
-| 03-start-rag-server.sh | RAG query API | 01 | ~30s | 8081 |
-| 04-start-redis.sh | Redis queue | None | ~5s | 6379 |
-| 05-start-nim-models.sh | 8 NIM models | GPU | 5-10min | 9080, 1976, 8999, 8997, 8000-8011 |
-| 06-start-nv-ingest-ms.sh | Document processor | 04, 05 | ~60s | 7670, 7671 |
-| 07-start-ingest-server.sh | Ingestion API | 01, 04, 05, 06 | ~30s | 8082 |
-| 08-validate-all-services.sh | Full validation | All | ~30s | - |
+| 03-start-redis.sh | Redis message queue | None | ~5s | 6379 |
+| 04-start-nim-models.sh | Launch 8 NIMs (non-blocking) | GPU | <10s | - |
+| 05-wait-nim-models.sh | Wait for NIMs ready | 04 | 5-10min | 9080, 1976, 8999, 8997, 8000-8011 |
+| 06-start-nv-ingest-ms.sh | NV-Ingest processor | 03, 05 | ~60s | 7670, 7671 |
+| 07-start-ingest-server.sh | Ingestion API | 01, 03, 05, 06 | ~30s | 8082 |
+| 08-start-rag-server.sh | RAG query API | 01 | ~30s | 8081 |
+| 09-validate-all-services.sh | Full validation | All | ~30s | - |
 | 99-stop-all.sh | Stop all | - | ~10s | - |
 
 ## 🔍 Validation Results

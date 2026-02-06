@@ -1,0 +1,20 @@
+Bootstrap: docker
+From: nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:1.14.0
+
+%help
+    NIM LLM - Llama 3.3 Nemotron Super 49B v1.5
+    Official image: nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:1.14.0
+
+    Matches version from docker-compose (deploy/compose/nims.yaml)
+
+    This definition preserves the NIM container's default startup behavior.
+
+%labels
+    Author NVIDIA RAG Blueprint - Singularity Deployment
+    Version 1.14.0
+    Description NIM LLM for RAG generation (49B model)
+
+%startscript
+    # NIMs use their built-in entrypoint/cmd from the Docker image
+    # This startscript executes the default behavior
+    exec "$@"

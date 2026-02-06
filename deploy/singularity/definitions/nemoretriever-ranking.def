@@ -1,0 +1,20 @@
+Bootstrap: docker
+From: nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2:1.8.0
+
+%help
+    NIM Ranking Model - Llama 3.2 NV RerankQA 1B v2
+    Official image: nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2:1.8.0
+
+    Matches version from docker-compose (deploy/compose/nims.yaml)
+
+    This definition preserves the NIM container's default startup behavior.
+
+%labels
+    Author NVIDIA RAG Blueprint - Singularity Deployment
+    Version 1.8.0
+    Description NIM Ranking Model for RAG reranking
+
+%startscript
+    # NIMs use their built-in entrypoint/cmd from the Docker image
+    # This startscript executes the default behavior
+    exec "$@"

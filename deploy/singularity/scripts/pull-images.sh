@@ -102,7 +102,7 @@ pull_image "nvcr.io/nvidia/blueprint/ingestor-server:2.3.0" \
     "Ingestor Server v2.3.0"
 
 # ==============================================================================
-# Full Ingestion Pipeline (only for 'all')
+# Additional Services for Full Pipeline (only for 'all')
 # ==============================================================================
 if [ "$IMAGE_SET" = "all" ]; then
     echo ""
@@ -115,54 +115,6 @@ if [ "$IMAGE_SET" = "all" ]; then
         "false"
 
     echo ""
-    echo "=== NIMs - Language Models ==="
-    echo ""
-
-    pull_image "nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:1.14.0" \
-        "nim-llm.sif" \
-        "NIM LLM - Llama 3.3 Nemotron 49B"
-
-    pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-embedqa-1b-v2:1.10.1" \
-        "nemoretriever-embedding.sif" \
-        "NIM Embedding - Llama 3.2 EmbedQA 1B"
-
-    pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2:1.8.0" \
-        "nemoretriever-ranking.sif" \
-        "NIM Reranking - Llama 3.2 RerankQA 1B"
-
-    pull_image "nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:1.3.1" \
-        "vlm.sif" \
-        "NIM VLM - Llama 3.1 Nemotron Nano VL 8B"
-
-    echo ""
-    echo "=== NIMs - Document Processing ==="
-    echo ""
-
-    pull_image "nvcr.io/nim/nvidia/nemoretriever-page-elements-v2:1.5.0" \
-        "page-elements.sif" \
-        "NIM Page Elements (YOLOX) v2"
-
-    pull_image "nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1:1.5.0" \
-        "graphic-elements.sif" \
-        "NIM Graphic Elements (YOLOX) v1"
-
-    pull_image "nvcr.io/nim/nvidia/nemoretriever-table-structure-v1:1.5.0" \
-        "table-structure.sif" \
-        "NIM Table Structure (YOLOX) v1"
-
-    pull_image "nvcr.io/nim/baidu/paddleocr:1.5.0" \
-        "paddle.sif" \
-        "NIM PaddleOCR v1.5.0"
-
-    echo ""
-    echo "=== NV-Ingest Runtime ==="
-    echo ""
-
-    pull_image "nvcr.io/nvidia/nemo-microservices/nv-ingest:25.9.0" \
-        "nv-ingest.sif" \
-        "NV-Ingest Microservice v25.9.0"
-
-    echo ""
     echo "=== Optional/Extras ==="
     echo ""
 
@@ -170,6 +122,12 @@ if [ "$IMAGE_SET" = "all" ]; then
         "frontend.sif" \
         "Frontend UI v2.3.0 (optional)"
 fi
+
+echo ""
+echo "════════════════════════════════════════════════════════════════"
+echo "NOTE: NIMs and NV-Ingest are now built locally from .def files"
+echo "      Run build-images.sh to build them (required for full stack)"
+echo "════════════════════════════════════════════════════════════════"
 
 # ==============================================================================
 # Summary

@@ -1,0 +1,20 @@
+Bootstrap: docker
+From: nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1:1.5.0
+
+%help
+    NIM Graphic Elements Detection (YOLOX) v1
+    Official image: nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1:1.5.0
+
+    Matches version from docker-compose (deploy/compose/nims.yaml)
+
+    This definition preserves the Triton NIM container's default startup behavior.
+
+%labels
+    Author NVIDIA RAG Blueprint - Singularity Deployment
+    Version 1.5.0
+    Description NIM YOLOX model for graphic element detection
+
+%startscript
+    # Triton NIMs use their built-in entrypoint/cmd from the Docker image
+    # This startscript executes the default behavior
+    exec "$@"

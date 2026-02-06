@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start NV-Ingest Microservice Runtime
-# Run after 04-start-redis.sh and 05-start-nim-models.sh
+# Run after 03-start-redis.sh and 05-wait-nim-models.sh
 #
 # NV-Ingest is the engine that processes documents using Ray and the NIM models
 
