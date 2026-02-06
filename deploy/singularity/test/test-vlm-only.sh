@@ -57,8 +57,9 @@ echo "Cache directory: $NIM_CACHE_DIR"
 echo ""
 
 # Start VLM with exec (not instance) to see full output
-# Force single-GPU mode to avoid MPI initialization
+# Force single-GPU mode and disable MPI/PMIx to avoid SLURM integration
 singularity exec \
+  --cleanenv \
   --nv \
   --bind "$NIM_CACHE_DIR:/opt/nim/.cache" \
   --env CUDA_VISIBLE_DEVICES=3 \
@@ -67,8 +68,10 @@ singularity exec \
   --env NIM_CACHE_PATH=/opt/nim/.cache \
   --env NIM_TENSOR_PARALLEL_SIZE=1 \
   --env NIM_PIPELINE_PARALLEL_SIZE=1 \
-  --env OMPI_ALLOW_RUN_AS_ROOT=1 \
-  --env OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1 \
+  --env OMPI_MCA_pmix=^all \
+  --env OMPI_MCA_pml=ob1 \
+  --env PMIX_MCA_gds=^ds12,ds21 \
+  --env PMIX_MCA_psec=^munge \
   "$RAG_IMAGES_DIR/vlm.sif" \
   /opt/nim/start_server.sh \
   > "$RAG_LOGS_DIR/vlm-test.log" 2>&1 &
