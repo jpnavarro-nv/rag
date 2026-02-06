@@ -56,19 +56,19 @@ chmod 755 "$NIM_CACHE_DIR"
 echo "Cache directory: $NIM_CACHE_DIR"
 echo ""
 
-# Export SINGULARITYENV_ variables to override container defaults
+# Export APPTAINERENV_ variables to override container defaults
 # Port 1977 matches Docker Compose configuration (1977:8000)
-export SINGULARITYENV_NIM_HTTP_API_PORT=1977
-export SINGULARITYENV_NIM_TENSOR_PARALLEL_SIZE=1
-export SINGULARITYENV_NIM_PIPELINE_PARALLEL_SIZE=1
-export SINGULARITYENV_NGC_API_KEY=$NGC_API_KEY
-export SINGULARITYENV_NVIDIA_API_KEY=$NGC_API_KEY
-export SINGULARITYENV_NIM_CACHE_PATH=/opt/nim/.cache
-export SINGULARITYENV_CUDA_VISIBLE_DEVICES=3
-export SINGULARITYENV_OMPI_MCA_pmix=^all
-export SINGULARITYENV_OMPI_MCA_pml=ob1
-export SINGULARITYENV_PMIX_MCA_gds=^ds12,ds21
-export SINGULARITYENV_PMIX_MCA_psec=^munge
+export APPTAINERENV_NIM_HTTP_API_PORT=1977
+export APPTAINERENV_NIM_TENSOR_PARALLEL_SIZE=1
+export APPTAINERENV_NIM_PIPELINE_PARALLEL_SIZE=1
+export APPTAINERENV_NGC_API_KEY=$NGC_API_KEY
+export APPTAINERENV_NVIDIA_API_KEY=$NGC_API_KEY
+export APPTAINERENV_NIM_CACHE_PATH=/opt/nim/.cache
+export APPTAINERENV_CUDA_VISIBLE_DEVICES=3
+export APPTAINERENV_OMPI_MCA_pmix=^all
+export APPTAINERENV_OMPI_MCA_pml=ob1
+export APPTAINERENV_PMIX_MCA_gds=^ds12,ds21
+export APPTAINERENV_PMIX_MCA_psec=^munge
 
 # Start VLM with exec (not instance) to see full output
 # Using --cleanenv to remove SLURM vars, then SINGULARITYENV_ to set ours
