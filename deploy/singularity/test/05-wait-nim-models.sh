@@ -38,6 +38,11 @@ CHECK_INTERVAL=2   # Check every 2 seconds
 
 # Temp directory for status files
 STATUS_DIR=$(mktemp -d)
+if [ ! -d "$STATUS_DIR" ]; then
+    echo "ERROR: Failed to create temp directory"
+    exit 1
+fi
+export STATUS_DIR
 trap "rm -rf $STATUS_DIR" EXIT
 
 # ==============================================================================
@@ -60,6 +65,9 @@ declare -A SERVICES=(
 # ==============================================================================
 
 monitor_service() {
+    # Disable exit-on-error for this function
+    set +e
+
     local key=$1
     local info=${SERVICES[$key]}
     IFS=':' read -r name port endpoint gpu <<< "$info"
@@ -68,23 +76,23 @@ monitor_service() {
     local start_time=$(date +%s)
 
     # Initial status
-    echo "waiting:0" > "$status_file"
+    echo "waiting:0" > "$status_file" 2>/dev/null || return 1
 
     while true; do
         local elapsed=$(($(date +%s) - start_time))
 
         # Check if timeout
         if [ $elapsed -ge $MAX_WAIT_TIME ]; then
-            echo "timeout:$elapsed" > "$status_file"
+            echo "timeout:$elapsed" > "$status_file" 2>/dev/null
             break
         fi
 
-        # Check health
-        if curl -s "http://localhost:${port}${endpoint}" > /dev/null 2>&1; then
-            echo "ready:$elapsed" > "$status_file"
+        # Check health (suppress all errors)
+        if curl -s -f "http://localhost:${port}${endpoint}" >/dev/null 2>&1; then
+            echo "ready:$elapsed" > "$status_file" 2>/dev/null
             break
         else
-            echo "loading:$elapsed" > "$status_file"
+            echo "loading:$elapsed" > "$status_file" 2>/dev/null
         fi
 
         sleep $CHECK_INTERVAL
