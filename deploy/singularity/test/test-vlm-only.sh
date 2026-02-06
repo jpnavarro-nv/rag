@@ -17,7 +17,7 @@ echo "Configuration:"
 echo "  NGC_API_KEY: ${NGC_API_KEY:0:10}...${NGC_API_KEY: -4}"
 echo "  Images dir: $RAG_IMAGES_DIR"
 echo "  GPU: 3"
-echo "  Port: 8997"
+echo "  Port: 1977 (matching Docker Compose)"
 echo ""
 
 # Check if VLM image exists
@@ -56,24 +56,26 @@ chmod 755 "$NIM_CACHE_DIR"
 echo "Cache directory: $NIM_CACHE_DIR"
 echo ""
 
+# Export SINGULARITYENV_ variables to override container defaults
+# Port 1977 matches Docker Compose configuration (1977:8000)
+export SINGULARITYENV_NIM_HTTP_API_PORT=1977
+export SINGULARITYENV_NIM_TENSOR_PARALLEL_SIZE=1
+export SINGULARITYENV_NIM_PIPELINE_PARALLEL_SIZE=1
+export SINGULARITYENV_NGC_API_KEY=$NGC_API_KEY
+export SINGULARITYENV_NVIDIA_API_KEY=$NGC_API_KEY
+export SINGULARITYENV_NIM_CACHE_PATH=/opt/nim/.cache
+export SINGULARITYENV_CUDA_VISIBLE_DEVICES=3
+export SINGULARITYENV_OMPI_MCA_pmix=^all
+export SINGULARITYENV_OMPI_MCA_pml=ob1
+export SINGULARITYENV_PMIX_MCA_gds=^ds12,ds21
+export SINGULARITYENV_PMIX_MCA_psec=^munge
+
 # Start VLM with exec (not instance) to see full output
-# Force single-GPU mode and disable MPI/PMIx to avoid SLURM integration
-# Note: VLM uses port 8000 (NIM_HTTP_API_PORT), not 8997
+# Using --cleanenv to remove SLURM vars, then SINGULARITYENV_ to set ours
 singularity exec \
   --cleanenv \
   --nv \
   --bind "$NIM_CACHE_DIR:/opt/nim/.cache" \
-  --env CUDA_VISIBLE_DEVICES=3 \
-  --env NGC_API_KEY=$NGC_API_KEY \
-  --env NVIDIA_API_KEY=$NGC_API_KEY \
-  --env NIM_CACHE_PATH=/opt/nim/.cache \
-  --env NIM_HTTP_API_PORT=8997 \
-  --env NIM_TENSOR_PARALLEL_SIZE=1 \
-  --env NIM_PIPELINE_PARALLEL_SIZE=1 \
-  --env OMPI_MCA_pmix=^all \
-  --env OMPI_MCA_pml=ob1 \
-  --env PMIX_MCA_gds=^ds12,ds21 \
-  --env PMIX_MCA_psec=^munge \
   "$RAG_IMAGES_DIR/vlm.sif" \
   /opt/nim/start_server.sh \
   > "$RAG_LOGS_DIR/vlm-test.log" 2>&1 &
@@ -95,7 +97,7 @@ fi
 
 echo ""
 echo "=== Waiting for VLM startup (max 10 min) ==="
-echo "Health URL: http://localhost:8997/v1/health/ready"
+echo "Health URL: http://localhost:1977/v1/health/ready"
 echo ""
 
 # Check health endpoint every 10 seconds
@@ -103,7 +105,7 @@ for i in {1..60}; do
     sleep 10
     echo -n "[$i/60] $(date +%H:%M:%S) - "
 
-    if curl -s -f "http://localhost:8997/v1/health/ready" >/dev/null 2>&1; then
+    if curl -s -f "http://localhost:1977/v1/health/ready" >/dev/null 2>&1; then
         echo "✅ VLM is READY!"
         echo ""
         echo "=== VLM Test Successful ==="
@@ -112,7 +114,7 @@ for i in {1..60}; do
         tail -50 "$RAG_LOGS_DIR/vlm-test.log"
         echo ""
         echo "Test the VLM:"
-        echo "  curl http://localhost:8997/v1/models"
+        echo "  curl http://localhost:1977/v1/models"
         echo ""
         echo "Stop VLM:"
         echo "  kill $(cat $RAG_RUNTIME_DIR/pids/vlm-test.pid)"
