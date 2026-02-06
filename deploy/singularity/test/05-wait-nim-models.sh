@@ -36,12 +36,14 @@ PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
 MAX_WAIT_TIME=600  # 10 minutes total
 CHECK_INTERVAL=2   # Check every 2 seconds
 
-# Temp directory for status files
-STATUS_DIR=$(mktemp -d)
+# Status directory for monitor files
+STATUS_DIR="$RAG_RUNTIME_DIR/nim-status"
+mkdir -p "$STATUS_DIR"
 if [ ! -d "$STATUS_DIR" ]; then
-    echo "ERROR: Failed to create temp directory"
+    echo "ERROR: Failed to create status directory at $STATUS_DIR"
     exit 1
 fi
+chmod 755 "$STATUS_DIR"
 export STATUS_DIR
 trap "rm -rf $STATUS_DIR" EXIT
 
@@ -76,23 +78,26 @@ monitor_service() {
     local start_time=$(date +%s)
 
     # Initial status
-    echo "waiting:0" > "$status_file" 2>/dev/null || return 1
+    echo "waiting:0" > "$status_file" || {
+        echo "ERROR: Cannot write to $status_file" >&2
+        return 1
+    }
 
     while true; do
         local elapsed=$(($(date +%s) - start_time))
 
         # Check if timeout
         if [ $elapsed -ge $MAX_WAIT_TIME ]; then
-            echo "timeout:$elapsed" > "$status_file" 2>/dev/null
+            echo "timeout:$elapsed" > "$status_file"
             break
         fi
 
-        # Check health (suppress all errors)
+        # Check health (suppress curl errors only)
         if curl -s -f "http://localhost:${port}${endpoint}" >/dev/null 2>&1; then
-            echo "ready:$elapsed" > "$status_file" 2>/dev/null
+            echo "ready:$elapsed" > "$status_file"
             break
         else
-            echo "loading:$elapsed" > "$status_file" 2>/dev/null
+            echo "loading:$elapsed" > "$status_file"
         fi
 
         sleep $CHECK_INTERVAL
