@@ -29,6 +29,18 @@ fi
 echo "✅ VLM image found"
 echo ""
 
+# Check for existing VLM Singularity instances and stop them
+echo "Checking for existing VLM instances..."
+EXISTING_INSTANCES=$(singularity instance list | grep -E "vlm|nemotron.*vl" | awk '{print $1}')
+if [ -n "$EXISTING_INSTANCES" ]; then
+    echo "Found existing VLM instances, stopping them..."
+    for instance in $EXISTING_INSTANCES; do
+        echo "  Stopping instance: $instance"
+        singularity instance stop $instance
+    done
+    sleep 2
+fi
+
 # Kill any existing process
 if [ -f "$RAG_RUNTIME_DIR/pids/vlm-test.pid" ]; then
     OLD_PID=$(cat "$RAG_RUNTIME_DIR/pids/vlm-test.pid")
@@ -56,6 +68,37 @@ chmod 755 "$NIM_CACHE_DIR"
 echo "Cache directory: $NIM_CACHE_DIR"
 echo ""
 
+# Check GPU memory before starting
+echo "=== GPU Status Before Start ==="
+nvidia-smi --query-gpu=index,name,memory.used,memory.free,memory.total --format=csv
+echo ""
+
+# Check if GPU 3 has enough free memory (need ~10GB for engine build)
+GPU_FREE_MB=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i 3)
+GPU_TOTAL_MB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits -i 3)
+GPU_FREE_GB=$((GPU_FREE_MB / 1024))
+GPU_TOTAL_GB=$((GPU_TOTAL_MB / 1024))
+
+echo "GPU 3 Memory: ${GPU_FREE_GB}GB free / ${GPU_TOTAL_GB}GB total"
+
+if [ $GPU_FREE_MB -lt 10240 ]; then
+    echo ""
+    echo "⚠️  WARNING: GPU 3 has less than 10GB free memory"
+    echo "   TensorRT engine build may fail with CUDA OOM error"
+    echo "   Free memory: ${GPU_FREE_GB}GB"
+    echo ""
+    echo "To free GPU memory, check running processes:"
+    echo "  nvidia-smi"
+    echo "  fuser -v /dev/nvidia3"
+    echo ""
+    read -p "Continue anyway? (y/N) " -n 1 -r
+    echo ""
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+echo ""
+
 # Export APPTAINERENV_ variables to override container defaults
 # Port 1977 matches Docker Compose configuration (1977:8000)
 export APPTAINERENV_NIM_HTTP_API_PORT=1977
@@ -65,6 +108,12 @@ export APPTAINERENV_NGC_API_KEY=$NGC_API_KEY
 export APPTAINERENV_NVIDIA_API_KEY=$NGC_API_KEY
 export APPTAINERENV_NIM_CACHE_PATH=/opt/nim/.cache
 export APPTAINERENV_CUDA_VISIBLE_DEVICES=3
+
+# Reduce GPU memory utilization to 0.7 for engine build (default 0.9 is too high)
+# This leaves more memory for TensorRT engine compilation
+export APPTAINERENV_NIM_GPU_MEMORY_UTILIZATION=0.7
+
+# Disable MPI/PMIx for single-GPU deployment
 export APPTAINERENV_OMPI_MCA_pmix=^all
 export APPTAINERENV_OMPI_MCA_pml=ob1
 export APPTAINERENV_PMIX_MCA_gds=^ds12,ds21
