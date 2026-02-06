@@ -15,6 +15,5 @@ From: nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:1.3.1
     Description NIM Vision-Language Model for image captioning
 
 %startscript
-    # NIMs use their built-in entrypoint/cmd from the Docker image
-    # This startscript executes the default behavior
-    exec "$@"
+    # Execute the NIM server startup script
+    exec /opt/nim/start_server.sh
