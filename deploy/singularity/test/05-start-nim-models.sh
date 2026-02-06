@@ -136,7 +136,8 @@ start_nim_service() {
     echo "[$name] Starting on port $port with GPU $gpu_id..."
 
     # Start NIM with GPU binding
-    singularity exec \
+    # Use 'singularity run' to execute the container's default entrypoint (from Docker CMD/ENTRYPOINT)
+    singularity run \
       --nv \
       --env CUDA_VISIBLE_DEVICES=$gpu_id \
       --env NGC_API_KEY=$NGC_API_KEY \
