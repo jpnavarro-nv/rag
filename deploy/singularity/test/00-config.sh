@@ -21,12 +21,11 @@ export RAG_TMP_DIR=$RAG_BASE_DIR/tmp
 export RAG_LOGS_DIR=$RAG_BASE_DIR/logs
 
 # ==============================================================================
-# Apptainer/Singularity Configuration
+# Singularity Configuration
 # ==============================================================================
-# Configure Apptainer cache and temp directories automatically
-# Using APPTAINER_ prefix (SINGULARITY_ is deprecated but still works)
-export APPTAINER_CACHEDIR=$RAG_CACHE_DIR
-export APPTAINER_TMPDIR=$RAG_TMP_DIR
+# Configure Singularity cache and temp directories automatically
+export SINGULARITY_CACHEDIR=$RAG_CACHE_DIR
+export SINGULARITY_TMPDIR=$RAG_TMP_DIR
 
 # ==============================================================================
 # Create Required Directories
@@ -73,9 +72,9 @@ echo "   Tmp:        $RAG_TMP_DIR"
 echo "   Runtime:    $RAG_RUNTIME_DIR"
 echo "   Logs:       $RAG_LOGS_DIR"
 echo ""
-echo "Apptainer:"
-echo "   Cache dir:  $APPTAINER_CACHEDIR"
-echo "   Tmp dir:    $APPTAINER_TMPDIR"
+echo "Singularity:"
+echo "   Cache dir:  $SINGULARITY_CACHEDIR"
+echo "   Tmp dir:    $SINGULARITY_TMPDIR"
 echo ""
 
 # Check NGC_API_KEY
