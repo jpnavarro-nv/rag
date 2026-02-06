@@ -71,11 +71,22 @@ export APPTAINERENV_PMIX_MCA_gds=^ds12,ds21
 export APPTAINERENV_PMIX_MCA_psec=^munge
 
 # Start VLM with exec (not instance) to see full output
-# Using --cleanenv to remove SLURM vars, then SINGULARITYENV_ to set ours
+# Using --cleanenv to remove SLURM vars, then --env to pass our variables
 singularity exec \
   --cleanenv \
   --nv \
   --bind "$NIM_CACHE_DIR:/opt/nim/.cache" \
+  --env NIM_HTTP_API_PORT=1977 \
+  --env NIM_TENSOR_PARALLEL_SIZE=1 \
+  --env NIM_PIPELINE_PARALLEL_SIZE=1 \
+  --env NGC_API_KEY=$NGC_API_KEY \
+  --env NVIDIA_API_KEY=$NGC_API_KEY \
+  --env NIM_CACHE_PATH=/opt/nim/.cache \
+  --env CUDA_VISIBLE_DEVICES=3 \
+  --env OMPI_MCA_pmix=^all \
+  --env OMPI_MCA_pml=ob1 \
+  --env PMIX_MCA_gds=^ds12,ds21 \
+  --env PMIX_MCA_psec=^munge \
   "$RAG_IMAGES_DIR/vlm.sif" \
   /opt/nim/start_server.sh \
   > "$RAG_LOGS_DIR/vlm-test.log" 2>&1 &
