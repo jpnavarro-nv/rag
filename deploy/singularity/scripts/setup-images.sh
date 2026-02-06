@@ -6,8 +6,8 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Default to minimal image set
-IMAGE_SET="${1:-minimal}"
+# Default to all images (full ingestion pipeline)
+IMAGE_SET="${1:-all}"
 
 echo "╔════════════════════════════════════════════════════════════════╗"
 echo "║         RAG Singularity - Image Setup                         ║"
@@ -20,8 +20,8 @@ if [[ "$IMAGE_SET" != "minimal" && "$IMAGE_SET" != "all" ]]; then
     echo ""
     echo "Usage: $0 [minimal|all]"
     echo ""
-    echo "  minimal - Core infrastructure + RAG server (recommended for testing)"
-    echo "  all     - Complete deployment with all optional components"
+    echo "  minimal - Core infrastructure + RAG server only (query-only mode)"
+    echo "  all     - Complete deployment with full ingestion pipeline (default)"
     exit 1
 fi
 
