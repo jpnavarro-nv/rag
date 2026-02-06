@@ -44,12 +44,22 @@ echo "  This will download the model on first run (~16GB)"
 echo "  Log: $RAG_LOGS_DIR/vlm-test.log"
 echo ""
 
-# Start VLM instance
+# Create NIM cache directory (writable)
+NIM_CACHE_DIR="$RAG_BASE_DIR/models/vlm-cache"
+mkdir -p "$NIM_CACHE_DIR"
+chmod 755 "$NIM_CACHE_DIR"
+
+echo "Cache directory: $NIM_CACHE_DIR"
+echo ""
+
+# Start VLM instance with bind mount for cache
 singularity instance start \
   --nv \
+  --bind "$NIM_CACHE_DIR:/opt/nim/.cache" \
   --env CUDA_VISIBLE_DEVICES=3 \
   --env NGC_API_KEY=$NGC_API_KEY \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
+  --env NIM_CACHE_PATH=/opt/nim/.cache \
   "$RAG_IMAGES_DIR/vlm.sif" \
   "nim-vlm-test" \
   > "$RAG_LOGS_DIR/vlm-test.log" 2>&1
