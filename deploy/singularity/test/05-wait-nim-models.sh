@@ -45,7 +45,15 @@ if [ ! -d "$STATUS_DIR" ]; then
 fi
 chmod 755 "$STATUS_DIR"
 export STATUS_DIR
-trap "rm -rf $STATUS_DIR" EXIT
+
+# Cleanup function
+cleanup_status_dir() {
+    if [ -d "$STATUS_DIR" ]; then
+        rm -f "$STATUS_DIR"/*.status 2>/dev/null
+        rmdir "$STATUS_DIR" 2>/dev/null || rm -rf "$STATUS_DIR" 2>/dev/null
+    fi
+}
+trap cleanup_status_dir EXIT
 
 # ==============================================================================
 # Service Definitions
