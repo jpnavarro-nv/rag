@@ -1,8 +1,8 @@
 #!/bin/bash
-# Wait for NIM Models to become ready
+# Wait for NIM Models to become ready - Real-Time Parallel Monitor
 # Run after 04-start-nim-models.sh
 #
-# This script checks health endpoints of all 8 NIMs and waits until they're ready.
+# This script monitors all 8 NIMs simultaneously with real-time status updates.
 # Models can take 5-10 minutes to load on first startup.
 
 set -e
@@ -15,6 +15,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # ==============================================================================
@@ -33,43 +34,147 @@ PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
 
 # Timeouts
 MAX_WAIT_TIME=600  # 10 minutes total
-CHECK_INTERVAL=5   # Check every 5 seconds
+CHECK_INTERVAL=2   # Check every 2 seconds
+
+# Temp directory for status files
+STATUS_DIR=$(mktemp -d)
+trap "rm -rf $STATUS_DIR" EXIT
 
 # ==============================================================================
-# Healthcheck Functions
+# Service Definitions
 # ==============================================================================
 
-check_nim_health() {
-    local name=$1
-    local port=$2
-    local endpoint=$3
+declare -A SERVICES=(
+    ["embedding"]="Embedding NIM:$EMBEDDING_PORT:/v1/health/ready:GPU0"
+    ["ranking"]="Ranking NIM:$RANKING_PORT:/v1/health/ready:GPU0"
+    ["llm"]="LLM NIM:$LLM_PORT:/v1/health/ready:GPU1"
+    ["vlm"]="VLM NIM:$VLM_PORT:/v1/health/ready:GPU3"
+    ["page-elements"]="Page Elements:$PAGE_ELEMENTS_PORT:/v2/health/ready:GPU2"
+    ["graphic-elements"]="Graphic Elements:$GRAPHIC_ELEMENTS_PORT:/v2/health/ready:GPU2"
+    ["table-structure"]="Table Structure:$TABLE_STRUCTURE_PORT:/v2/health/ready:GPU2"
+    ["paddle-ocr"]="PaddleOCR:$PADDLE_OCR_PORT:/v2/health/ready:GPU2"
+)
 
-    if curl -s "http://localhost:${port}${endpoint}" > /dev/null 2>&1; then
-        return 0
-    fi
-    return 1
+# ==============================================================================
+# Background Monitor Function (runs in parallel for each service)
+# ==============================================================================
+
+monitor_service() {
+    local key=$1
+    local info=${SERVICES[$key]}
+    IFS=':' read -r name port endpoint gpu <<< "$info"
+
+    local status_file="$STATUS_DIR/$key.status"
+    local start_time=$(date +%s)
+
+    # Initial status
+    echo "waiting:0" > "$status_file"
+
+    while true; do
+        local elapsed=$(($(date +%s) - start_time))
+
+        # Check if timeout
+        if [ $elapsed -ge $MAX_WAIT_TIME ]; then
+            echo "timeout:$elapsed" > "$status_file"
+            break
+        fi
+
+        # Check health
+        if curl -s "http://localhost:${port}${endpoint}" > /dev/null 2>&1; then
+            echo "ready:$elapsed" > "$status_file"
+            break
+        else
+            echo "loading:$elapsed" > "$status_file"
+        fi
+
+        sleep $CHECK_INTERVAL
+    done
 }
 
-wait_for_service() {
-    local name=$1
-    local port=$2
-    local endpoint=$3
-    local elapsed=0
+# ==============================================================================
+# Display Function
+# ==============================================================================
 
-    echo -n "   Waiting for $name (port $port)..."
+draw_dashboard() {
+    clear
+    echo ""
+    echo -e "${BLUE}╔════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║         NIM Models - Real-Time Status Monitor                     ║${NC}"
+    echo -e "${BLUE}╚════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
 
-    while [ $elapsed -lt $MAX_WAIT_TIME ]; do
-        if check_nim_health "$name" "$port" "$endpoint"; then
-            echo -e " ${GREEN}✅ Ready${NC} (${elapsed}s)"
-            return 0
+    local total_elapsed=$(($(date +%s) - $START_TIME))
+
+    # Language Models Section
+    echo -e "${CYAN}Language Models (GPU 0, 1, 3):${NC}"
+    draw_service_line "embedding"
+    draw_service_line "ranking"
+    draw_service_line "llm"
+    draw_service_line "vlm"
+
+    echo ""
+
+    # Document Processing Section
+    echo -e "${CYAN}Document Processing Models (GPU 2):${NC}"
+    draw_service_line "page-elements"
+    draw_service_line "graphic-elements"
+    draw_service_line "table-structure"
+    draw_service_line "paddle-ocr"
+
+    echo ""
+    echo "────────────────────────────────────────────────────────────────────"
+
+    # Calculate summary
+    local ready_count=0
+    local timeout_count=0
+    for key in "${!SERVICES[@]}"; do
+        local status_file="$STATUS_DIR/$key.status"
+        if [ -f "$status_file" ]; then
+            local status=$(cat "$status_file" | cut -d: -f1)
+            if [ "$status" = "ready" ]; then
+                ready_count=$((ready_count + 1))
+            elif [ "$status" = "timeout" ]; then
+                timeout_count=$((timeout_count + 1))
+            fi
         fi
-        sleep $CHECK_INTERVAL
-        elapsed=$((elapsed + CHECK_INTERVAL))
-        echo -n "."
     done
 
-    echo -e " ${RED}❌ Timeout${NC} (${MAX_WAIT_TIME}s)"
-    return 1
+    echo -e "Progress: ${GREEN}${ready_count}/8 Ready${NC} | Elapsed: ${total_elapsed}s | Max wait: ${MAX_WAIT_TIME}s"
+
+    if [ $timeout_count -gt 0 ]; then
+        echo -e "${RED}Timeouts: ${timeout_count}${NC}"
+    fi
+
+    echo ""
+}
+
+draw_service_line() {
+    local key=$1
+    local info=${SERVICES[$key]}
+    IFS=':' read -r name port endpoint gpu <<< "$info"
+
+    local status_file="$STATUS_DIR/$key.status"
+    if [ ! -f "$status_file" ]; then
+        echo -e "  [${YELLOW}⏳${NC}] $(printf '%-20s' "$name") (port $port)  Initializing..."
+        return
+    fi
+
+    IFS=':' read -r status elapsed < "$status_file"
+
+    case $status in
+        ready)
+            echo -e "  [${GREEN}✅${NC}] $(printf '%-20s' "$name") (port $port)  ${GREEN}Ready in ${elapsed}s${NC}"
+            ;;
+        timeout)
+            echo -e "  [${RED}❌${NC}] $(printf '%-20s' "$name") (port $port)  ${RED}Timeout after ${elapsed}s${NC}"
+            ;;
+        loading)
+            echo -e "  [${YELLOW}⏳${NC}] $(printf '%-20s' "$name") (port $port)  Loading... ${elapsed}s"
+            ;;
+        waiting)
+            echo -e "  [${YELLOW}⏳${NC}] $(printf '%-20s' "$name") (port $port)  Waiting..."
+            ;;
+    esac
 }
 
 # ==============================================================================
@@ -77,84 +182,68 @@ wait_for_service() {
 # ==============================================================================
 
 echo ""
-echo -e "${BLUE}╔════════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║         Waiting for NIM Models to Become Ready                    ║${NC}"
-echo -e "${BLUE}╚════════════════════════════════════════════════════════════════════╝${NC}"
-echo ""
+echo -e "${BLUE}Starting parallel monitoring of all 8 NIMs...${NC}"
 echo "This may take 5-10 minutes on first startup while models load..."
-echo ""
+sleep 2
 
-# Track results
-READY_COUNT=0
-FAILED_COUNT=0
 START_TIME=$(date +%s)
 
-# ==============================================================================
-# Check Language Models
-# ==============================================================================
-echo "=== Language Models ==="
-echo ""
+# Start background monitors for all services
+for key in "${!SERVICES[@]}"; do
+    monitor_service "$key" &
+done
 
-if wait_for_service "Embedding NIM" $EMBEDDING_PORT "/v1/health/ready"; then
-    READY_COUNT=$((READY_COUNT + 1))
-else
-    FAILED_COUNT=$((FAILED_COUNT + 1))
-fi
+# Main display loop
+while true; do
+    draw_dashboard
 
-if wait_for_service "Ranking NIM" $RANKING_PORT "/v1/health/ready"; then
-    READY_COUNT=$((READY_COUNT + 1))
-else
-    FAILED_COUNT=$((FAILED_COUNT + 1))
-fi
+    # Check if all services are done (ready or timeout)
+    local all_done=true
+    for key in "${!SERVICES[@]}"; do
+        local status_file="$STATUS_DIR/$key.status"
+        if [ -f "$status_file" ]; then
+            local status=$(cat "$status_file" | cut -d: -f1)
+            if [ "$status" != "ready" ] && [ "$status" != "timeout" ]; then
+                all_done=false
+                break
+            fi
+        else
+            all_done=false
+            break
+        fi
+    done
 
-if wait_for_service "LLM NIM" $LLM_PORT "/v1/health/ready"; then
-    READY_COUNT=$((READY_COUNT + 1))
-else
-    FAILED_COUNT=$((FAILED_COUNT + 1))
-fi
+    if [ "$all_done" = true ]; then
+        break
+    fi
 
-if wait_for_service "VLM NIM" $VLM_PORT "/v1/health/ready"; then
-    READY_COUNT=$((READY_COUNT + 1))
-else
-    FAILED_COUNT=$((FAILED_COUNT + 1))
-fi
+    sleep 2
+done
 
-# ==============================================================================
-# Check Document Processing Models
-# ==============================================================================
-echo ""
-echo "=== Document Processing Models ==="
-echo ""
+# Wait for all background jobs to complete
+wait
 
-if wait_for_service "Page Elements (YOLOX)" $PAGE_ELEMENTS_PORT "/v2/health/ready"; then
-    READY_COUNT=$((READY_COUNT + 1))
-else
-    FAILED_COUNT=$((FAILED_COUNT + 1))
-fi
-
-if wait_for_service "Graphic Elements (YOLOX)" $GRAPHIC_ELEMENTS_PORT "/v2/health/ready"; then
-    READY_COUNT=$((READY_COUNT + 1))
-else
-    FAILED_COUNT=$((FAILED_COUNT + 1))
-fi
-
-if wait_for_service "Table Structure (YOLOX)" $TABLE_STRUCTURE_PORT "/v2/health/ready"; then
-    READY_COUNT=$((READY_COUNT + 1))
-else
-    FAILED_COUNT=$((FAILED_COUNT + 1))
-fi
-
-if wait_for_service "PaddleOCR" $PADDLE_OCR_PORT "/v2/health/ready"; then
-    READY_COUNT=$((READY_COUNT + 1))
-else
-    FAILED_COUNT=$((FAILED_COUNT + 1))
-fi
+# Final dashboard
+draw_dashboard
 
 # ==============================================================================
 # Summary
 # ==============================================================================
 END_TIME=$(date +%s)
 TOTAL_TIME=$((END_TIME - START_TIME))
+
+# Calculate final results
+READY_COUNT=0
+FAILED_COUNT=0
+for key in "${!SERVICES[@]}"; do
+    local status_file="$STATUS_DIR/$key.status"
+    local status=$(cat "$status_file" | cut -d: -f1)
+    if [ "$status" = "ready" ]; then
+        READY_COUNT=$((READY_COUNT + 1))
+    else
+        FAILED_COUNT=$((FAILED_COUNT + 1))
+    fi
+done
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
