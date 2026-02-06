@@ -38,19 +38,40 @@ CHECK_INTERVAL=2   # Check every 2 seconds
 
 # Status directory for monitor files
 STATUS_DIR="$RAG_RUNTIME_DIR/nim-status"
+
+# Clean and recreate status directory
+if [ -d "$STATUS_DIR" ]; then
+    rm -rf "$STATUS_DIR" 2>/dev/null || {
+        echo "ERROR: Cannot remove existing status directory at $STATUS_DIR"
+        echo "Try: sudo rm -rf $STATUS_DIR"
+        exit 1
+    }
+fi
+
 mkdir -p "$STATUS_DIR"
 if [ ! -d "$STATUS_DIR" ]; then
     echo "ERROR: Failed to create status directory at $STATUS_DIR"
     exit 1
 fi
+
 chmod 755 "$STATUS_DIR"
+
+# Test write permissions
+TEST_FILE="$STATUS_DIR/.test"
+if ! echo "test" > "$TEST_FILE" 2>/dev/null; then
+    echo "ERROR: Cannot write to status directory at $STATUS_DIR"
+    echo "Check permissions: ls -ld $STATUS_DIR"
+    exit 1
+fi
+rm -f "$TEST_FILE"
+
 export STATUS_DIR
 
 # Cleanup function
 cleanup_status_dir() {
     if [ -d "$STATUS_DIR" ]; then
         rm -f "$STATUS_DIR"/*.status 2>/dev/null
-        rmdir "$STATUS_DIR" 2>/dev/null || rm -rf "$STATUS_DIR" 2>/dev/null
+        rm -rf "$STATUS_DIR" 2>/dev/null
     fi
 }
 trap cleanup_status_dir EXIT
@@ -85,27 +106,32 @@ monitor_service() {
     local status_file="$STATUS_DIR/$key.status"
     local start_time=$(date +%s)
 
-    # Initial status
-    echo "waiting:0" > "$status_file" || {
-        echo "ERROR: Cannot write to $status_file" >&2
+    # Verify status directory exists
+    if [ ! -d "$STATUS_DIR" ]; then
         return 1
-    }
+    fi
+
+    # Initial status
+    if ! echo "waiting:0" > "$status_file" 2>/dev/null; then
+        return 1
+    fi
 
     while true; do
         local elapsed=$(($(date +%s) - start_time))
 
         # Check if timeout
         if [ $elapsed -ge $MAX_WAIT_TIME ]; then
-            echo "timeout:$elapsed" > "$status_file"
+            echo "timeout:$elapsed" > "$status_file" 2>/dev/null || return 1
             break
         fi
 
         # Check health (suppress curl errors only)
         if curl -s -f "http://localhost:${port}${endpoint}" >/dev/null 2>&1; then
-            echo "ready:$elapsed" > "$status_file"
+            echo "ready:$elapsed" > "$status_file" 2>/dev/null || return 1
             break
         else
-            echo "loading:$elapsed" > "$status_file"
+            # Try to write status, if fails silently exit
+            echo "loading:$elapsed" > "$status_file" 2>/dev/null || return 1
         fi
 
         sleep $CHECK_INTERVAL
@@ -175,12 +201,23 @@ draw_service_line() {
     IFS=':' read -r name port endpoint gpu <<< "$info"
 
     local status_file="$STATUS_DIR/$key.status"
-    if [ ! -f "$status_file" ]; then
+    if [ ! -f "$status_file" ] || [ ! -r "$status_file" ]; then
         echo -e "  [${YELLOW}⏳${NC}] $(printf '%-20s' "$name") (port $port)  Initializing..."
         return
     fi
 
-    IFS=':' read -r status elapsed < "$status_file"
+    # Read status safely
+    local status=""
+    local elapsed=0
+    if [ -s "$status_file" ]; then
+        IFS=':' read -r status elapsed < "$status_file" 2>/dev/null || {
+            echo -e "  [${YELLOW}⏳${NC}] $(printf '%-20s' "$name") (port $port)  Initializing..."
+            return
+        }
+    else
+        echo -e "  [${YELLOW}⏳${NC}] $(printf '%-20s' "$name") (port $port)  Initializing..."
+        return
+    fi
 
     case $status in
         ready)
@@ -194,6 +231,9 @@ draw_service_line() {
             ;;
         waiting)
             echo -e "  [${YELLOW}⏳${NC}] $(printf '%-20s' "$name") (port $port)  Waiting..."
+            ;;
+        *)
+            echo -e "  [${YELLOW}⏳${NC}] $(printf '%-20s' "$name") (port $port)  Unknown status"
             ;;
     esac
 }
