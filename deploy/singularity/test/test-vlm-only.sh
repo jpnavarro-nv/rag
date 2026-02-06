@@ -29,17 +29,21 @@ fi
 echo "✅ VLM image found"
 echo ""
 
-# Stop if already running
-if singularity instance list | grep -q "^nim-vlm-test"; then
-    echo "Stopping existing nim-vlm-test instance..."
-    singularity instance stop nim-vlm-test
-    sleep 2
+# Kill any existing process
+if [ -f "$RAG_RUNTIME_DIR/pids/vlm-test.pid" ]; then
+    OLD_PID=$(cat "$RAG_RUNTIME_DIR/pids/vlm-test.pid")
+    if ps -p $OLD_PID > /dev/null 2>&1; then
+        echo "Stopping existing VLM process (PID $OLD_PID)..."
+        kill $OLD_PID
+        sleep 2
+    fi
+    rm -f "$RAG_RUNTIME_DIR/pids/vlm-test.pid"
 fi
 
 # Clean log
 > "$RAG_LOGS_DIR/vlm-test.log"
 
-echo "Starting VLM NIM instance..."
+echo "Starting VLM NIM server..."
 echo "  This will download the model on first run (~16GB)"
 echo "  Log: $RAG_LOGS_DIR/vlm-test.log"
 echo ""
@@ -52,8 +56,8 @@ chmod 755 "$NIM_CACHE_DIR"
 echo "Cache directory: $NIM_CACHE_DIR"
 echo ""
 
-# Start VLM instance with bind mount for cache
-singularity instance start \
+# Start VLM with exec (not instance) to see full output
+singularity exec \
   --nv \
   --bind "$NIM_CACHE_DIR:/opt/nim/.cache" \
   --env CUDA_VISIBLE_DEVICES=3 \
@@ -61,13 +65,21 @@ singularity instance start \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
   --env NIM_CACHE_PATH=/opt/nim/.cache \
   "$RAG_IMAGES_DIR/vlm.sif" \
-  "nim-vlm-test" \
-  > "$RAG_LOGS_DIR/vlm-test.log" 2>&1
+  /opt/nim/start_server.sh \
+  > "$RAG_LOGS_DIR/vlm-test.log" 2>&1 &
 
-if singularity instance list | grep -q "^nim-vlm-test"; then
-    echo "✅ Instance started"
+VLM_PID=$!
+echo $VLM_PID > "$RAG_RUNTIME_DIR/pids/vlm-test.pid"
+
+# Wait a moment and check if process started
+sleep 3
+if ps -p $VLM_PID > /dev/null 2>&1; then
+    echo "✅ VLM server started (PID $VLM_PID)"
 else
-    echo "❌ Instance failed to start"
+    echo "❌ VLM failed to start"
+    echo ""
+    echo "=== Log output ==="
+    cat "$RAG_LOGS_DIR/vlm-test.log"
     exit 1
 fi
 
@@ -93,7 +105,8 @@ for i in {1..60}; do
         echo "  curl http://localhost:8997/v1/models"
         echo ""
         echo "Stop VLM:"
-        echo "  singularity instance stop nim-vlm-test"
+        echo "  kill $(cat $RAG_RUNTIME_DIR/pids/vlm-test.pid)"
+        echo "  rm $RAG_RUNTIME_DIR/pids/vlm-test.pid"
         echo ""
         exit 0
     else
@@ -112,7 +125,8 @@ echo ""
 echo "=== GPU Status ==="
 nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv
 echo ""
-echo "Instance still running. To stop:"
-echo "  singularity instance stop nim-vlm-test"
+echo "Process still running. To stop:"
+echo "  kill $(cat $RAG_RUNTIME_DIR/pids/vlm-test.pid)"
+echo "  rm $RAG_RUNTIME_DIR/pids/vlm-test.pid"
 echo ""
 exit 1
