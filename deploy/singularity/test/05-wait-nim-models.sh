@@ -198,11 +198,11 @@ while true; do
     draw_dashboard
 
     # Check if all services are done (ready or timeout)
-    local all_done=true
+    all_done=true
     for key in "${!SERVICES[@]}"; do
-        local status_file="$STATUS_DIR/$key.status"
+        status_file="$STATUS_DIR/$key.status"
         if [ -f "$status_file" ]; then
-            local status=$(cat "$status_file" | cut -d: -f1)
+            status=$(cat "$status_file" | cut -d: -f1)
             if [ "$status" != "ready" ] && [ "$status" != "timeout" ]; then
                 all_done=false
                 break
@@ -236,8 +236,8 @@ TOTAL_TIME=$((END_TIME - START_TIME))
 READY_COUNT=0
 FAILED_COUNT=0
 for key in "${!SERVICES[@]}"; do
-    local status_file="$STATUS_DIR/$key.status"
-    local status=$(cat "$status_file" | cut -d: -f1)
+    status_file="$STATUS_DIR/$key.status"
+    status=$(cat "$status_file" | cut -d: -f1)
     if [ "$status" = "ready" ]; then
         READY_COUNT=$((READY_COUNT + 1))
     else
