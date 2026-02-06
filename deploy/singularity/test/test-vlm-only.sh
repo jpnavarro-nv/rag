@@ -58,6 +58,7 @@ echo ""
 
 # Start VLM with exec (not instance) to see full output
 # Force single-GPU mode and disable MPI/PMIx to avoid SLURM integration
+# Note: VLM uses port 8000 (NIM_HTTP_API_PORT), not 8997
 singularity exec \
   --cleanenv \
   --nv \
@@ -66,6 +67,7 @@ singularity exec \
   --env NGC_API_KEY=$NGC_API_KEY \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
   --env NIM_CACHE_PATH=/opt/nim/.cache \
+  --env NIM_HTTP_API_PORT=8997 \
   --env NIM_TENSOR_PARALLEL_SIZE=1 \
   --env NIM_PIPELINE_PARALLEL_SIZE=1 \
   --env OMPI_MCA_pmix=^all \
