@@ -57,6 +57,34 @@ else
 fi
 echo "" >> "$OUTPUT_FILE"
 
+echo "=== 11. start_server.sh content ===" >> "$OUTPUT_FILE"
+singularity exec "$RAG_IMAGES_DIR/vlm.sif" cat /opt/nim/start_server.sh 2>/dev/null >> "$OUTPUT_FILE" || \
+    echo "start_server.sh not found or not readable" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+echo "=== 12. nim_llm_sdk port/server_port references (KEY for port fix) ===" >> "$OUTPUT_FILE"
+echo "Searching for how launch.py builds --port argument..." >> "$OUTPUT_FILE"
+singularity exec "$RAG_IMAGES_DIR/vlm.sif" \
+    grep -rn "NIM_SERVER_PORT\|NIM_HTTP_API_PORT\|api_port\|server_port\|--port\|host_port\|openai_port" \
+    /opt/nim/llm/.venv/lib/python3.12/site-packages/nim_llm_sdk/ \
+    2>/dev/null | grep -v ".pyc:" | grep -v "Binary" >> "$OUTPUT_FILE" || \
+    echo "nim_llm_sdk not found at expected path" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+echo "=== 13. launch.py content ===" >> "$OUTPUT_FILE"
+singularity exec "$RAG_IMAGES_DIR/vlm.sif" \
+    find /opt/nim/llm -name "launch.py" 2>/dev/null | \
+    xargs -I{} singularity exec "$RAG_IMAGES_DIR/vlm.sif" cat {} 2>/dev/null >> "$OUTPUT_FILE" || \
+    echo "launch.py not found" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
+echo "=== 14. nim_llm_sdk args.py (port argument definition) ===" >> "$OUTPUT_FILE"
+singularity exec "$RAG_IMAGES_DIR/vlm.sif" \
+    find /opt/nim/llm -name "args.py" 2>/dev/null | \
+    xargs -I{} singularity exec "$RAG_IMAGES_DIR/vlm.sif" grep -n "port\|PORT" {} 2>/dev/null >> "$OUTPUT_FILE" || \
+    echo "args.py not found" >> "$OUTPUT_FILE"
+echo "" >> "$OUTPUT_FILE"
+
 echo "" >> "$OUTPUT_FILE"
 echo "=== Diagnosis Complete ===" >> "$OUTPUT_FILE"
 echo "Output saved to: $OUTPUT_FILE" >> "$OUTPUT_FILE"
