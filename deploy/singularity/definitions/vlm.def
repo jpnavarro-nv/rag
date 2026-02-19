@@ -17,7 +17,9 @@ From: nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:1.3.1
 %environment
     # Override default NIM port to match Docker Compose configuration (1977:8000)
     # In Singularity with host network, container port = host port (no port mapping)
-    export NIM_HTTP_API_PORT=1977
+    # NIM_SERVER_PORT is the correct variable for LLM/VLM NIMs (nim_llm_sdk/vLLM stack)
+    # NIM_HTTP_API_PORT is for Triton-based NIMs only and is ignored by this container
+    export NIM_SERVER_PORT=1977
 
 %startscript
     # Execute the NIM server startup script

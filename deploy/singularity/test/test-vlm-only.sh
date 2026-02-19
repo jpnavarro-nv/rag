@@ -58,7 +58,7 @@ echo ""
 
 # Export APPTAINERENV_ variables to override container defaults
 # Port 1977 matches Docker Compose configuration (1977:8000)
-export APPTAINERENV_NIM_HTTP_API_PORT=1977
+export APPTAINERENV_NIM_SERVER_PORT=1977
 export APPTAINERENV_NIM_TENSOR_PARALLEL_SIZE=1
 export APPTAINERENV_NIM_PIPELINE_PARALLEL_SIZE=1
 export APPTAINERENV_NGC_API_KEY=$NGC_API_KEY
@@ -76,7 +76,7 @@ singularity exec \
   --cleanenv \
   --nv \
   --bind "$NIM_CACHE_DIR:/opt/nim/.cache" \
-  --env NIM_HTTP_API_PORT=1977 \
+  --env NIM_SERVER_PORT=1977 \
   --env NIM_TENSOR_PARALLEL_SIZE=1 \
   --env NIM_PIPELINE_PARALLEL_SIZE=1 \
   --env NGC_API_KEY=$NGC_API_KEY \
