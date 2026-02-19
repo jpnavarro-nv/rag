@@ -22,20 +22,23 @@ TABLE_STRUCTURE_PORT=${TABLE_STRUCTURE_PORT:-8006}
 PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
 
 # ==============================================================================
-# GPU Distribution — 4-GPU strategy
+# GPU Distribution — 4× A100 80GB strategy
 # ==============================================================================
-# GPU 0: Retrieval  (Embedding, Ranking)
-# GPU 1: Generation (LLM - 49B)
-# GPU 2: Processing (YOLOX x3, PaddleOCR)
-# GPU 3: Vision     (VLM)
+# The 49B LLM (BF16) requires ~79 GB for weights alone — does not fit on a
+# single A100 80GB. It needs TP=2 across 2 GPUs so the NIM selects a
+# vllm-bf16-tp2 profile (~40 GB/GPU for weights + KV cache).
+#
+# GPU 0:    Embedding + Ranking + YOLOX×3 + PaddleOCR  (~10 GB total, all small)
+# GPU 1+2:  LLM 49B (TP=2, CUDA_VISIBLE_DEVICES=1,2 → NIM selects tp2 profile)
+# GPU 3:    VLM 8B  (~16 GB)
 EMBEDDING_GPU_ID=${EMBEDDING_MS_GPU_ID:-0}
 RANKING_GPU_ID=${RANKING_MS_GPU_ID:-0}
-LLM_GPU_ID=${LLM_MS_GPU_ID:-1}
+LLM_GPU_ID=${LLM_MS_GPU_ID:-1,2}
 VLM_GPU_ID=${VLM_MS_GPU_ID:-3}
-PAGE_ELEMENTS_GPU_ID=${YOLOX_MS_GPU_ID:-2}
-GRAPHIC_ELEMENTS_GPU_ID=${YOLOX_GRAPHICS_MS_GPU_ID:-2}
-TABLE_STRUCTURE_GPU_ID=${YOLOX_TABLE_MS_GPU_ID:-2}
-PADDLE_OCR_GPU_ID=${OCR_MS_GPU_ID:-2}
+PAGE_ELEMENTS_GPU_ID=${YOLOX_MS_GPU_ID:-0}
+GRAPHIC_ELEMENTS_GPU_ID=${YOLOX_GRAPHICS_MS_GPU_ID:-0}
+TABLE_STRUCTURE_GPU_ID=${YOLOX_TABLE_MS_GPU_ID:-0}
+PADDLE_OCR_GPU_ID=${OCR_MS_GPU_ID:-0}
 
 # ==============================================================================
 # HPC NVML fix — Triton NIMs (embedding, ranking, YOLOX, paddle) require

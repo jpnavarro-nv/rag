@@ -7,11 +7,10 @@
 #   nim-ingest.sh     — YOLOX x3 + PaddleOCR        (profile: ingest)
 #   nim-vlm.sh        — VLM                          (profile: vlm)
 #
-# GPU distribution:
-#   GPU 0: Embedding + Ranking
-#   GPU 1: LLM (49B)
-#   GPU 2: YOLOX x3 + PaddleOCR
-#   GPU 3: VLM
+# GPU distribution (4× A100 80GB):
+#   GPU 0:   Embedding + Ranking + YOLOX×3 + PaddleOCR (all small, ~10 GB)
+#   GPU 1+2: LLM 49B (TP=2, needs 2 GPUs — BF16 weights ~79 GB total)
+#   GPU 3:   VLM 8B
 set -e
 
 DIR="$(dirname "$0")"
