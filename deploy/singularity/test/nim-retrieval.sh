@@ -35,13 +35,23 @@ echo "   LLM:        localhost:$LLM_PORT  (GPU $LLM_GPU_ID)"
 echo ""
 
 # Triton NIMs: singularity run (Docker entrypoint), port via NIM_HTTP_API_PORT
+#
+# NIM_HTTP_API_WORKERS: controls uvicorn HTTP workers AND the number of Triton
+# Python backend stub instances spawned simultaneously. In Singularity, Python
+# imports run against a read-only SquashFS filesystem which is slower than
+# Docker's overlay. With the default workers=<nproc> (e.g. 16), all 16 stubs
+# start concurrently and exceed the Triton Python backend health-check timeout.
+# Reducing to 2 avoids the thundering-herd startup failure while still allowing
+# some request concurrency.  Increase NIM_HTTP_API_WORKERS if throughput matters.
+_RETRIEVAL_WORKERS=${NIM_HTTP_API_WORKERS:-2}
+
 start_nim_service "nemoretriever-embedding" "$EMBEDDING_PORT" "$EMBEDDING_GPU_ID" \
     "nemoretriever-embedding.sif" \
-    "$NVML_BIND --bind $EMBEDDING_CACHE_DIR:/opt/nim/.cache --bind $EMBEDDING_WORK_DIR/tmp:/opt/nim/tmp --bind $EMBEDDING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$EMBEDDING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $EMBEDDING_CACHE_DIR:/opt/nim/.cache --bind $EMBEDDING_WORK_DIR/tmp:/opt/nim/tmp --bind $EMBEDDING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$EMBEDDING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_RETRIEVAL_WORKERS"
 
 start_nim_service "nemoretriever-ranking" "$RANKING_PORT" "$RANKING_GPU_ID" \
     "nemoretriever-ranking.sif" \
-    "$NVML_BIND --bind $RANKING_CACHE_DIR:/opt/nim/.cache --bind $RANKING_WORK_DIR/tmp:/opt/nim/tmp --bind $RANKING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $RANKING_CACHE_DIR:/opt/nim/.cache --bind $RANKING_WORK_DIR/tmp:/opt/nim/tmp --bind $RANKING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_RETRIEVAL_WORKERS"
 
 # nim_llm_sdk NIM: singularity exec with explicit start_server.sh --port
 # --cleanenv + MPI suppression same as VLM (same family, same HPC issues)
