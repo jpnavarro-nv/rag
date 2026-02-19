@@ -15,10 +15,9 @@ From: nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:1.3.1
     Description NIM Vision-Language Model for image captioning
 
 %environment
-    # NIM_HTTP_API_PORT is for Triton-based NIMs only and is ignored by this container.
-    # NIM_SERVER_PORT sets the argparse default but is NOT passed as cli_args to api_server.py.
-    # The only reliable way to set the port is via --port CLI argument passed through "$@".
-    export NIM_SERVER_PORT=1977
+    # Port is set via --port 1977 in %startscript (start_server.sh "$@" passthrough).
+    # NIM_HTTP_API_PORT: Triton-only, ignored here.
+    # NIM_SERVER_PORT: argparse default only, not forwarded to api_server.py via os.execvpe.
 
 %startscript
     # Pass --port 1977 directly to start_server.sh.

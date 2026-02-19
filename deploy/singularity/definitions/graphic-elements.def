@@ -14,7 +14,11 @@ From: nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1:1.5.0
     Version 1.5.0
     Description NIM YOLOX model for graphic element detection
 
-%startscript
-    # Triton NIMs use their built-in entrypoint/cmd from the Docker image
-    # This startscript executes the default behavior
-    exec "$@"
+%environment
+    # Triton-based NIM: port configured via NIM_HTTP_API_PORT.
+    # Docker Compose maps host:8003 → container:8000. In Singularity (host network),
+    # the container must bind directly on port 8003.
+    export NIM_HTTP_API_PORT=8003
+
+# No %startscript: Apptainer falls back to %runscript (Docker CMD/ENTRYPOINT),
+# which starts the Triton Inference Server with NIM_HTTP_API_PORT from %environment.

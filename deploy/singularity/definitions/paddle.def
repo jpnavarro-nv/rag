@@ -14,7 +14,11 @@ From: nvcr.io/nim/baidu/paddleocr:1.5.0
     Version 1.5.0
     Description NIM PaddleOCR model for text extraction
 
-%startscript
-    # Triton NIMs use their built-in entrypoint/cmd from the Docker image
-    # This startscript executes the default behavior
-    exec "$@"
+%environment
+    # Triton-based NIM: port configured via NIM_HTTP_API_PORT.
+    # Docker Compose maps host:8009 → container:8000. In Singularity (host network),
+    # the container must bind directly on port 8009.
+    export NIM_HTTP_API_PORT=8009
+
+# No %startscript: Apptainer falls back to %runscript (Docker CMD/ENTRYPOINT),
+# which starts the Triton Inference Server with NIM_HTTP_API_PORT from %environment.

@@ -14,7 +14,11 @@ From: nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2:1.8.0
     Version 1.8.0
     Description NIM Ranking Model for RAG reranking
 
-%startscript
-    # NIMs use their built-in entrypoint/cmd from the Docker image
-    # This startscript executes the default behavior
-    exec "$@"
+%environment
+    # Triton-based NIM: port configured via NIM_HTTP_API_PORT.
+    # Docker Compose maps host:1976 → container:8000. In Singularity (host network),
+    # the container must bind directly on port 1976.
+    export NIM_HTTP_API_PORT=1976
+
+# No %startscript: Apptainer falls back to %runscript (Docker CMD/ENTRYPOINT),
+# which starts the Triton Inference Server with NIM_HTTP_API_PORT from %environment.

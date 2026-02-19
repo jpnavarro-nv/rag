@@ -14,7 +14,11 @@ From: nvcr.io/nim/nvidia/llama-3.2-nv-embedqa-1b-v2:1.10.1
     Version 1.10.1
     Description NIM Embedding Model for RAG retrieval
 
-%startscript
-    # NIMs use their built-in entrypoint/cmd from the Docker image
-    # This startscript executes the default behavior
-    exec "$@"
+%environment
+    # Triton-based NIM: port configured via NIM_HTTP_API_PORT.
+    # Docker Compose maps host:9080 → container:8000. In Singularity (host network),
+    # the container must bind directly on port 9080.
+    export NIM_HTTP_API_PORT=9080
+
+# No %startscript: Apptainer falls back to %runscript (Docker CMD/ENTRYPOINT),
+# which starts the Triton Inference Server with NIM_HTTP_API_PORT from %environment.

@@ -14,7 +14,11 @@ From: nvcr.io/nim/nvidia/nemoretriever-page-elements-v2:1.5.0
     Version 1.5.0
     Description NIM YOLOX model for page layout element detection
 
-%startscript
-    # Triton NIMs use their built-in entrypoint/cmd from the Docker image
-    # This startscript executes the default behavior
-    exec "$@"
+%environment
+    # Triton-based NIM: port configured via NIM_HTTP_API_PORT.
+    # Docker Compose maps host:8000 → container:8000. No port change needed for Singularity,
+    # but set explicitly for consistency with other Triton NIMs.
+    export NIM_HTTP_API_PORT=8000
+
+# No %startscript: Apptainer falls back to %runscript (Docker CMD/ENTRYPOINT),
+# which starts the Triton Inference Server with NIM_HTTP_API_PORT from %environment.

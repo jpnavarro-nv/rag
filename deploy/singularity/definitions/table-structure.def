@@ -14,7 +14,11 @@ From: nvcr.io/nim/nvidia/nemoretriever-table-structure-v1:1.5.0
     Version 1.5.0
     Description NIM YOLOX model for table structure detection
 
-%startscript
-    # Triton NIMs use their built-in entrypoint/cmd from the Docker image
-    # This startscript executes the default behavior
-    exec "$@"
+%environment
+    # Triton-based NIM: port configured via NIM_HTTP_API_PORT.
+    # Docker Compose maps host:8006 → container:8000. In Singularity (host network),
+    # the container must bind directly on port 8006.
+    export NIM_HTTP_API_PORT=8006
+
+# No %startscript: Apptainer falls back to %runscript (Docker CMD/ENTRYPOINT),
+# which starts the Triton Inference Server with NIM_HTTP_API_PORT from %environment.
