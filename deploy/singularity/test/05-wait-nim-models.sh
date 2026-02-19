@@ -214,7 +214,7 @@ draw_service_line() {
 
     case $status in
         ready)
-            echo -e "  [${GREEN}✅${NC}] $(printf '%-20s' "$name") (port $port)  ${GREEN}Ready in ${elapsed}s${NC}"
+            echo -e "  [${GREEN}✅${NC}] $(printf '%-20s' "$name") (port $port)  ${GREEN}Ready${NC}"
             ;;
         timeout)
             echo -e "  [${RED}❌${NC}] $(printf '%-20s' "$name") (port $port)  ${RED}Timeout after ${elapsed}s${NC}"
