@@ -7,18 +7,6 @@ echo ""
 # Load configuration
 source "$(dirname "$0")/00-config.sh"
 
-# Function to stop Singularity instance
-stop_instance() {
-    local instance_name=$1
-    echo "Stopping instance $instance_name..."
-    if singularity instance list | grep -q "^${instance_name}"; then
-        singularity instance stop "$instance_name"
-        echo "   ✅ $instance_name stopped"
-    else
-        echo "   ⊘  $instance_name not running"
-    fi
-}
-
 # Function to stop process if running
 stop_process() {
     local service_name=$1
@@ -54,15 +42,15 @@ stop_process "nv-ingest"
 stop_process "redis"
 
 echo ""
-echo "=== Stopping NIM Instances ==="
-stop_instance "nim-nemoretriever-embedding"
-stop_instance "nim-nemoretriever-ranking"
-stop_instance "nim-nim-llm"
-stop_instance "nim-vlm"
-stop_instance "nim-page-elements"
-stop_instance "nim-graphic-elements"
-stop_instance "nim-table-structure"
-stop_instance "nim-paddle-ocr"
+echo "=== Stopping NIM Processes ==="
+stop_process "nemoretriever-embedding"
+stop_process "nemoretriever-ranking"
+stop_process "nim-llm"
+stop_process "vlm"
+stop_process "page-elements"
+stop_process "graphic-elements"
+stop_process "table-structure"
+stop_process "paddle-ocr"
 
 echo ""
 echo "=== Stopping Infrastructure ==="

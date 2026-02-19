@@ -38,50 +38,84 @@ TABLE_STRUCTURE_GPU_ID=${YOLOX_TABLE_MS_GPU_ID:-2}
 PADDLE_OCR_GPU_ID=${OCR_MS_GPU_ID:-2}
 
 # ==============================================================================
-# start_nim_service — launches a NIM as a Singularity instance
+# start_nim_service — launches a NIM as a background process (singularity exec/run)
 # ==============================================================================
-# Usage: start_nim_service NAME PORT GPU IMAGE [SINGULARITY_OPTS] [STARTSCRIPT_CMD]
-#   NAME:             service name (instance will be named nim-NAME)
-#   PORT:             host port the NIM will listen on
+# Usage: start_nim_service NAME PORT GPU IMAGE [SINGULARITY_OPTS] [EXEC_CMD]
+#   NAME:             service name (PID saved to $RAG_RUNTIME_DIR/pids/NAME.pid)
+#   PORT:             host port the NIM will listen on (for display/health checks)
 #   GPU:              CUDA_VISIBLE_DEVICES value
 #   IMAGE:            .sif filename (relative to RAG_IMAGES_DIR)
-#   SINGULARITY_OPTS: extra --env flags for singularity instance start (optional)
-#   STARTSCRIPT_CMD:  command passed after instance name to %startscript "$@" (optional)
-#                     Used as workaround for nim_llm_sdk NIMs before image rebuild.
+#   SINGULARITY_OPTS: extra flags for singularity (--cleanenv, --bind, --env, etc.)
+#   EXEC_CMD:         if set → singularity exec IMAGE EXEC_CMD (nim_llm_sdk NIMs)
+#                     if empty → singularity run IMAGE (Triton NIMs, uses Docker entrypoint)
+#
+# Output goes to $RAG_LOGS_DIR/NAME.log (full NIM stdout+stderr, not just the
+# singularity launcher banner).
 start_nim_service() {
     local name=$1
     local port=$2
     local gpu_id=$3
     local image=$4
     local singularity_opts="${5:-}"
-    local startscript_cmd="${6:-}"
+    local exec_cmd="${6:-}"
 
-    local instance_name="nim-${name}"
+    local pid_file="$RAG_RUNTIME_DIR/pids/${name}.pid"
     local log_file="$RAG_LOGS_DIR/${name}.log"
 
-    if singularity instance list | grep -q "^${instance_name}"; then
-        echo "   ⊘  $name already running (instance: $instance_name)"
-        return 0
+    # Check if already running via PID file
+    if [ -f "$pid_file" ]; then
+        local existing_pid
+        existing_pid=$(cat "$pid_file")
+        if ps -p "$existing_pid" > /dev/null 2>&1; then
+            echo "   ⊘  $name already running (PID $existing_pid)"
+            return 0
+        fi
+        rm -f "$pid_file"
     fi
 
     echo "   Starting $name on port $port, GPU $gpu_id..."
 
-    singularity instance start \
-      --nv \
-      --env CUDA_VISIBLE_DEVICES=$gpu_id \
-      --env NGC_API_KEY=$NGC_API_KEY \
-      --env NVIDIA_API_KEY=$NGC_API_KEY \
-      $singularity_opts \
-      "$RAG_IMAGES_DIR/$image" \
-      "$instance_name" \
-      $startscript_cmd \
-      > "$log_file" 2>&1
+    # Clear log so tail -f is unambiguous
+    > "$log_file"
 
-    if singularity instance list | grep -q "^${instance_name}"; then
-        echo "   ✅ $name started (instance: $instance_name, log: $log_file)"
+    if [ -n "$exec_cmd" ]; then
+        # nim_llm_sdk NIMs (VLM, LLM): explicit command, port via --port arg
+        # shellcheck disable=SC2086
+        singularity exec \
+          --nv \
+          --env CUDA_VISIBLE_DEVICES="$gpu_id" \
+          --env NGC_API_KEY="$NGC_API_KEY" \
+          --env NVIDIA_API_KEY="$NGC_API_KEY" \
+          $singularity_opts \
+          "$RAG_IMAGES_DIR/$image" \
+          $exec_cmd \
+          >> "$log_file" 2>&1 &
+    else
+        # Triton NIMs: use Docker entrypoint via singularity run
+        # Port controlled by NIM_HTTP_API_PORT passed in singularity_opts
+        # shellcheck disable=SC2086
+        singularity run \
+          --nv \
+          --env CUDA_VISIBLE_DEVICES="$gpu_id" \
+          --env NGC_API_KEY="$NGC_API_KEY" \
+          --env NVIDIA_API_KEY="$NGC_API_KEY" \
+          $singularity_opts \
+          "$RAG_IMAGES_DIR/$image" \
+          >> "$log_file" 2>&1 &
+    fi
+
+    local pid=$!
+    echo "$pid" > "$pid_file"
+
+    sleep 3
+    if ps -p "$pid" > /dev/null 2>&1; then
+        echo "   ✅ $name started (PID $pid, port $port)"
+        echo "      log: $log_file"
         return 0
     else
-        echo "   ❌ $name failed to start — check: tail -20 $log_file"
+        echo "   ❌ $name failed to start"
+        echo "      check: tail -20 $log_file"
+        rm -f "$pid_file"
         return 1
     fi
 }

@@ -17,7 +17,7 @@ if [ -z "$NGC_API_KEY" ]; then
     exit 1
 fi
 
-# Ensure VLM cache directory exists
+# Writable cache for model weights
 NIM_CACHE_DIR="$RAG_BASE_DIR/models/vlm-cache"
 mkdir -p "$NIM_CACHE_DIR"
 
@@ -26,16 +26,21 @@ echo "   VLM: localhost:$VLM_PORT  (GPU $VLM_GPU_ID)"
 echo "   Cache: $NIM_CACHE_DIR"
 echo ""
 
-# nim_llm_sdk NIM: %startscript has --port 1977 baked in (after image rebuild).
-# No startscript_cmd needed — %startscript handles the port.
-start_nim_service "vlm" $VLM_PORT $VLM_GPU_ID \
+# nim_llm_sdk NIM:
+#   --cleanenv: strip HPC host vars (MPI/PMIx) that cause noise/conflicts
+#   --bind: writable cache for model weights
+#   --env OMPI/PMIX: suppress MPI warnings in HPC environments
+#   exec_cmd: port passed via start_server.sh "$@" -> api_server.py --port
+VLM_OPTS="--cleanenv --bind $NIM_CACHE_DIR:/opt/nim/.cache --env NIM_TENSOR_PARALLEL_SIZE=1 --env NIM_PIPELINE_PARALLEL_SIZE=1 --env NIM_CACHE_PATH=/opt/nim/.cache --env OMPI_MCA_pmix=^all --env OMPI_MCA_pml=ob1 --env PMIX_MCA_gds=^ds12,ds21 --env PMIX_MCA_psec=^munge"
+
+start_nim_service "vlm" "$VLM_PORT" "$VLM_GPU_ID" \
     "vlm.sif" \
-    "--bind $NIM_CACHE_DIR:/opt/nim/.cache --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$VLM_OPTS" \
+    "/opt/nim/start_server.sh --port $VLM_PORT"
 
 echo ""
-echo "✅ VLM NIM launched"
-echo "   Monitor: tail -f $RAG_LOGS_DIR/vlm.log"
-echo "   Health:  curl http://localhost:$VLM_PORT/v1/health/ready"
-echo "   Status:  singularity instance list"
+echo "Monitor:  tail -f $RAG_LOGS_DIR/vlm.log"
+echo "Health:   curl http://localhost:$VLM_PORT/v1/health/ready"
+echo "Stop:     kill \$(cat $RAG_RUNTIME_DIR/pids/vlm.pid)"
 echo ""
 echo "⚠️  Model loads in ~5-10 min (~16GB download on first run)."
