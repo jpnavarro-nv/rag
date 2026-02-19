@@ -12,18 +12,14 @@ if [ -z "$NGC_API_KEY" ]; then
 fi
 
 # VLM NIM port behavior:
-# The nim_llm_sdk/vLLM stack reads the port ONLY from the --port CLI argument.
-# NIM_SERVER_PORT and NIM_HTTP_API_PORT are not translated to --port by launch.py
-# in this image version (confirmed: launch command shows no --port in the log).
-# The container always binds internally to port 8000.
-#
-# In Docker: port mapping 1977:8000 makes VLM reachable on 1977.
-# In Singularity (host network): no port mapping exists. VLM is on host:8000.
-#
-# For full-stack integration where other services expect port 1977, we use socat
-# to proxy 1977 -> 8000 on the host. See SOCAT_PROXY below.
-VLM_INTERNAL_PORT=8000
-VLM_EXTERNAL_PORT=1977
+# NIM_HTTP_API_PORT is for Triton-based NIMs only - ignored by this VLM container.
+# NIM_SERVER_PORT sets the argparse default but is NOT forwarded into cli_args/os.execvpe.
+# The only reliable fix: pass --port directly to start_server.sh.
+# start_server.sh calls: python3 -m nim_llm_sdk.entrypoints.launch "$@"
+# The "$@" forwards --port into cli_args -> api_server.py receives --port.
+# In Docker: port mapping 1977:8000 exists; internal port is always 8000.
+# In Singularity (host network): no port mapping, VLM must bind on host port directly.
+VLM_PORT=1977
 
 echo "=== Testing VLM NIM in Isolation ==="
 echo ""
@@ -31,8 +27,7 @@ echo "Configuration:"
 echo "  NGC_API_KEY:   ${NGC_API_KEY:0:10}...${NGC_API_KEY: -4}"
 echo "  Images dir:    $RAG_IMAGES_DIR"
 echo "  GPU:           3"
-echo "  Internal port: $VLM_INTERNAL_PORT (VLM always binds here)"
-echo "  External port: $VLM_EXTERNAL_PORT (socat proxy -> $VLM_INTERNAL_PORT)"
+echo "  Port:          $VLM_PORT (passed as --port to start_server.sh)"
 echo ""
 
 # Check if VLM image exists
@@ -44,17 +39,6 @@ fi
 echo "✅ VLM image found"
 echo ""
 
-# Check socat availability (needed for port proxy)
-SOCAT_AVAILABLE=false
-if command -v socat &> /dev/null; then
-    SOCAT_AVAILABLE=true
-    echo "✅ socat available (port proxy 1977->8000 will be set up)"
-else
-    echo "⚠️  socat not found - VLM will only be accessible on port $VLM_INTERNAL_PORT"
-    echo "   Install with: apt-get install socat  OR  module load socat"
-fi
-echo ""
-
 # Kill any existing VLM process
 if [ -f "$RAG_RUNTIME_DIR/pids/vlm-test.pid" ]; then
     OLD_PID=$(cat "$RAG_RUNTIME_DIR/pids/vlm-test.pid")
@@ -64,16 +48,6 @@ if [ -f "$RAG_RUNTIME_DIR/pids/vlm-test.pid" ]; then
         sleep 2
     fi
     rm -f "$RAG_RUNTIME_DIR/pids/vlm-test.pid"
-fi
-
-# Kill any existing socat proxy
-if [ -f "$RAG_RUNTIME_DIR/pids/vlm-socat.pid" ]; then
-    OLD_PID=$(cat "$RAG_RUNTIME_DIR/pids/vlm-socat.pid")
-    if ps -p $OLD_PID > /dev/null 2>&1; then
-        echo "Stopping existing socat proxy (PID $OLD_PID)..."
-        kill $OLD_PID 2>/dev/null || true
-    fi
-    rm -f "$RAG_RUNTIME_DIR/pids/vlm-socat.pid"
 fi
 
 # Clean log
@@ -92,14 +66,13 @@ chmod 755 "$NIM_CACHE_DIR"
 echo "Cache directory: $NIM_CACHE_DIR"
 echo ""
 
-# Start VLM with exec (not instance) to see full output
-# Note: NIM_SERVER_PORT is passed but may not be effective in this image version.
-# The server will bind to port 8000. Use socat proxy for external port 1977.
+# Start VLM with exec (not instance) to see full output.
+# --port $VLM_PORT is passed directly to start_server.sh, which forwards it via "$@"
+# to nim_llm_sdk.entrypoints.launch -> cli_args -> api_server.py --port 1977.
 singularity exec \
   --cleanenv \
   --nv \
   --bind "$NIM_CACHE_DIR:/opt/nim/.cache" \
-  --env NIM_SERVER_PORT=$VLM_INTERNAL_PORT \
   --env NIM_TENSOR_PARALLEL_SIZE=1 \
   --env NIM_PIPELINE_PARALLEL_SIZE=1 \
   --env NGC_API_KEY=$NGC_API_KEY \
@@ -111,7 +84,7 @@ singularity exec \
   --env PMIX_MCA_gds=^ds12,ds21 \
   --env PMIX_MCA_psec=^munge \
   "$RAG_IMAGES_DIR/vlm.sif" \
-  /opt/nim/start_server.sh \
+  /opt/nim/start_server.sh --port $VLM_PORT \
   > "$RAG_LOGS_DIR/vlm-test.log" 2>&1 &
 
 VLM_PID=$!
@@ -131,32 +104,16 @@ fi
 
 echo ""
 echo "=== Waiting for VLM startup (max 10 min) ==="
-echo "Health URL: http://localhost:$VLM_INTERNAL_PORT/v1/health/ready"
+echo "Health URL: http://localhost:$VLM_PORT/v1/health/ready"
 echo ""
 
-# Check health endpoint every 10 seconds on the internal port
+# Check health endpoint every 10 seconds
 for i in {1..60}; do
     sleep 10
     echo -n "[$i/60] $(date +%H:%M:%S) - "
 
-    if curl -s -f "http://localhost:$VLM_INTERNAL_PORT/v1/health/ready" >/dev/null 2>&1; then
-        echo "✅ VLM is READY on port $VLM_INTERNAL_PORT!"
-        echo ""
-
-        # Start socat proxy 1977 -> 8000 if available
-        if [ "$SOCAT_AVAILABLE" = "true" ]; then
-            socat TCP-LISTEN:$VLM_EXTERNAL_PORT,reuseaddr,fork TCP:localhost:$VLM_INTERNAL_PORT \
-              > "$RAG_LOGS_DIR/vlm-socat.log" 2>&1 &
-            SOCAT_PID=$!
-            echo $SOCAT_PID > "$RAG_RUNTIME_DIR/pids/vlm-socat.pid"
-            sleep 1
-            if ps -p $SOCAT_PID > /dev/null 2>&1; then
-                echo "✅ socat proxy started: localhost:$VLM_EXTERNAL_PORT -> localhost:$VLM_INTERNAL_PORT (PID $SOCAT_PID)"
-            else
-                echo "⚠️  socat proxy failed to start (check port $VLM_EXTERNAL_PORT not in use)"
-            fi
-        fi
-
+    if curl -s -f "http://localhost:$VLM_PORT/v1/health/ready" >/dev/null 2>&1; then
+        echo "✅ VLM is READY on port $VLM_PORT!"
         echo ""
         echo "=== VLM Test Successful ==="
         echo ""
@@ -164,15 +121,11 @@ for i in {1..60}; do
         tail -50 "$RAG_LOGS_DIR/vlm-test.log"
         echo ""
         echo "Test the VLM:"
-        echo "  curl http://localhost:$VLM_INTERNAL_PORT/v1/models"
-        if [ "$SOCAT_AVAILABLE" = "true" ]; then
-            echo "  curl http://localhost:$VLM_EXTERNAL_PORT/v1/models  (via socat proxy)"
-        fi
+        echo "  curl http://localhost:$VLM_PORT/v1/models"
         echo ""
-        echo "Stop VLM + proxy:"
+        echo "Stop VLM:"
         echo "  kill \$(cat $RAG_RUNTIME_DIR/pids/vlm-test.pid)"
-        echo "  kill \$(cat $RAG_RUNTIME_DIR/pids/vlm-socat.pid) 2>/dev/null || true"
-        echo "  rm -f $RAG_RUNTIME_DIR/pids/vlm-test.pid $RAG_RUNTIME_DIR/pids/vlm-socat.pid"
+        echo "  rm -f $RAG_RUNTIME_DIR/pids/vlm-test.pid"
         echo ""
         exit 0
     else

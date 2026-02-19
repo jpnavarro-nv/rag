@@ -15,12 +15,14 @@ From: nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:1.3.1
     Description NIM Vision-Language Model for image captioning
 
 %environment
-    # Override default NIM port to match Docker Compose configuration (1977:8000)
-    # In Singularity with host network, container port = host port (no port mapping)
-    # NIM_SERVER_PORT is the correct variable for LLM/VLM NIMs (nim_llm_sdk/vLLM stack)
-    # NIM_HTTP_API_PORT is for Triton-based NIMs only and is ignored by this container
+    # NIM_HTTP_API_PORT is for Triton-based NIMs only and is ignored by this container.
+    # NIM_SERVER_PORT sets the argparse default but is NOT passed as cli_args to api_server.py.
+    # The only reliable way to set the port is via --port CLI argument passed through "$@".
     export NIM_SERVER_PORT=1977
 
 %startscript
-    # Execute the NIM server startup script
-    exec /opt/nim/start_server.sh
+    # Pass --port 1977 directly to start_server.sh.
+    # start_server.sh calls: python3 -m nim_llm_sdk.entrypoints.launch "$@"
+    # The "$@" forwards all args → launch.py → cli_args → api_server.py --port 1977
+    # This is the correct fix for Singularity (no Docker port mapping available).
+    exec /opt/nim/start_server.sh --port 1977
