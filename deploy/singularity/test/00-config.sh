@@ -9,8 +9,6 @@
 # ==============================================================================
 # Base Directories
 # ==============================================================================
-# NOTE: On HPC cluster, set: export RAG_BASE_DIR=/gaia/nvidia/partner/rag
-# For local testing, it defaults to $HOME/rag-test
 export RAG_BASE_DIR=${RAG_BASE_DIR:-$HOME/rag-test}
 
 # Derived directories

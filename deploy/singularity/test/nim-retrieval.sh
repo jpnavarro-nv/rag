@@ -15,11 +15,18 @@ if [ -z "$NGC_API_KEY" ]; then
     exit 1
 fi
 
-# Writable cache dirs for model weights
+# Persistent dirs for model weights, manifests and workspace
+# /opt/nim/.cache    → model weights (persistent, large)
+# /opt/nim/tmp       → manifest downloads (persistent, small)
+# /opt/nim/workspace → NIM working files during init (persistent, small)
 EMBEDDING_CACHE_DIR="$RAG_BASE_DIR/models/embedding-cache"
 RANKING_CACHE_DIR="$RAG_BASE_DIR/models/ranking-cache"
 LLM_CACHE_DIR="$RAG_BASE_DIR/models/llm-cache"
-mkdir -p "$EMBEDDING_CACHE_DIR" "$RANKING_CACHE_DIR" "$LLM_CACHE_DIR"
+EMBEDDING_WORK_DIR="$RAG_BASE_DIR/runtime/nim-work/embedding"
+RANKING_WORK_DIR="$RAG_BASE_DIR/runtime/nim-work/ranking"
+mkdir -p "$EMBEDDING_CACHE_DIR" "$EMBEDDING_WORK_DIR/tmp" "$EMBEDDING_WORK_DIR/workspace"
+mkdir -p "$RANKING_CACHE_DIR"   "$RANKING_WORK_DIR/tmp"   "$RANKING_WORK_DIR/workspace"
+mkdir -p "$LLM_CACHE_DIR"
 
 echo "=== Starting Retrieval NIMs ==="
 echo "   Embedding:  localhost:$EMBEDDING_PORT  (GPU $EMBEDDING_GPU_ID)"
@@ -30,11 +37,11 @@ echo ""
 # Triton NIMs: singularity run (Docker entrypoint), port via NIM_HTTP_API_PORT
 start_nim_service "nemoretriever-embedding" "$EMBEDDING_PORT" "$EMBEDDING_GPU_ID" \
     "nemoretriever-embedding.sif" \
-    "$NVML_BIND --bind $EMBEDDING_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$EMBEDDING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $EMBEDDING_CACHE_DIR:/opt/nim/.cache --bind $EMBEDDING_WORK_DIR/tmp:/opt/nim/tmp --bind $EMBEDDING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$EMBEDDING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
 
 start_nim_service "nemoretriever-ranking" "$RANKING_PORT" "$RANKING_GPU_ID" \
     "nemoretriever-ranking.sif" \
-    "$NVML_BIND --bind $RANKING_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $RANKING_CACHE_DIR:/opt/nim/.cache --bind $RANKING_WORK_DIR/tmp:/opt/nim/tmp --bind $RANKING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
 
 # nim_llm_sdk NIM: singularity exec with explicit start_server.sh --port
 # --cleanenv + MPI suppression same as VLM (same family, same HPC issues)

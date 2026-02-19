@@ -83,3 +83,4 @@ cover/
 # Temporary legacy pull scripts (deprecated)
 deploy/singularity/scripts/pull-minimal-images.sh
 deploy/singularity/scripts/pull-all-images.sh
+
