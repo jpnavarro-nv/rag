@@ -7,8 +7,9 @@
 
 set -e
 
-# Load configuration
+# Load configuration and port definitions
 source "$(dirname "$0")/00-config.sh"
+source "$(dirname "$0")/nim-lib.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -22,15 +23,7 @@ NC='\033[0m' # No Color
 # Configuration
 # ==============================================================================
 
-# NIM ports (must match 04-start-nim-models.sh)
-EMBEDDING_PORT=${EMBEDDING_PORT:-9080}
-RANKING_PORT=${RANKING_PORT:-1976}
-LLM_PORT=${LLM_PORT:-8999}
-VLM_PORT=${VLM_PORT:-8997}
-PAGE_ELEMENTS_PORT=${PAGE_ELEMENTS_PORT:-8000}
-GRAPHIC_ELEMENTS_PORT=${GRAPHIC_ELEMENTS_PORT:-8003}
-TABLE_STRUCTURE_PORT=${TABLE_STRUCTURE_PORT:-8006}
-PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
+# Ports sourced from nim-lib.sh (single source of truth)
 
 # Timeouts
 MAX_WAIT_TIME=600  # 10 minutes total
@@ -332,7 +325,7 @@ else
     echo "Troubleshooting:"
     echo "  • Check logs: ls -lh $RAG_LOGS_DIR/"
     echo "  • View specific log: tail -100 $RAG_LOGS_DIR/nim-llm.log"
-    echo "  • Check instances: singularity instance list"
+    echo "  • Check PIDs: ls $RAG_RUNTIME_DIR/pids/"
     echo "  • GPU memory: nvidia-smi"
     echo ""
     echo "Common issues:"
