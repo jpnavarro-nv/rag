@@ -96,7 +96,7 @@ start_nim_service "nemoretriever-embedding" "$EMBEDDING_PORT" "$EMBEDDING_GPU_ID
 
 start_nim_service "nemoretriever-ranking" "$RANKING_PORT" "$RANKING_GPU_ID" \
     "nemoretriever-ranking.sif" \
-    "$NVML_BIND --bind $RANKING_CACHE_DIR:/opt/nim/.cache --bind $RANKING_WORK_DIR/tmp:/opt/nim/tmp --bind $RANKING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_RETRIEVAL_WORKERS"
+    "$NVML_BIND --bind $RANKING_CACHE_DIR:/opt/nim/.cache --bind $RANKING_WORK_DIR/tmp:/opt/nim/tmp --bind $RANKING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_RETRIEVAL_WORKERS --env NIM_TRITON_GRPC_PORT=8002 --env NIM_TRITON_HTTP_PORT=8012"
 
 # nim_llm_sdk NIM: singularity exec with explicit start_server.sh --port
 # --cleanenv + MPI suppression same as VLM (same family, same HPC issues)
