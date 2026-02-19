@@ -33,19 +33,19 @@ mkdir -p "$PAGE_ELEMENTS_CACHE_DIR" "$GRAPHIC_ELEMENTS_CACHE_DIR" \
 # Triton NIMs: singularity run (Docker entrypoint), port via NIM_HTTP_API_PORT
 start_nim_service "page-elements" "$PAGE_ELEMENTS_PORT" "$PAGE_ELEMENTS_GPU_ID" \
     "page-elements.sif" \
-    "--bind $PAGE_ELEMENTS_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$PAGE_ELEMENTS_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $PAGE_ELEMENTS_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$PAGE_ELEMENTS_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
 
 start_nim_service "graphic-elements" "$GRAPHIC_ELEMENTS_PORT" "$GRAPHIC_ELEMENTS_GPU_ID" \
     "graphic-elements.sif" \
-    "--bind $GRAPHIC_ELEMENTS_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$GRAPHIC_ELEMENTS_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $GRAPHIC_ELEMENTS_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$GRAPHIC_ELEMENTS_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
 
 start_nim_service "table-structure" "$TABLE_STRUCTURE_PORT" "$TABLE_STRUCTURE_GPU_ID" \
     "table-structure.sif" \
-    "--bind $TABLE_STRUCTURE_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$TABLE_STRUCTURE_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $TABLE_STRUCTURE_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$TABLE_STRUCTURE_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
 
 start_nim_service "paddle-ocr" "$PADDLE_OCR_PORT" "$PADDLE_OCR_GPU_ID" \
     "paddle.sif" \
-    "--bind $PADDLE_OCR_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$PADDLE_OCR_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $PADDLE_OCR_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$PADDLE_OCR_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
 
 echo ""
 echo "✅ Ingest NIMs launched"

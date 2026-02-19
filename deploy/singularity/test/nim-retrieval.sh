@@ -30,11 +30,11 @@ echo ""
 # Triton NIMs: singularity run (Docker entrypoint), port via NIM_HTTP_API_PORT
 start_nim_service "nemoretriever-embedding" "$EMBEDDING_PORT" "$EMBEDDING_GPU_ID" \
     "nemoretriever-embedding.sif" \
-    "--bind $EMBEDDING_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$EMBEDDING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $EMBEDDING_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$EMBEDDING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
 
 start_nim_service "nemoretriever-ranking" "$RANKING_PORT" "$RANKING_GPU_ID" \
     "nemoretriever-ranking.sif" \
-    "--bind $RANKING_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
+    "$NVML_BIND --bind $RANKING_CACHE_DIR:/opt/nim/.cache --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache"
 
 # nim_llm_sdk NIM: singularity exec with explicit start_server.sh --port
 # --cleanenv + MPI suppression same as VLM (same family, same HPC issues)

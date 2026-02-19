@@ -38,6 +38,21 @@ TABLE_STRUCTURE_GPU_ID=${YOLOX_TABLE_MS_GPU_ID:-2}
 PADDLE_OCR_GPU_ID=${OCR_MS_GPU_ID:-2}
 
 # ==============================================================================
+# HPC NVML fix — Triton NIMs (embedding, ranking, YOLOX, paddle) require
+# libnvidia-ml.so.1 at startup. On RHEL/Rocky HPC hosts the lib lives in
+# /usr/lib64/ but the Ubuntu-based NIM containers expect it in
+# /usr/lib/x86_64-linux-gnu/. Singularity --nv does not auto-mount it.
+# Bind it manually. Overridable via NVML_HOST_LIB env var.
+# vLLM NIMs (VLM, LLM) do NOT need this — they don't call NVML at startup.
+# ==============================================================================
+_NVML_HOST_LIB="${NVML_HOST_LIB:-/usr/lib64/libnvidia-ml.so.1}"
+if [ -f "$_NVML_HOST_LIB" ]; then
+    NVML_BIND="--bind $_NVML_HOST_LIB:/usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1"
+else
+    NVML_BIND=""
+fi
+
+# ==============================================================================
 # start_nim_service — launches a NIM as a background process (singularity exec/run)
 # ==============================================================================
 # Usage: start_nim_service NAME PORT GPU IMAGE [SINGULARITY_OPTS] [EXEC_CMD]
