@@ -28,6 +28,51 @@ mkdir -p "$EMBEDDING_CACHE_DIR" "$EMBEDDING_WORK_DIR/tmp" "$EMBEDDING_WORK_DIR/w
 mkdir -p "$RANKING_CACHE_DIR"   "$RANKING_WORK_DIR/tmp"   "$RANKING_WORK_DIR/workspace"
 mkdir -p "$LLM_CACHE_DIR"
 
+# ==============================================================================
+# Triton Python backend instance count patch
+# ==============================================================================
+# The embedding and ranking NIMs default to workers_count = nproc (e.g. 16),
+# spawning 16 concurrent Triton Python backend stubs. In Singularity the stubs
+# race on SquashFS imports and several exceed their health-check timeout.
+#
+# The NIM regenerates the Triton model-repository only on first run (or when
+# --force-recompile is set). Once generated, it reuses the existing config.pbtxt.
+# We patch the instance count to TRITON_INSTANCE_COUNT (default: 2) after
+# generation so subsequent runs use the reduced count.
+#
+# To force re-generation (e.g. after a NIM update): remove the triton-model-repository:
+#   rm -rf $EMBEDDING_WORK_DIR/tmp/run/triton-model-repository
+#   rm -rf $RANKING_WORK_DIR/tmp/run/triton-model-repository
+TRITON_INSTANCE_COUNT=${TRITON_INSTANCE_COUNT:-2}
+
+_patch_triton_instances() {
+    local repo_dir="$1"
+    local count="$2"
+    # Find all config.pbtxt files that have an instance_group with count > target
+    find "$repo_dir" -name "config.pbtxt" 2>/dev/null | while read -r cfg; do
+        if grep -q "count:" "$cfg" 2>/dev/null; then
+            local current
+            current=$(grep -m1 "count:" "$cfg" | tr -d ' ' | cut -d: -f2)
+            if [ "${current:-0}" -gt "$count" ] 2>/dev/null; then
+                sed -i "s/count: ${current}/count: ${count}/g" "$cfg"
+                echo "   Patched $cfg: instance count ${current} → ${count}"
+            fi
+        fi
+    done
+}
+
+EMBEDDING_TRITON_REPO="$EMBEDDING_WORK_DIR/tmp/run/triton-model-repository"
+RANKING_TRITON_REPO="$RANKING_WORK_DIR/tmp/run/triton-model-repository"
+
+if [ -d "$EMBEDDING_TRITON_REPO" ]; then
+    echo "   Patching embedding Triton instance count to $TRITON_INSTANCE_COUNT..."
+    _patch_triton_instances "$EMBEDDING_TRITON_REPO" "$TRITON_INSTANCE_COUNT"
+fi
+if [ -d "$RANKING_TRITON_REPO" ]; then
+    echo "   Patching ranking Triton instance count to $TRITON_INSTANCE_COUNT..."
+    _patch_triton_instances "$RANKING_TRITON_REPO" "$TRITON_INSTANCE_COUNT"
+fi
+
 echo "=== Starting Retrieval NIMs ==="
 echo "   Embedding:  localhost:$EMBEDDING_PORT  (GPU $EMBEDDING_GPU_ID)"
 echo "   Ranking:    localhost:$RANKING_PORT  (GPU $RANKING_GPU_ID)"

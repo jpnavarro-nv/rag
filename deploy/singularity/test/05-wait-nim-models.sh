@@ -73,15 +73,19 @@ trap cleanup_status_dir EXIT
 # Service Definitions
 # ==============================================================================
 
+# Format: "Display Name:PORT:HEALTH_ENDPOINT:GPU:PID_FILE_NAME"
+# PID_FILE_NAME must match the name used in start_nim_service calls.
+# The PID check prevents false "ready" reports when a NIM passes the initial
+# health check but then dies (e.g. Triton fails to load all models).
 declare -A SERVICES=(
-    ["embedding"]="Embedding NIM:$EMBEDDING_PORT:/v1/health/ready:GPU0"
-    ["ranking"]="Ranking NIM:$RANKING_PORT:/v1/health/ready:GPU0"
-    ["llm"]="LLM NIM:$LLM_PORT:/v1/health/ready:GPU1"
-    ["vlm"]="VLM NIM:$VLM_PORT:/v1/health/ready:GPU3"
-    ["page-elements"]="Page Elements:$PAGE_ELEMENTS_PORT:/v2/health/ready:GPU2"
-    ["graphic-elements"]="Graphic Elements:$GRAPHIC_ELEMENTS_PORT:/v2/health/ready:GPU2"
-    ["table-structure"]="Table Structure:$TABLE_STRUCTURE_PORT:/v2/health/ready:GPU2"
-    ["paddle-ocr"]="PaddleOCR:$PADDLE_OCR_PORT:/v2/health/ready:GPU2"
+    ["embedding"]="Embedding NIM:$EMBEDDING_PORT:/v1/health/ready:GPU0:nemoretriever-embedding"
+    ["ranking"]="Ranking NIM:$RANKING_PORT:/v1/health/ready:GPU0:nemoretriever-ranking"
+    ["llm"]="LLM NIM:$LLM_PORT:/v1/health/ready:GPU1:nim-llm"
+    ["vlm"]="VLM NIM:$VLM_PORT:/v1/health/ready:GPU3:vlm"
+    ["page-elements"]="Page Elements:$PAGE_ELEMENTS_PORT:/v2/health/ready:GPU2:page-elements"
+    ["graphic-elements"]="Graphic Elements:$GRAPHIC_ELEMENTS_PORT:/v2/health/ready:GPU2:graphic-elements"
+    ["table-structure"]="Table Structure:$TABLE_STRUCTURE_PORT:/v2/health/ready:GPU2:table-structure"
+    ["paddle-ocr"]="PaddleOCR:$PADDLE_OCR_PORT:/v2/health/ready:GPU2:paddle-ocr"
 )
 
 # ==============================================================================
@@ -94,7 +98,7 @@ monitor_service() {
 
     local key=$1
     local info=${SERVICES[$key]}
-    IFS=':' read -r name port endpoint gpu <<< "$info"
+    IFS=':' read -r name port endpoint gpu pid_name <<< "$info"
 
     local status_file="$STATUS_DIR/$key.status"
     local start_time=$(date +%s)
@@ -120,9 +124,32 @@ monitor_service() {
 
         # Check health (suppress curl errors only)
         if curl -s -f "http://localhost:${port}${endpoint}" >/dev/null 2>&1; then
+            # Also verify the process is still alive. Some NIMs (embedding,
+            # ranking) briefly answer health checks while Triton loads, then
+            # exit if models fail to load. Without this check, the monitor
+            # would report "Ready" for a dead process.
+            local pid_file="$RAG_RUNTIME_DIR/pids/${pid_name}.pid"
+            if [ -n "$pid_name" ] && [ -f "$pid_file" ]; then
+                local pid
+                pid=$(cat "$pid_file")
+                if ! ps -p "$pid" >/dev/null 2>&1; then
+                    echo "died:$elapsed" > "$status_file" 2>/dev/null
+                    break
+                fi
+            fi
             echo "ready:$elapsed" > "$status_file" 2>/dev/null || return 1
             break
         else
+            # Check if process has already died (no point waiting further)
+            local pid_file="$RAG_RUNTIME_DIR/pids/${pid_name}.pid"
+            if [ -n "$pid_name" ] && [ -f "$pid_file" ]; then
+                local pid
+                pid=$(cat "$pid_file")
+                if ! ps -p "$pid" >/dev/null 2>&1; then
+                    echo "died:$elapsed" > "$status_file" 2>/dev/null
+                    break
+                fi
+            fi
             # Try to write status, if fails silently exit
             echo "loading:$elapsed" > "$status_file" 2>/dev/null || return 1
         fi
@@ -173,7 +200,7 @@ draw_dashboard() {
             local status=$(cat "$status_file" | cut -d: -f1)
             if [ "$status" = "ready" ]; then
                 ready_count=$((ready_count + 1))
-            elif [ "$status" = "timeout" ]; then
+            elif [ "$status" = "timeout" ] || [ "$status" = "died" ]; then
                 timeout_count=$((timeout_count + 1))
             fi
         fi
@@ -191,7 +218,7 @@ draw_dashboard() {
 draw_service_line() {
     local key=$1
     local info=${SERVICES[$key]}
-    IFS=':' read -r name port endpoint gpu <<< "$info"
+    IFS=':' read -r name port endpoint gpu pid_name <<< "$info"
 
     local status_file="$STATUS_DIR/$key.status"
     if [ ! -f "$status_file" ] || [ ! -r "$status_file" ]; then
@@ -218,6 +245,9 @@ draw_service_line() {
             ;;
         timeout)
             echo -e "  [${RED}❌${NC}] $(printf '%-20s' "$name") (port $port)  ${RED}Timeout after ${elapsed}s${NC}"
+            ;;
+        died)
+            echo -e "  [${RED}❌${NC}] $(printf '%-20s' "$name") (port $port)  ${RED}Process died (check log)${NC}"
             ;;
         loading)
             echo -e "  [${YELLOW}⏳${NC}] $(printf '%-20s' "$name") (port $port)  Loading... ${elapsed}s"
@@ -257,7 +287,7 @@ while true; do
         status_file="$STATUS_DIR/$key.status"
         if [ -f "$status_file" ]; then
             status=$(cat "$status_file" | cut -d: -f1)
-            if [ "$status" != "ready" ] && [ "$status" != "timeout" ]; then
+            if [ "$status" != "ready" ] && [ "$status" != "timeout" ] && [ "$status" != "died" ]; then
                 all_done=false
                 break
             fi
