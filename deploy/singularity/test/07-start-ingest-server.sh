@@ -37,21 +37,28 @@ NVINGEST_PORT=${NVINGEST_PORT:-7670}
 wait_for_ingestor() {
     local host=$1
     local port=$2
-    local max_attempts=30
-    local attempt=1
+    local pid=$3
+    local start
+    start=$(date +%s)
 
-    echo "   ⏳ Waiting for Ingestor Server to be ready..."
-    while [ $attempt -le $max_attempts ]; do
-        if curl -s "http://${host}:${port}/health" > /dev/null 2>&1; then
-            echo "   ✅ Ingestor Server is ready"
+    echo "   ⏳ Waiting for Ingestor Server to be ready (no timeout)..."
+    while true; do
+        local elapsed=$(( $(date +%s) - start ))
+
+        # Check if the process is still alive before polling the endpoint
+        if ! ps -p "$pid" > /dev/null 2>&1; then
+            printf "\r%-70s\n" "   ❌ Ingestor Server process died after ${elapsed}s — check logs"
+            return 1
+        fi
+
+        if curl -s -f "http://${host}:${port}/health" > /dev/null 2>&1; then
+            printf "\r%-70s\n" "   ✅ Ingestor Server is ready (${elapsed}s)"
             return 0
         fi
-        sleep 2
-        attempt=$((attempt + 1))
-    done
 
-    echo "   ❌ Ingestor Server failed to become ready after $((max_attempts * 2))s"
-    return 1
+        printf "\r   ⏳ Loading... %ds" "$elapsed"
+        sleep 2
+    done
 }
 
 # ==============================================================================
@@ -182,7 +189,7 @@ else
 fi
 
 # Wait for Ingestor to be ready
-if ! wait_for_ingestor $INGESTOR_HOST $INGESTOR_PORT; then
+if ! wait_for_ingestor $INGESTOR_HOST $INGESTOR_PORT $INGESTOR_PID; then
     echo "   Check logs: tail -100 $RAG_LOGS_DIR/ingestor-server.log"
     exit 1
 fi

@@ -38,21 +38,28 @@ PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
 wait_for_nvingest() {
     local host=$1
     local port=$2
-    local max_attempts=60
-    local attempt=1
+    local pid=$3
+    local start
+    start=$(date +%s)
 
-    echo "   ⏳ Waiting for NV-Ingest to be ready (may take 1-2 min)..."
-    while [ $attempt -le $max_attempts ]; do
-        if curl -s "http://${host}:${port}/v1/health/ready" > /dev/null 2>&1; then
-            echo "   ✅ NV-Ingest is ready"
+    echo "   ⏳ Waiting for NV-Ingest to be ready (no timeout — may take 1-2 min)..."
+    while true; do
+        local elapsed=$(( $(date +%s) - start ))
+
+        # Check if the process is still alive before polling the endpoint
+        if ! ps -p "$pid" > /dev/null 2>&1; then
+            printf "\r%-70s\n" "   ❌ NV-Ingest process died after ${elapsed}s — check logs"
+            return 1
+        fi
+
+        if curl -s -f "http://${host}:${port}/v1/health/ready" > /dev/null 2>&1; then
+            printf "\r%-70s\n" "   ✅ NV-Ingest is ready (${elapsed}s)"
             return 0
         fi
-        sleep 2
-        attempt=$((attempt + 1))
-    done
 
-    echo "   ❌ NV-Ingest failed to become ready after $((max_attempts * 2))s"
-    return 1
+        printf "\r   ⏳ Loading... %ds" "$elapsed"
+        sleep 2
+    done
 }
 
 # ==============================================================================
@@ -165,7 +172,7 @@ else
 fi
 
 # Wait for NV-Ingest to be ready
-if ! wait_for_nvingest $NVINGEST_HOST $NVINGEST_PORT; then
+if ! wait_for_nvingest $NVINGEST_HOST $NVINGEST_PORT $NVINGEST_PID; then
     echo "   Check logs: tail -100 $RAG_LOGS_DIR/nv-ingest.log"
     exit 1
 fi

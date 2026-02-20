@@ -36,23 +36,30 @@ INGESTOR_PORT=${INGESTOR_PORT:-8082}
 wait_for_frontend() {
     local host=$1
     local port=$2
-    local max_attempts=20
-    local attempt=1
+    local pid=$3
+    local start
+    start=$(date +%s)
 
-    echo "   ⏳ Waiting for Frontend to be ready..."
-    while [ $attempt -le $max_attempts ]; do
+    echo "   ⏳ Waiting for Frontend to be ready (no timeout)..."
+    while true; do
+        local elapsed=$(( $(date +%s) - start ))
+
+        # Check if the process is still alive before polling the endpoint
+        if ! ps -p "$pid" > /dev/null 2>&1; then
+            printf "\r%-70s\n" "   ❌ Frontend process died after ${elapsed}s — check logs"
+            return 1
+        fi
+
         local status_code
         status_code=$(curl -s -o /dev/null -w "%{http_code}" "http://${host}:${port}/" 2>/dev/null || echo "000")
         if [ "$status_code" = "200" ]; then
-            echo "   ✅ Frontend is ready"
+            printf "\r%-70s\n" "   ✅ Frontend is ready (${elapsed}s)"
             return 0
         fi
-        sleep 2
-        attempt=$((attempt + 1))
-    done
 
-    echo "   ❌ Frontend failed to become ready after $((max_attempts * 2))s"
-    return 1
+        printf "\r   ⏳ Loading... %ds" "$elapsed"
+        sleep 2
+    done
 }
 
 echo "=== Starting RAG Frontend ==="
@@ -141,7 +148,7 @@ else
 fi
 
 # Wait for the server to be ready
-if ! wait_for_frontend $FRONTEND_HOST $FRONTEND_PORT; then
+if ! wait_for_frontend $FRONTEND_HOST $FRONTEND_PORT $FRONTEND_PID; then
     echo "   Check logs: tail -50 $RAG_LOGS_DIR/rag-frontend.log"
     exit 1
 fi

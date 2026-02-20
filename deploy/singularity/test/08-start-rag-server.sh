@@ -35,21 +35,28 @@ VLM_PORT=${VLM_PORT:-1977}
 wait_for_rag_server() {
     local host=$1
     local port=$2
-    local max_attempts=30
-    local attempt=1
+    local pid=$3
+    local start
+    start=$(date +%s)
 
-    echo "   ⏳ Waiting for RAG Server to be ready..."
-    while [ $attempt -le $max_attempts ]; do
-        if curl -s "http://${host}:${port}/health" > /dev/null 2>&1; then
-            echo "   ✅ RAG Server is ready"
+    echo "   ⏳ Waiting for RAG Server to be ready (no timeout)..."
+    while true; do
+        local elapsed=$(( $(date +%s) - start ))
+
+        # Check if the process is still alive before polling the endpoint
+        if ! ps -p "$pid" > /dev/null 2>&1; then
+            printf "\r%-70s\n" "   ❌ RAG Server process died after ${elapsed}s — check logs"
+            return 1
+        fi
+
+        if curl -s -f "http://${host}:${port}/health" > /dev/null 2>&1; then
+            printf "\r%-70s\n" "   ✅ RAG Server is ready (${elapsed}s)"
             return 0
         fi
-        sleep 2
-        attempt=$((attempt + 1))
-    done
 
-    echo "   ❌ RAG Server failed to become ready after $((max_attempts * 2))s"
-    return 1
+        printf "\r   ⏳ Loading... %ds" "$elapsed"
+        sleep 2
+    done
 }
 
 echo "=== Starting RAG Server ==="
@@ -210,7 +217,7 @@ else
 fi
 
 # Wait for RAG Server to be ready
-if ! wait_for_rag_server $RAG_SERVER_HOST $RAG_SERVER_PORT; then
+if ! wait_for_rag_server $RAG_SERVER_HOST $RAG_SERVER_PORT $RAG_SERVER_PID; then
     echo "   Check logs: tail -100 $RAG_LOGS_DIR/rag-server.log"
     exit 1
 fi
