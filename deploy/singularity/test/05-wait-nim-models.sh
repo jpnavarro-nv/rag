@@ -200,7 +200,7 @@ draw_dashboard() {
         fi
     done
 
-    echo -e "Progress: ${GREEN}${ready_count}/8 Ready${NC} | Elapsed: ${total_elapsed}s (no timeout — waiting indefinitely)"
+    echo -e "Progress: ${GREEN}${ready_count}/8 Ready${NC} | Elapsed: ${total_elapsed}s"
 
     echo ""
 }
@@ -287,7 +287,7 @@ while true; do
         fi
     done
 
-    # Only exit when each NIM is ready or its process died (no timeout)
+    # Only exit when each NIM is ready or its process died
     if [ "$all_done" = true ]; then
         break
     fi
