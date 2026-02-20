@@ -27,7 +27,7 @@ REDIS_PORT=${REDIS_PORT:-6379}
 # NIM endpoints
 EMBEDDING_PORT=${EMBEDDING_PORT:-9080}
 LLM_PORT=${LLM_PORT:-8999}
-VLM_PORT=${VLM_PORT:-8997}
+VLM_PORT=${VLM_PORT:-1977}
 NVINGEST_PORT=${NVINGEST_PORT:-7670}
 
 # ==============================================================================
