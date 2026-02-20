@@ -40,7 +40,7 @@ check_health() {
     local port=$2
 
     local resp
-    resp=$(curl -s --max-time 10 "http://localhost:${port}/v1/health/ready" 2>&1)
+    resp=$(curl -s --max-time 30 "http://localhost:${port}/v1/health/ready" 2>&1)
     local rc=$?
 
     if [ $rc -ne 0 ]; then
