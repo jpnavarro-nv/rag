@@ -579,7 +579,7 @@ def build_table(results: list[CollectionResult], lock: threading.Lock) -> Table:
     table.add_column("Collection", min_width=24, no_wrap=True)
     table.add_column("Files", width=14, justify="right")
     table.add_column("Progress", min_width=26, no_wrap=True)
-    table.add_column("Current step", min_width=22, no_wrap=True)
+    table.add_column("Status", min_width=22, no_wrap=True)
     table.add_column("Elapsed", width=9, justify="right")
 
     with lock:
@@ -589,15 +589,16 @@ def build_table(results: list[CollectionResult], lock: threading.Lock) -> Table:
         color = _STATUS_COLOR.get(r.status, "white")
         icon  = _STATUS_ICON.get(r.status, "?")
 
-        # Files column
+        # Files column: processed (success + failed) out of total
+        processed = r.ingested_files + r.failed_files
         if r.total_files:
-            files_str = f"{r.ingested_files}/{r.total_files}"
+            files_str = f"{processed}/{r.total_files}"
         else:
             files_str = "—"
 
-        # Progress bar
+        # Progress bar: advances for every processed file (success OR failure)
         if r.total_files > 0 and r.status not in ("pending",):
-            frac = r.ingested_files / r.total_files
+            frac = processed / r.total_files
             pct  = frac * 100
             bar  = f"[{color}]{_bar(frac)}[/] {pct:4.0f}%"
         elif r.status == "done":
@@ -605,37 +606,32 @@ def build_table(results: list[CollectionResult], lock: threading.Lock) -> Table:
         else:
             bar = f"[dim]{_bar(0.0)}[/]   —"
 
-        # Step / error text
-        step_text = (r.error or r.current_step) if r.status in ("failed", "partial") else r.current_step
-        if len(step_text) > 36:
-            step_text = step_text[:35] + "…"
+        # Status column: ✓success ✗failed /total
+        # Before file counts are known, show the current step text instead.
+        if r.status == "pending":
+            status_cell = "[dim]Queued[/]"
+        elif r.status == "skipped":
+            status_cell = f"[dim]{r.current_step[:36]}[/]"
+        elif r.total_files == 0:
+            step = r.current_step[:36]
+            status_cell = f"[{color}]{step}[/]"
+        else:
+            ok   = r.ingested_files
+            fail = r.failed_files
+            total = r.total_files
+            ok_part   = f"[green]✓{ok}[/]"
+            fail_part = f"[red]✗{fail}[/]" if fail > 0 else f"[dim]✗0[/]"
+            status_cell = f"{ok_part} {fail_part} [dim]/{total}[/]"
 
         table.add_row(
             f"[{color}]{icon}[/]",
             f"[{color}]{r.collection_name[:38]}[/]",
             f"[{color}]{files_str}[/]",
             bar,
-            f"[{color}]{step_text}[/]",
+            status_cell,
             f"[dim]{r.elapsed_str}[/]",
         )
 
-    # Summary footer row
-    done_n    = sum(1 for r in snapshot if r.status == "done")
-    running_n = sum(1 for r in snapshot if r.status == "running")
-    pending_n = sum(1 for r in snapshot if r.status == "pending")
-    partial_n = sum(1 for r in snapshot if r.status == "partial")
-    failed_n  = sum(1 for r in snapshot if r.status == "failed")
-
-    table.add_section()
-    table.add_row(
-        "",
-        f"[dim]{len(snapshot)} total[/]",
-        "",
-        f"[green]{done_n} done[/]  [cyan]{running_n} running[/]  "
-        f"[dim]{pending_n} pending[/]  [yellow]{partial_n} partial[/]  [red]{failed_n} failed[/]",
-        "",
-        "",
-    )
     return table
 
 
