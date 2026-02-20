@@ -376,11 +376,16 @@ def ingest_collection(
             _update(result, lock, status="done", end_time=time.time(),
                     current_step=f"Done ({result.ingested_files} files)")
             logger.info(f"=== SUCCESS  ingested={result.ingested_files} ===")
+        elif result.ingested_files > 0:
+            _update(result, lock, status="partial", end_time=time.time(),
+                    current_step=f"{result.ingested_files} ok · {failed_files_count} failed",
+                    error=f"{result.ingested_files} ok · {failed_files_count} failed")
+            logger.error(f"=== PARTIAL FAILURE  ok={result.ingested_files}  failed={failed_files_count}/{len(files)} ===")
         else:
             _update(result, lock, status="failed", end_time=time.time(),
-                    current_step=f"{failed_files_count} files failed",
-                    error=f"{failed_files_count}/{len(files)} files failed")
-            logger.error(f"=== PARTIAL FAILURE  failed={failed_files_count}/{len(files)} ===")
+                    current_step=f"All {failed_files_count} files failed",
+                    error=f"All {failed_files_count} files failed")
+            logger.error(f"=== TOTAL FAILURE  failed={failed_files_count}/{len(files)} ===")
 
     except Exception as exc:
         logger.error(f"=== FATAL ERROR: {exc} ===", exc_info=True)
@@ -396,13 +401,15 @@ _STATUS_COLOR = {
     "pending": "dim",
     "running": "cyan",
     "done":    "green",
+    "partial": "yellow",
     "failed":  "red bold",
-    "skipped": "yellow",
+    "skipped": "dim",
 }
 _STATUS_ICON = {
     "pending": "·",
     "running": "⚙",
     "done":    "✓",
+    "partial": "⚠",
     "failed":  "✗",
     "skipped": "⊘",
 }
@@ -452,7 +459,7 @@ def build_table(results: list[CollectionResult], lock: threading.Lock) -> Table:
             bar = f"[dim]{_bar(0.0)}[/]   —"
 
         # Step / error text
-        step_text = (r.error or r.current_step) if r.status == "failed" else r.current_step
+        step_text = (r.error or r.current_step) if r.status in ("failed", "partial") else r.current_step
         if len(step_text) > 36:
             step_text = step_text[:35] + "…"
 
@@ -469,6 +476,7 @@ def build_table(results: list[CollectionResult], lock: threading.Lock) -> Table:
     done_n    = sum(1 for r in snapshot if r.status == "done")
     running_n = sum(1 for r in snapshot if r.status == "running")
     pending_n = sum(1 for r in snapshot if r.status == "pending")
+    partial_n = sum(1 for r in snapshot if r.status == "partial")
     failed_n  = sum(1 for r in snapshot if r.status == "failed")
 
     table.add_section()
@@ -477,7 +485,7 @@ def build_table(results: list[CollectionResult], lock: threading.Lock) -> Table:
         f"[dim]{len(snapshot)} total[/]",
         "",
         f"[green]{done_n} done[/]  [cyan]{running_n} running[/]  "
-        f"[dim]{pending_n} pending[/]  [red]{failed_n} failed[/]",
+        f"[dim]{pending_n} pending[/]  [yellow]{partial_n} partial[/]  [red]{failed_n} failed[/]",
         "",
         "",
     )
@@ -645,6 +653,7 @@ def main() -> int:
 
     # ── Summary report ─────────────────────────────────────────────────────────
     done_results    = [r for r in results if r.status == "done"]
+    partial_results = [r for r in results if r.status == "partial"]
     failed_results  = [r for r in results if r.status == "failed"]
     skipped_results = [r for r in results if r.status == "skipped"]
 
@@ -659,8 +668,10 @@ def main() -> int:
     console.print()
     console.print(f"  Collections total:  [white]{len(results)}[/]")
     console.print(f"  [green]✅ Successful:      {len(done_results)}[/]")
+    if partial_results:
+        console.print(f"  [yellow]⚠  Partial:         {len(partial_results)}  (some files failed)[/]")
     if skipped_results:
-        console.print(f"  [yellow]⊘  Skipped:         {len(skipped_results)}  (no supported files)[/]")
+        console.print(f"  [dim]⊘  Skipped:         {len(skipped_results)}  (no supported files)[/]")
     if failed_results:
         console.print(f"  [red]❌ Failed:          {len(failed_results)}[/]")
     console.print()
@@ -672,8 +683,16 @@ def main() -> int:
     console.print(f"  Per-collection logs: [dim]{log_dir.resolve()}/[/]")
     console.print()
 
+    if partial_results:
+        console.print("[bold yellow]Partial collections (some files failed):[/]")
+        for r in partial_results:
+            console.print(f"  [yellow]• {r.collection_name}[/]")
+            console.print(f"    Result:  {r.error or 'see log'}")
+            console.print(f"    Log:     {r.log_path}")
+        console.print()
+
     if failed_results:
-        console.print("[bold red]Failed collections:[/]")
+        console.print("[bold red]Failed collections (no files ingested):[/]")
         for r in failed_results:
             console.print(f"  [red]• {r.collection_name}[/]")
             console.print(f"    Error:   {r.error or 'see log'}")
@@ -681,15 +700,15 @@ def main() -> int:
         console.print()
 
     if skipped_results:
-        console.print("[bold yellow]Skipped collections (no supported files found):[/]")
+        console.print("[bold dim]Skipped collections (no supported files found):[/]")
         for r in skipped_results:
-            console.print(f"  [yellow]• {r.dir_path.name}  →  {r.collection_name}[/]")
+            console.print(f"  [dim]• {r.dir_path.name}  →  {r.collection_name}[/]")
         console.print()
 
     console.print("[bold white]══════════════════════════════════════════════[/]")
     console.print()
 
-    return 0 if not failed_results else 1
+    return 0 if not (failed_results or partial_results) else 1
 
 
 if __name__ == "__main__":
