@@ -124,44 +124,25 @@ echo "Starting NV-Ingest Microservice..."
 mkdir -p $RAG_RUNTIME_DIR/nv-ingest-data
 
 # ==============================================================================
-# Writable overlay for the bin/ directory that contains bulk_writer
+# Writable /workspace/.venv for NV-Ingest uv-managed project environment
 #
-# SIF images are read-only SquashFS. --writable-tmpfs should overlay a tmpfs
-# layer, but many HPC kernels do not support unprivileged OverlayFS, so the
-# mount silently stays read-only. NV-Ingest (via pip / Ray runtime_env) tries
-# to write to its bin/ dir at startup → Errno 30 (EROFS).
+# SIF images are read-only SquashFS. At runtime NV-Ingest (via uv or Ray)
+# creates a project venv at /workspace/.venv and installs entry-point scripts
+# there (e.g. bulk_writer). This write fails with Errno 30 (EROFS) because
+# /workspace inside the SIF is read-only.
 #
-# Fix: discover dynamically where bulk_writer lives inside the SIF, then
-# pre-populate a writable host directory from the SIF on first run and
-# bind-mount it over that path, replacing the read-only SIF layer with a
-# writable host-side copy.
+# bulk_writer does NOT exist inside the SIF — it is created at runtime, so
+# pre-populating from the SIF is not possible. Instead, bind-mount a writable
+# host directory over /workspace/.venv so the container can create the venv
+# freely. The venv persists across restarts — subsequent runs reuse it without
+# reinstalling packages.
 # ==============================================================================
-echo "   Locating bulk_writer inside container..."
-CONTAINER_BIN_DIR=$(singularity exec "$RAG_IMAGES_DIR/nv-ingest.sif" \
-    sh -c 'BW=$(which bulk_writer 2>/dev/null); \
-           [ -z "$BW" ] && BW=$(find /workspace /opt /usr/local -name bulk_writer 2>/dev/null | head -1); \
-           [ -n "$BW" ] && dirname "$BW"' 2>/dev/null)
-
-NVINGEST_VENV_BIN="$RAG_RUNTIME_DIR/nv-ingest-venv-bin"
-EXTRA_BINDS=()
-
-if [ -z "$CONTAINER_BIN_DIR" ]; then
-    echo "   ⚠️  bulk_writer not found inside container — skipping writable overlay"
-    echo "      (Errno 30 may still occur if Ray/pip writes to a read-only path)"
+NVINGEST_VENV="$RAG_RUNTIME_DIR/nv-ingest-venv"
+mkdir -p "$NVINGEST_VENV"
+if [ -z "$(ls -A "$NVINGEST_VENV" 2>/dev/null)" ]; then
+    echo "   Writable /workspace/.venv ready (first run — venv will be created by container)"
 else
-    echo "   Found bulk_writer in container at: $CONTAINER_BIN_DIR"
-    if [ ! -d "$NVINGEST_VENV_BIN" ] || [ -z "$(ls -A "$NVINGEST_VENV_BIN" 2>/dev/null)" ]; then
-        echo "   Preparing writable overlay for $CONTAINER_BIN_DIR (first-time setup)..."
-        mkdir -p "$NVINGEST_VENV_BIN"
-        singularity exec \
-            --bind "${NVINGEST_VENV_BIN}:/tmp/_venvbin" \
-            "$RAG_IMAGES_DIR/nv-ingest.sif" \
-            sh -c "cp -a ${CONTAINER_BIN_DIR}/. /tmp/_venvbin/"
-        echo "   ✅ Writable overlay ready ($(ls "$NVINGEST_VENV_BIN" | wc -l) files)"
-    else
-        echo "   ✅ Writable overlay already exists — reusing"
-    fi
-    EXTRA_BINDS=("--bind" "$NVINGEST_VENV_BIN:$CONTAINER_BIN_DIR")
+    echo "   ✅ Writable /workspace/.venv already populated — reusing"
 fi
 
 singularity run \
@@ -196,7 +177,7 @@ singularity run \
   --env MRC_IGNORE_NUMA_CHECK=1 \
   --env READY_CHECK_ALL_COMPONENTS=False \
   --env OTEL_SDK_DISABLED=true \
-  "${EXTRA_BINDS[@]}" \
+  --bind "$NVINGEST_VENV:/workspace/.venv" \
   --bind $RAG_RUNTIME_DIR/nv-ingest-data:/workspace/data \
   $RAG_IMAGES_DIR/nv-ingest.sif \
   > $RAG_LOGS_DIR/nv-ingest.log 2>&1 &
