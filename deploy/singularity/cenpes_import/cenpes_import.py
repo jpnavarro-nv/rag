@@ -266,6 +266,7 @@ class IngestionClient:
             "collection_name": collection_name,
             "blocking": False,
             "split_options": {"chunk_size": chunk_size, "chunk_overlap": chunk_overlap},
+            "custom_metadata": [],
             "generate_summary": False,
         }
 
