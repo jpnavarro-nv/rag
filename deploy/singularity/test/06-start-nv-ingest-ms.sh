@@ -123,6 +123,31 @@ echo "Starting NV-Ingest Microservice..."
 # Create data directory for NV-Ingest if needed
 mkdir -p $RAG_RUNTIME_DIR/nv-ingest-data
 
+# ==============================================================================
+# Writable overlay for /workspace/.venv/bin
+#
+# SIF images are read-only SquashFS. --writable-tmpfs should overlay a tmpfs
+# layer, but many HPC kernels do not support unprivileged OverlayFS, so the
+# mount silently stays read-only. NV-Ingest (via pip / Ray runtime_env) tries
+# to create /workspace/.venv/bin/bulk_writer at startup → Errno 30.
+#
+# Fix: pre-populate a writable host directory from the SIF on first run and
+# bind-mount it over /workspace/.venv/bin, replacing the read-only SIF layer
+# with a writable host-side copy.
+# ==============================================================================
+NVINGEST_VENV_BIN="$RAG_RUNTIME_DIR/nv-ingest-venv-bin"
+if [ ! -d "$NVINGEST_VENV_BIN" ] || [ -z "$(ls -A "$NVINGEST_VENV_BIN" 2>/dev/null)" ]; then
+    echo "   Preparing writable /workspace/.venv/bin overlay (first-time setup)..."
+    mkdir -p "$NVINGEST_VENV_BIN"
+    singularity exec \
+        --bind "${NVINGEST_VENV_BIN}:/tmp/_venvbin" \
+        "$RAG_IMAGES_DIR/nv-ingest.sif" \
+        sh -c "cp -a /workspace/.venv/bin/. /tmp/_venvbin/"
+    echo "   ✅ Writable venv/bin ready ($(ls "$NVINGEST_VENV_BIN" | wc -l) files)"
+else
+    echo "   ✅ Writable venv/bin overlay already exists — reusing"
+fi
+
 singularity run \
   --nv \
   --writable-tmpfs \
@@ -155,6 +180,7 @@ singularity run \
   --env MRC_IGNORE_NUMA_CHECK=1 \
   --env READY_CHECK_ALL_COMPONENTS=False \
   --env OTEL_SDK_DISABLED=true \
+  --bind "$NVINGEST_VENV_BIN:/workspace/.venv/bin" \
   --bind $RAG_RUNTIME_DIR/nv-ingest-data:/workspace/data \
   $RAG_IMAGES_DIR/nv-ingest.sif \
   > $RAG_LOGS_DIR/nv-ingest.log 2>&1 &
