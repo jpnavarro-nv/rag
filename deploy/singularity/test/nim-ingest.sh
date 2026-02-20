@@ -65,14 +65,14 @@ mkdir -p "$PADDLE_OCR_CACHE_DIR"       "$PADDLE_OCR_WORK_DIR/tmp"       "$PADDLE
 # (see 06-start-nv-ingest-ms.sh).  gRPC values must equal PORT+1:
 #   page-elements    gRPC=8001  (8000+1)
 #   graphic-elements gRPC=8004  (8003+1)
-#   table-structure  gRPC=8007  (8006+1)
+#   table-structure  gRPC=8017  (8016+1)
 #   paddle-ocr       gRPC=8010  (8009+1)
 #
 # Full port map (no conflicts with embedding 9000-9002 or ranking 8060-8061,8011):
 #   NIM               uvicorn  gRPC   Triton-HTTP  metrics
 #   page-elements     8000     8001   8020         8021
 #   graphic-elements  8003     8004   8030         8031
-#   table-structure   8006     8007   8040         8041
+#   table-structure   8016     8017   8040         8041   (8006 is a cluster system port)
 #   paddle-ocr        8009     8010   8050         8051
 #
 # NIM_TRITON_EXTRA_ARGS cuda args:
@@ -112,15 +112,15 @@ start_nim_service "graphic-elements" "$GRAPHIC_ELEMENTS_PORT" "$GRAPHIC_ELEMENTS
     "graphic-elements.sif" \
     "$NVML_BIND --bind $GRAPHIC_ELEMENTS_CACHE_DIR:/opt/nim/.cache --bind $GRAPHIC_ELEMENTS_WORK_DIR/tmp:/opt/nim/tmp --bind $GRAPHIC_ELEMENTS_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$GRAPHIC_ELEMENTS_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8004 --env NIM_HTTP_TRITON_PORT=8030 --env NIM_TRITON_METRICS_PORT=8031"
 
-export NIM_TRITON_EXTRA_ARGS="${_INGEST_CUDA_ARGS} --grpc-port=8007"
+export NIM_TRITON_EXTRA_ARGS="${_INGEST_CUDA_ARGS} --grpc-port=8017"
 start_nim_service "table-structure" "$TABLE_STRUCTURE_PORT" "$TABLE_STRUCTURE_GPU_ID" \
     "table-structure.sif" \
-    "$NVML_BIND --bind $TABLE_STRUCTURE_CACHE_DIR:/opt/nim/.cache --bind $TABLE_STRUCTURE_WORK_DIR/tmp:/opt/nim/tmp --bind $TABLE_STRUCTURE_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$TABLE_STRUCTURE_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8007 --env NIM_HTTP_TRITON_PORT=8040 --env NIM_TRITON_METRICS_PORT=8041"
+    "$NVML_BIND --bind $TABLE_STRUCTURE_CACHE_DIR:/opt/nim/.cache --bind $TABLE_STRUCTURE_WORK_DIR/tmp:/opt/nim/tmp --bind $TABLE_STRUCTURE_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$TABLE_STRUCTURE_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8017 --env NIM_HTTP_TRITON_PORT=8040 --env NIM_TRITON_METRICS_PORT=8041"
 
 export NIM_TRITON_EXTRA_ARGS="${_INGEST_CUDA_ARGS} --grpc-port=8010"
 start_nim_service "paddle-ocr" "$PADDLE_OCR_PORT" "$PADDLE_OCR_GPU_ID" \
     "paddle.sif" \
-    "$NVML_BIND --bind $PADDLE_OCR_CACHE_DIR:/opt/nim/.cache --bind $PADDLE_OCR_WORK_DIR/tmp:/opt/nim/tmp --bind $PADDLE_OCR_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$PADDLE_OCR_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8010 --env NIM_HTTP_TRITON_PORT=8050 --env NIM_TRITON_METRICS_PORT=8051"
+    "$NVML_BIND $LIBXEXT_BIND --bind $PADDLE_OCR_CACHE_DIR:/opt/nim/.cache --bind $PADDLE_OCR_WORK_DIR/tmp:/opt/nim/tmp --bind $PADDLE_OCR_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$PADDLE_OCR_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8010 --env NIM_HTTP_TRITON_PORT=8050 --env NIM_TRITON_METRICS_PORT=8051"
 
 unset NIM_TRITON_EXTRA_ARGS
 

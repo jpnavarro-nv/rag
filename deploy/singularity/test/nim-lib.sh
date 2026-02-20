@@ -18,7 +18,7 @@ LLM_PORT=${LLM_PORT:-8999}
 VLM_PORT=${VLM_PORT:-1977}
 PAGE_ELEMENTS_PORT=${PAGE_ELEMENTS_PORT:-8000}
 GRAPHIC_ELEMENTS_PORT=${GRAPHIC_ELEMENTS_PORT:-8003}
-TABLE_STRUCTURE_PORT=${TABLE_STRUCTURE_PORT:-8006}
+TABLE_STRUCTURE_PORT=${TABLE_STRUCTURE_PORT:-8016}
 PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
 
 # ==============================================================================
@@ -53,6 +53,22 @@ if [ -f "$_NVML_HOST_LIB" ]; then
     NVML_BIND="--bind $_NVML_HOST_LIB:/usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1"
 else
     NVML_BIND=""
+fi
+
+# ==============================================================================
+# HPC libXext fix — paddle-ocr's OpenCV (cv2) requires libXext.so.6.
+# When Singularity --nv overlays the host's NVIDIA driver libraries into the
+# container's /usr/lib/x86_64-linux-gnu/, the X11 extension library shipped
+# inside the Ubuntu-based container may become inaccessible (the host's
+# /usr/lib64/ does not contain X11 libs on headless HPC nodes).
+# Bind from the host if the file exists there, same pattern as NVML_BIND.
+# Overridable via LIBXEXT_HOST_LIB env var.
+# ==============================================================================
+_LIBXEXT_HOST_LIB="${LIBXEXT_HOST_LIB:-/usr/lib64/libXext.so.6}"
+if [ -f "$_LIBXEXT_HOST_LIB" ]; then
+    LIBXEXT_BIND="--bind $_LIBXEXT_HOST_LIB:/usr/lib/x86_64-linux-gnu/libXext.so.6"
+else
+    LIBXEXT_BIND=""
 fi
 
 # ==============================================================================
