@@ -3,7 +3,9 @@
 # Run after 04-start-nim-models.sh
 #
 # This script monitors all 8 NIMs simultaneously with real-time status updates.
-# Models can take 5-10 minutes to load on first startup.
+# There is NO timeout: the LLM NIM (49B) can take up to 60 min on first load
+# while weights are downloaded and cached. The script waits indefinitely until
+# every NIM is ready or its process dies.
 
 set -e
 
@@ -25,8 +27,6 @@ NC='\033[0m' # No Color
 
 # Ports sourced from nim-lib.sh (single source of truth)
 
-# Timeouts
-MAX_WAIT_TIME=600  # 10 minutes total
 CHECK_INTERVAL=2   # Check every 2 seconds
 
 # Status directory for monitor files
@@ -116,12 +116,6 @@ monitor_service() {
     while true; do
         local elapsed=$(($(date +%s) - start_time))
 
-        # Check if timeout
-        if [ $elapsed -ge $MAX_WAIT_TIME ]; then
-            echo "timeout:$elapsed" > "$status_file" 2>/dev/null || return 1
-            break
-        fi
-
         # Check health (suppress curl errors only)
         if curl -s -f "http://localhost:${port}${endpoint}" >/dev/null 2>&1; then
             # Also verify the process is still alive. Some NIMs (embedding,
@@ -193,24 +187,20 @@ draw_dashboard() {
 
     # Calculate summary
     local ready_count=0
-    local timeout_count=0
+    local died_count=0
     for key in "${!SERVICES[@]}"; do
         local status_file="$STATUS_DIR/$key.status"
         if [ -f "$status_file" ]; then
             local status=$(cat "$status_file" | cut -d: -f1)
             if [ "$status" = "ready" ]; then
                 ready_count=$((ready_count + 1))
-            elif [ "$status" = "timeout" ] || [ "$status" = "died" ]; then
-                timeout_count=$((timeout_count + 1))
+            elif [ "$status" = "died" ]; then
+                died_count=$((died_count + 1))
             fi
         fi
     done
 
-    echo -e "Progress: ${GREEN}${ready_count}/8 Ready${NC} | Elapsed: ${total_elapsed}s | Max wait: ${MAX_WAIT_TIME}s"
-
-    if [ $timeout_count -gt 0 ]; then
-        echo -e "${RED}Timeouts: ${timeout_count}${NC}"
-    fi
+    echo -e "Progress: ${GREEN}${ready_count}/8 Ready${NC} | Elapsed: ${total_elapsed}s (no timeout — waiting indefinitely)"
 
     echo ""
 }
@@ -267,7 +257,7 @@ draw_service_line() {
 
 echo ""
 echo -e "${BLUE}Starting parallel monitoring of all 8 NIMs...${NC}"
-echo "This may take 5-10 minutes on first startup while models load..."
+echo "Waiting without timeout — LLM NIM (49B) can take up to 60 min on first load..."
 sleep 2
 
 START_TIME=$(date +%s)
@@ -297,6 +287,7 @@ while true; do
         fi
     done
 
+    # Only exit when each NIM is ready or its process died (no timeout)
     if [ "$all_done" = true ]; then
         break
     fi
