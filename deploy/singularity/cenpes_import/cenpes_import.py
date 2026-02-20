@@ -31,6 +31,7 @@ Requirements:
 
 import argparse
 import concurrent.futures
+import hashlib
 import json
 import logging
 import os
@@ -61,8 +62,9 @@ DEFAULT_CHUNK_SIZE   = 512
 DEFAULT_CHUNK_OVERLAP = 150
 DEFAULT_LOG_DIR      = Path("cenpes_import_logs")
 
-POLL_INTERVAL_S = 5
-POLL_TIMEOUT_S  = 6 * 3600   # 6 h — large PDFs take a long time to process
+POLL_INTERVAL_S   = 5
+POLL_TIMEOUT_S    = 6 * 3600   # 6 h — large PDFs take a long time to process
+SHA256_CHUNK_SIZE = 65536       # 64 KB read chunks for hashing
 
 # Supported by the NVIDIA RAG Blueprint frontend + ingestor backend
 SUPPORTED_EXTENSIONS = {
@@ -96,13 +98,20 @@ CONTENT_TYPES: dict[str, str] = {
 # ==============================================================================
 
 @dataclass
+class FileRecord:
+    path: Path
+    sha256: str
+
+
+@dataclass
 class CollectionResult:
     dir_path: Path
     collection_name: str
-    status: str = "pending"        # pending | running | done | failed | skipped
-    total_files: int = 0
+    status: str = "pending"        # pending | running | done | partial | failed | skipped
+    total_files: int = 0           # files to upload this run (new + modified)
     ingested_files: int = 0
     failed_files: int = 0
+    skipped_files: int = 0         # files skipped because already current in server
     current_step: str = "Queued"
     error: Optional[str] = None
     start_time: Optional[float] = None
@@ -163,6 +172,15 @@ def chunked(lst: list, size: int):
         yield lst[i : i + size]
 
 
+def compute_sha256(path: Path) -> str:
+    """Compute SHA-256 hex digest of a file, reading in 64 KB chunks."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while chunk := f.read(SHA256_CHUNK_SIZE):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def make_logger(log_path: Path, name: str) -> logging.Logger:
     """Create a file-only logger for one collection."""
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -191,12 +209,19 @@ class IngestionClient:
         self.logger = logger
 
     def create_collection(self, collection_name: str, embedding_dimension: int = 2048) -> None:
-        """POST /v1/collection — create the collection (idempotent on server side)."""
+        """POST /v1/collection — create the collection (idempotent on server side).
+
+        The metadata_schema declares source_path and sha256 so that deduplication
+        can query existing documents by their origin file and content hash.
+        """
         url = f"{self.base_url}/v1/collection"
         payload = {
             "collection_name": collection_name,
             "embedding_dimension": embedding_dimension,
-            "metadata_schema": [],
+            "metadata_schema": [
+                {"name": "source_path", "type": "string"},
+                {"name": "sha256",      "type": "string"},
+            ],
         }
         resp = requests.post(url, json=payload, timeout=60)
         if resp.status_code >= 400:
@@ -204,31 +229,75 @@ class IngestionClient:
             resp.raise_for_status()
         self.logger.info(f"Collection '{collection_name}' created: {resp.text[:120]}")
 
+    def list_documents(self, collection_name: str) -> dict[str, str]:
+        """GET /v1/documents — return {source_path: sha256} for docs that have dedup metadata."""
+        url = f"{self.base_url}/v1/documents"
+        resp = requests.get(url, params={"collection_name": collection_name}, timeout=60)
+        if resp.status_code == 404:
+            return {}
+        resp.raise_for_status()
+        data = resp.json()
+        existing: dict[str, str] = {}
+        for doc in data.get("documents", []):
+            meta = doc.get("metadata", {})
+            src  = meta.get("source_path")
+            sha  = meta.get("sha256")
+            if src and sha:
+                existing[src] = sha
+        self.logger.info(
+            f"list_documents: {len(existing)} doc(s) with dedup metadata "
+            f"(total in collection: {data.get('total_documents', 0)})"
+        )
+        return existing
+
+    def delete_documents(self, collection_name: str, document_names: list[str]) -> None:
+        """DELETE /v1/documents — delete documents by name before re-uploading modified files."""
+        if not document_names:
+            return
+        url = f"{self.base_url}/v1/documents"
+        resp = requests.delete(
+            url, params={"collection_name": collection_name},
+            json=document_names, timeout=60,
+        )
+        resp.raise_for_status()
+        self.logger.info(f"Deleted {len(document_names)} modified document(s): {document_names}")
+
     def upload_batch(
         self,
-        files: list[Path],
+        records: list[FileRecord],
         collection_name: str,
         chunk_size: int,
         chunk_overlap: int,
     ) -> str:
-        """POST /v1/documents (multipart) — returns task_id."""
+        """POST /v1/documents (multipart) — returns task_id.
+
+        Each record carries source_path and sha256 stored as custom_metadata so
+        subsequent runs can detect already-current files without a local checkpoint.
+        """
         url = f"{self.base_url}/v1/documents"
+        custom_metadata = [
+            {
+                "filename": r.path.name,
+                "metadata": {"source_path": str(r.path), "sha256": r.sha256},
+            }
+            for r in records
+        ]
         payload = {
             "collection_name": collection_name,
             "blocking": False,
             "split_options": {"chunk_size": chunk_size, "chunk_overlap": chunk_overlap},
-            "custom_metadata": [],
+            "custom_metadata": custom_metadata,
             "generate_summary": False,
         }
 
         files_form: list = []
         opened: list = []
         try:
-            for p in files:
-                ct = CONTENT_TYPES.get(p.suffix.lower(), "application/octet-stream")
-                fobj = open(p, "rb")  # noqa: WPS515
+            for r in records:
+                ct = CONTENT_TYPES.get(r.path.suffix.lower(), "application/octet-stream")
+                fobj = open(r.path, "rb")  # noqa: WPS515
                 opened.append(fobj)
-                files_form.append(("documents", (p.name, fobj, ct)))
+                files_form.append(("documents", (r.path.name, fobj, ct)))
             files_form.append(("data", (None, json.dumps(payload), "application/json")))
 
             resp = requests.post(url, files=files_form, timeout=300)
@@ -310,11 +379,18 @@ def ingest_collection(
     chunk_size: int,
     chunk_overlap: int,
     lock: threading.Lock,
+    skip_dedup: bool = False,
 ) -> None:
     """
     Full lifecycle for one collection.
     All state changes go through `_update` (thread-safe).
     Exceptions are caught so the caller's thread-pool remains healthy.
+
+    Deduplication (unless skip_dedup):
+      - Queries existing documents from the ingestor before uploading.
+      - Compares source_path + sha256 stored in document metadata.
+      - NEW files are uploaded; MODIFIED files are deleted then re-uploaded;
+        UNCHANGED files are skipped entirely.
     """
     log_path = log_dir / f"{result.collection_name}.log"
     _update(result, lock, log_path=log_path)
@@ -325,11 +401,10 @@ def ingest_collection(
 
     try:
         # ── 1. Discover files ─────────────────────────────────────────────────
-        files = discover_files(result.dir_path)
-        _update(result, lock, total_files=len(files), current_step=f"Found {len(files)} files")
-        logger.info(f"Discovered {len(files)} supported file(s)")
+        all_files = discover_files(result.dir_path)
+        logger.info(f"Discovered {len(all_files)} supported file(s)")
 
-        if not files:
+        if not all_files:
             logger.warning("No supported files found — skipping collection.")
             _update(result, lock, status="skipped", end_time=time.time(),
                     current_step="No supported files")
@@ -341,11 +416,65 @@ def ingest_collection(
         try:
             client.create_collection(result.collection_name)
         except Exception as exc:
-            # Collection may already exist — log and continue
             logger.warning(f"create_collection error (may already exist): {exc}")
 
-        # ── 3. Upload batches sequentially ────────────────────────────────────
-        batches = list(chunked(files, batch_size))
+        # ── 3. Deduplication: query server + classify files ───────────────────
+        existing: dict[str, str] = {}   # {source_path: sha256}
+        if not skip_dedup:
+            _update(result, lock, current_step="Querying collection")
+            try:
+                existing = client.list_documents(result.collection_name)
+            except Exception as exc:
+                logger.warning(f"list_documents failed — treating all files as new: {exc}")
+
+        _update(result, lock, current_step="Computing file hashes")
+        to_upload: list[FileRecord] = []
+        to_delete: list[str] = []       # document_names of MODIFIED files to remove first
+        skipped = 0
+
+        for path in all_files:
+            try:
+                sha = compute_sha256(path)
+            except Exception as exc:
+                logger.warning(f"Cannot hash {path.name}: {exc} — treating as new")
+                sha = ""
+
+            src_key = str(path)
+            if src_key in existing:
+                if existing[src_key] == sha:
+                    skipped += 1        # UNCHANGED — skip
+                else:
+                    to_delete.append(path.name)     # MODIFIED — delete old
+                    to_upload.append(FileRecord(path=path, sha256=sha))
+            else:
+                to_upload.append(FileRecord(path=path, sha256=sha))  # NEW
+
+        n_new      = len(to_upload) - len(to_delete)
+        n_modified = len(to_delete)
+        logger.info(f"Classification: {n_new} new, {n_modified} modified, {skipped} unchanged")
+
+        _update(result, lock,
+                total_files=len(to_upload),
+                skipped_files=skipped,
+                current_step=_classify_step(n_new, n_modified, skipped))
+
+        # ── 4. Delete modified docs before re-uploading ───────────────────────
+        if to_delete:
+            _update(result, lock, current_step=f"Deleting {len(to_delete)} modified doc(s)")
+            try:
+                client.delete_documents(result.collection_name, to_delete)
+            except Exception as exc:
+                logger.warning(f"delete_documents failed (will re-upload anyway): {exc}")
+
+        # ── 5. All files already current ─────────────────────────────────────
+        if not to_upload:
+            step = f"All {skipped} file(s) already current"
+            _update(result, lock, status="done", end_time=time.time(), current_step=step)
+            logger.info(f"=== SKIP  {step} ===")
+            return
+
+        # ── 6. Upload batches sequentially ────────────────────────────────────
+        batches = list(chunked(to_upload, batch_size))
         total_batches = len(batches)
         logger.info(f"Uploading {total_batches} batch(es) of up to {batch_size} file(s) each")
 
@@ -355,7 +484,7 @@ def ingest_collection(
             label = f"batch {batch_idx}/{total_batches} ({len(batch)} files)"
             _update(result, lock, current_step=f"Uploading {label}")
             logger.info(f"--- {label} ---")
-            logger.debug("  Files: " + ", ".join(p.name for p in batch))
+            logger.debug("  Files: " + ", ".join(r.path.name for r in batch))
 
             try:
                 task_id = client.upload_batch(batch, result.collection_name, chunk_size, chunk_overlap)
@@ -371,26 +500,39 @@ def ingest_collection(
                     result.failed_files += len(batch)
                 # Continue with next batch — fault-tolerant
 
-        # ── 4. Finalize ───────────────────────────────────────────────────────
+        # ── 7. Finalize ───────────────────────────────────────────────────────
+        skip_note = f" · {skipped} skipped" if skipped else ""
         if failed_files_count == 0:
             _update(result, lock, status="done", end_time=time.time(),
-                    current_step=f"Done ({result.ingested_files} files)")
-            logger.info(f"=== SUCCESS  ingested={result.ingested_files} ===")
+                    current_step=f"Done ({result.ingested_files} files{skip_note})")
+            logger.info(f"=== SUCCESS  ingested={result.ingested_files}  skipped={skipped} ===")
         elif result.ingested_files > 0:
+            step = f"{result.ingested_files} ok · {failed_files_count} failed{skip_note}"
             _update(result, lock, status="partial", end_time=time.time(),
-                    current_step=f"{result.ingested_files} ok · {failed_files_count} failed",
-                    error=f"{result.ingested_files} ok · {failed_files_count} failed")
-            logger.error(f"=== PARTIAL FAILURE  ok={result.ingested_files}  failed={failed_files_count}/{len(files)} ===")
+                    current_step=step, error=step)
+            logger.error(f"=== PARTIAL FAILURE  ok={result.ingested_files}  failed={failed_files_count}  skipped={skipped} ===")
         else:
+            step = f"All {failed_files_count} files failed"
             _update(result, lock, status="failed", end_time=time.time(),
-                    current_step=f"All {failed_files_count} files failed",
-                    error=f"All {failed_files_count} files failed")
-            logger.error(f"=== TOTAL FAILURE  failed={failed_files_count}/{len(files)} ===")
+                    current_step=step, error=step)
+            logger.error(f"=== TOTAL FAILURE  failed={failed_files_count}  skipped={skipped} ===")
 
     except Exception as exc:
         logger.error(f"=== FATAL ERROR: {exc} ===", exc_info=True)
         _update(result, lock, status="failed", end_time=time.time(),
                 current_step="Fatal error", error=str(exc)[:120])
+
+
+def _classify_step(n_new: int, n_modified: int, n_skipped: int) -> str:
+    """Build a human-readable classification summary for the current_step field."""
+    parts = []
+    if n_new:
+        parts.append(f"{n_new} new")
+    if n_modified:
+        parts.append(f"{n_modified} modified")
+    if n_skipped:
+        parts.append(f"{n_skipped} skipped")
+    return " · ".join(parts) if parts else "No files to upload"
 
 
 # ==============================================================================
@@ -539,6 +681,10 @@ def parse_args() -> argparse.Namespace:
         "--dry-run", action="store_true",
         help="Discover files and show counts without uploading anything",
     )
+    p.add_argument(
+        "--skip-dedup", action="store_true",
+        help="Skip server-side deduplication and re-upload all files unconditionally",
+    )
     return p.parse_args()
 
 
@@ -577,6 +723,8 @@ def main() -> int:
     console.print(f"  Collections:[white] {len(subdirs)} found[/]")
     if args.dry_run:
         console.print("  [yellow bold]DRY RUN — no files will be uploaded[/]")
+    if args.skip_dedup:
+        console.print("  [yellow]Deduplication: DISABLED (--skip-dedup)[/]")
     console.print()
 
     # ── Build result objects ───────────────────────────────────────────────────
@@ -631,7 +779,7 @@ def main() -> int:
                         ingest_collection,
                         r, base_url, log_dir,
                         args.batch_size, args.chunk_size, args.chunk_overlap,
-                        lock,
+                        lock, args.skip_dedup,
                     ): r
                     for r in results
                 }
@@ -660,6 +808,7 @@ def main() -> int:
     total_files    = sum(r.total_files    for r in results)
     ingested_files = sum(r.ingested_files for r in results)
     failed_files   = sum(r.failed_files   for r in results)
+    skipped_files  = sum(r.skipped_files  for r in results)
 
     console.print()
     console.print("[bold white]══════════════════════════════════════════════[/]")
@@ -675,8 +824,10 @@ def main() -> int:
     if failed_results:
         console.print(f"  [red]❌ Failed:          {len(failed_results)}[/]")
     console.print()
-    console.print(f"  Files discovered:   [white]{total_files}[/]")
+    console.print(f"  Files uploaded:     [white]{total_files}[/]")
     console.print(f"  [green]Ingested:           {ingested_files}[/]")
+    if skipped_files:
+        console.print(f"  [dim]Already current:    {skipped_files}  (skipped)[/]")
     if failed_files:
         console.print(f"  [red]Failed:             {failed_files}[/]")
     console.print()
