@@ -154,6 +154,7 @@ singularity run \
   --env INGEST_RAY_LOG_LEVEL=PRODUCTION \
   --env MRC_IGNORE_NUMA_CHECK=1 \
   --env READY_CHECK_ALL_COMPONENTS=False \
+  --env OTEL_SDK_DISABLED=true \
   --bind $RAG_RUNTIME_DIR/nv-ingest-data:/workspace/data \
   $RAG_IMAGES_DIR/nv-ingest.sif \
   > $RAG_LOGS_DIR/nv-ingest.log 2>&1 &
