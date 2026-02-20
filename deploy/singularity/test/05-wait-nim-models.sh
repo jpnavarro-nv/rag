@@ -82,10 +82,10 @@ declare -A SERVICES=(
     ["ranking"]="Ranking NIM:$RANKING_PORT:/v1/health/ready:GPU0:nemoretriever-ranking"
     ["llm"]="LLM NIM:$LLM_PORT:/v1/health/ready:GPU1:nim-llm"
     ["vlm"]="VLM NIM:$VLM_PORT:/v1/health/ready:GPU3:vlm"
-    ["page-elements"]="Page Elements:$PAGE_ELEMENTS_PORT:/v2/health/ready:GPU2:page-elements"
-    ["graphic-elements"]="Graphic Elements:$GRAPHIC_ELEMENTS_PORT:/v2/health/ready:GPU2:graphic-elements"
-    ["table-structure"]="Table Structure:$TABLE_STRUCTURE_PORT:/v2/health/ready:GPU2:table-structure"
-    ["paddle-ocr"]="PaddleOCR:$PADDLE_OCR_PORT:/v2/health/ready:GPU2:paddle-ocr"
+    ["page-elements"]="Page Elements:$PAGE_ELEMENTS_PORT:/v1/health/ready:GPU0:page-elements"
+    ["graphic-elements"]="Graphic Elements:$GRAPHIC_ELEMENTS_PORT:/v1/health/ready:GPU0:graphic-elements"
+    ["table-structure"]="Table Structure:$TABLE_STRUCTURE_PORT:/v1/health/ready:GPU0:table-structure"
+    ["paddle-ocr"]="PaddleOCR:$PADDLE_OCR_PORT:/v1/health/ready:GPU0:paddle-ocr"
 )
 
 # ==============================================================================
