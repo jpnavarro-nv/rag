@@ -187,6 +187,14 @@ check_service_http "RAG Server" "http://localhost:8081/health"
 check_service_http "RAG API Docs" "http://localhost:8081/docs"
 
 # ==============================================================================
+# 6. Frontend
+# ==============================================================================
+print_section "6. Frontend (Web UI)"
+
+check_service_pid "Frontend" "$RAG_RUNTIME_DIR/pids/rag-frontend.pid"
+check_service_http "Frontend UI" "http://localhost:3000/"
+
+# ==============================================================================
 # Summary
 # ==============================================================================
 print_section "Validation Summary"
@@ -202,10 +210,12 @@ if [ $FAILED_CHECKS -eq 0 ]; then
     echo -e "${GREEN}║  ✅  ALL SERVICES OPERATIONAL - RAG Stack Ready for Use!          ║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo "🎯 Quick Access URLs:"
-    echo "   • RAG Server:      http://localhost:8081/docs"
-    echo "   • Ingestor Server: http://localhost:8082/docs"
-    echo "   • MinIO Console:   http://localhost:9011"
+    NODE_IP=$(hostname -I | awk '{print $1}')
+    echo "🎯 Quick Access URLs (use compute node IP from your browser):"
+    echo "   • Web UI:          http://${NODE_IP}:3000"
+    echo "   • RAG Server API:  http://${NODE_IP}:8081/docs"
+    echo "   • Ingestor API:    http://${NODE_IP}:8082/docs"
+    echo "   • MinIO Console:   http://${NODE_IP}:9011"
     echo ""
     echo "📝 Next Steps:"
     echo "   1. Use SSH tunnel to access from your laptop"

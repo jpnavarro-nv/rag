@@ -1,0 +1,28 @@
+Bootstrap: docker
+From: nvcr.io/nvidia/blueprint/rag-frontend:2.3.0
+
+%help
+    NVIDIA RAG Blueprint Frontend
+    Official image: nvcr.io/nvidia/blueprint/rag-frontend:2.3.0
+
+    Node.js server that serves the React UI and acts as a reverse proxy
+    to the RAG Server and Ingestor Server backends.
+
+    In Singularity (shared host network) the server binds to port 3000.
+    Docker maps it to 8090 externally, but in Singularity there is no
+    port mapping — access the UI at http://<compute-node-IP>:3000.
+
+    The backend URLs are read at runtime from environment variables:
+      VITE_API_CHAT_URL  — RAG Server base URL  (default: http://rag-server:8081/v1)
+      VITE_API_VDB_URL   — Ingestor Server URL  (default: http://ingestor-server:8082/v1)
+
+    In Singularity set both to localhost since all services share the host network:
+      singularity run \
+        --env VITE_API_CHAT_URL=http://localhost:8081/v1 \
+        --env VITE_API_VDB_URL=http://localhost:8082/v1 \
+        rag-frontend.sif
+
+%labels
+    Author NVIDIA RAG Blueprint - Singularity Deployment
+    Version 2.3.0
+    Description React frontend with Node.js reverse proxy for RAG Blueprint

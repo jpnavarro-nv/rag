@@ -109,6 +109,7 @@ free_port() {
 # ==============================================================================
 
 echo "=== [1/6] Stopping Application Servers ==="
+stop_process "rag-frontend"
 stop_process "rag-server"
 stop_process "ingestor-server"
 
@@ -159,6 +160,8 @@ echo ""
 echo "=== [6/6] Releasing Ports ==="
 
 # Application layer
+FRONTEND_PORT=${FRONTEND_PORT:-3000}
+free_port "Frontend"              $FRONTEND_PORT
 free_port "RAG Server"            $RAG_SERVER_PORT
 free_port "Ingestor"              $INGESTOR_PORT
 
@@ -195,5 +198,5 @@ echo ""
 echo "=== Cleanup Complete ==="
 echo ""
 echo "To restart:"
-echo "  Full stack:  ./01-start-infrastructure.sh && ./03-start-redis.sh && ./04-start-nim-models.sh && ./05-wait-nim-models.sh && ./06-start-nv-ingest-ms.sh && ./07-start-ingest-server.sh && ./08-start-rag-server.sh"
-echo "  Query-only:  ./01-start-infrastructure.sh && ./08-start-rag-server.sh"
+echo "  Full stack:  ./01-start-infrastructure.sh && ./03-start-redis.sh && ./04-start-nim-models.sh && ./05-wait-nim-models.sh && ./06-start-nv-ingest-ms.sh && ./07-start-ingest-server.sh && ./08-start-rag-server.sh && ./10-start-frontend.sh"
+echo "  Query-only:  ./01-start-infrastructure.sh && ./08-start-rag-server.sh && ./10-start-frontend.sh"
