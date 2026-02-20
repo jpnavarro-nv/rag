@@ -153,16 +153,16 @@ check_service_http "VLM NIM" "http://localhost:1977/v1/health/ready"
 
 # Document processing models
 check_service_pid "Page Elements" "$RAG_RUNTIME_DIR/pids/page-elements.pid"
-check_service_http "Page Elements" "http://localhost:8000/v2/health/ready"
+check_service_http "Page Elements" "http://localhost:8000/v1/health/ready"
 
 check_service_pid "Graphic Elements" "$RAG_RUNTIME_DIR/pids/graphic-elements.pid"
-check_service_http "Graphic Elements" "http://localhost:8003/v2/health/ready"
+check_service_http "Graphic Elements" "http://localhost:8003/v1/health/ready"
 
 check_service_pid "Table Structure" "$RAG_RUNTIME_DIR/pids/table-structure.pid"
-check_service_http "Table Structure" "http://localhost:8016/v2/health/ready"
+check_service_http "Table Structure" "http://localhost:8016/v1/health/ready"
 
 check_service_pid "PaddleOCR" "$RAG_RUNTIME_DIR/pids/paddle-ocr.pid"
-check_service_http "PaddleOCR" "http://localhost:8009/v2/health/ready"
+check_service_http "PaddleOCR" "http://localhost:8009/v1/health/ready"
 
 # ==============================================================================
 # 4. NV-Ingest Microservice
