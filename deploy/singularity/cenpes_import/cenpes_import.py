@@ -707,7 +707,7 @@ def main() -> int:
     base_url = f"http://{args.ingestor_host}:{args.ingestor_port}"
 
     # Each run gets its own timestamped subdirectory so logs are never overwritten.
-    run_ts  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    run_ts  = datetime.now().strftime("%Y-%m-%d_%H-%M")
     log_dir: Path = args.log_dir / run_ts
     log_dir.mkdir(parents=True, exist_ok=True)
 
