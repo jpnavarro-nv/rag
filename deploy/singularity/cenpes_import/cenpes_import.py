@@ -16,14 +16,26 @@ Behavior:
   - Real-time progress table shown during import
   - Final summary report printed at the end
 
+Deduplication (on by default, disable with --skip-dedup):
+  - Before uploading, queries the ingestor for existing documents
+  - Compares full source path + SHA-256 hash stored as document metadata
+  - NEW files are uploaded; MODIFIED files are deleted and re-uploaded;
+    UNCHANGED files are skipped — no redundant re-processing
+
 Usage:
   python cenpes_import.py [options]
 
-  # Dry run (discover files, no upload):
+  # Dry run — validate readability/permissions, no upload:
   python cenpes_import.py --dry-run
+
+  # Process only specific collections:
+  python cenpes_import.py --collections SEISCOPE CREWES
 
   # Full import:
   python cenpes_import.py --ingestor-host localhost --workers 4
+
+  # Force full re-upload ignoring deduplication:
+  python cenpes_import.py --skip-dedup
 
 Requirements:
   pip install requests rich
@@ -541,6 +553,57 @@ def ingest_collection(
                 current_step="Fatal error", error=str(exc)[:120])
 
 
+def dry_run_collection(
+    result: CollectionResult,
+    lock: threading.Lock,
+    unreadable_by_collection: dict,
+) -> None:
+    """Dry-run worker: discover files and validate readability for one collection."""
+    _update(result, lock, status="running", start_time=time.time(),
+            current_step="Scanning…")
+
+    files = discover_files(result.dir_path)
+
+    if not files:
+        _update(result, lock, total_files=0, status="skipped",
+                end_time=time.time(), current_step="No supported files")
+        return
+
+    _update(result, lock, total_files=len(files),
+            current_step=f"Validating {len(files)} files…")
+
+    unreadable: list[tuple[Path, str]] = []
+    for path in files:
+        err = validate_readable(path)
+        if err is not None:
+            unreadable.append((path, err))
+
+    readable_n   = len(files) - len(unreadable)
+    unreadable_n = len(unreadable)
+
+    if unreadable:
+        with lock:
+            unreadable_by_collection[result.collection_name] = unreadable
+
+    if unreadable_n == 0:
+        status = "done"
+        step   = f"All {readable_n} files readable"
+    elif readable_n > 0:
+        status = "partial"
+        step   = f"{readable_n} readable · {unreadable_n} unreadable"
+    else:
+        status = "failed"
+        step   = f"All {unreadable_n} files unreadable"
+
+    _update(result, lock,
+            ingested_files=readable_n,
+            failed_files=unreadable_n,
+            status=status,
+            end_time=time.time(),
+            current_step=step,
+            error=step if unreadable_n > 0 else None)
+
+
 def _classify_step(n_new: int, n_modified: int, n_skipped: int) -> str:
     """Build a human-readable classification summary for the current_step field."""
     parts = []
@@ -796,55 +859,25 @@ def main() -> int:
         refresh()
 
         if args.dry_run:
-            # Discover files and validate readability — no uploads
-            for r in results:
-                _update(r, lock, status="running", start_time=time.time(),
-                        current_step="Scanning…")
-                refresh()
+            # Discover files and validate readability — parallel, no uploads
+            with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as pool:
+                future_map = {
+                    pool.submit(dry_run_collection, r, lock, unreadable_by_collection): r
+                    for r in results
+                }
 
-                files = discover_files(r.dir_path)
-
-                if not files:
-                    _update(r, lock, total_files=0, status="skipped",
-                            end_time=time.time(), current_step="No supported files")
+                pending = set(future_map)
+                while pending:
+                    done, pending = concurrent.futures.wait(pending, timeout=0.25)
+                    for fut in done:
+                        try:
+                            fut.result()
+                        except Exception as exc:
+                            r = future_map[fut]
+                            _update(r, lock, status="failed", end_time=time.time(),
+                                    current_step="Unhandled error",
+                                    error=str(exc)[:120])
                     refresh()
-                    continue
-
-                # Validate each file: permissions + readability
-                _update(r, lock, total_files=len(files),
-                        current_step=f"Validating {len(files)} files…")
-                refresh()
-
-                unreadable: list[tuple[Path, str]] = []
-                for path in files:
-                    err = validate_readable(path)
-                    if err is not None:
-                        unreadable.append((path, err))
-
-                readable_n   = len(files) - len(unreadable)
-                unreadable_n = len(unreadable)
-
-                if unreadable:
-                    unreadable_by_collection[r.collection_name] = unreadable
-
-                if unreadable_n == 0:
-                    status = "done"
-                    step   = f"All {readable_n} files readable"
-                elif readable_n > 0:
-                    status = "partial"
-                    step   = f"{readable_n} readable · {unreadable_n} unreadable"
-                else:
-                    status = "failed"
-                    step   = f"All {unreadable_n} files unreadable"
-
-                _update(r, lock,
-                        ingested_files=readable_n,
-                        failed_files=unreadable_n,
-                        status=status,
-                        end_time=time.time(),
-                        current_step=step,
-                        error=step if unreadable_n > 0 else None)
-                refresh()
 
         else:
             # Parallel collection processing
