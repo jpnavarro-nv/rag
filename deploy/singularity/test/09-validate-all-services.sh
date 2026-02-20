@@ -10,7 +10,7 @@
 # - Ingestor Server
 # - RAG Server
 
-set -e
+# NOTE: no set -e — validation must continue past individual failures
 
 # Load configuration
 source "$(dirname "$0")/00-config.sh"
@@ -171,7 +171,7 @@ print_section "4. NV-Ingest Microservice"
 
 check_service_pid "NV-Ingest" "$RAG_RUNTIME_DIR/pids/nv-ingest.pid"
 check_service_http "NV-Ingest" "http://localhost:7670/v1/health/ready"
-check_service_port "NV-Ingest Broker" "localhost" "7671"
+# Broker port 7671 is not opened in Singularity: NV-Ingest uses Redis (6379) as message broker
 
 # ==============================================================================
 # 5. Application Servers
@@ -205,7 +205,7 @@ if [ $FAILED_CHECKS -eq 0 ]; then
     echo "🎯 Quick Access URLs:"
     echo "   • RAG Server:      http://localhost:8081/docs"
     echo "   • Ingestor Server: http://localhost:8082/docs"
-    echo "   • MinIO Console:   http://localhost:9001"
+    echo "   • MinIO Console:   http://localhost:9011"
     echo ""
     echo "📝 Next Steps:"
     echo "   1. Use SSH tunnel to access from your laptop"
