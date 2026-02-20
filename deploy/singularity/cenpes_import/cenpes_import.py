@@ -144,6 +144,12 @@ class CollectionResult:
 # Utilities
 # ==============================================================================
 
+class _NullContext:
+    """No-op context manager used when no semaphore is configured."""
+    def __enter__(self): return self
+    def __exit__(self, *_): pass
+
+
 def sanitize_collection_name(name: str) -> str:
     """Convert a directory name to a valid Milvus collection name.
 
@@ -359,6 +365,7 @@ def ingest_collection(
     chunk_overlap: int,
     lock: threading.Lock,
     skip_dedup: bool = False,
+    ingest_sem: Optional[threading.Semaphore] = None,
 ) -> None:
     """
     Full lifecycle for one collection.
@@ -443,8 +450,14 @@ def ingest_collection(
             logger.debug("  Files: " + ", ".join(p.name for p in batch))
 
             try:
-                task_id = client.upload_batch(batch, result.collection_name, chunk_size, chunk_overlap)
-                client.poll_task(task_id)
+                # Acquire the global NV-Ingest semaphore before submitting.
+                # This limits concurrent tasks in the NV-Ingest queue regardless
+                # of how many parallel collection workers are running.
+                _sem_ctx = ingest_sem if ingest_sem is not None else _NullContext()
+                with _sem_ctx:
+                    _update(result, lock, current_step=f"Uploading {label}")
+                    task_id = client.upload_batch(batch, result.collection_name, chunk_size, chunk_overlap)
+                    client.poll_task(task_id)
                 with lock:
                     result.ingested_files += len(batch)
                 logger.info(f"✅ {label} complete")
@@ -694,6 +707,10 @@ def parse_args() -> argparse.Namespace:
         "--collections", nargs="+", metavar="NAME",
         help="Process only these subdirectory names from root-dir (default: all)",
     )
+    p.add_argument(
+        "--ingest-concurrency", type=int, default=1, metavar="N",
+        help="Max concurrent tasks submitted to NV-Ingest (default: 1 — one at a time)",
+    )
     return p.parse_args()
 
 
@@ -751,6 +768,7 @@ def main() -> int:
         console.print("  [yellow bold]DRY RUN — no files will be uploaded[/]")
     if args.skip_dedup:
         console.print("  [yellow]Deduplication: DISABLED (--skip-dedup)[/]")
+    console.print(f"  Ingest conc: [white]{args.ingest_concurrency} task(s) at a time[/]")
     console.print()
 
     # ── Build result objects ───────────────────────────────────────────────────
@@ -762,6 +780,7 @@ def main() -> int:
         for d in subdirs
     ]
     lock = threading.Lock()
+    ingest_sem = threading.Semaphore(args.ingest_concurrency)
 
     # ── Validate collection name collisions ────────────────────────────────────
     seen: dict[str, str] = {}
@@ -814,7 +833,7 @@ def main() -> int:
                         ingest_collection,
                         r, base_url, log_dir,
                         args.batch_size, args.chunk_size, args.chunk_overlap,
-                        lock, args.skip_dedup,
+                        lock, args.skip_dedup, ingest_sem,
                     ): r
                     for r in results
                 }

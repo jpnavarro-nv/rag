@@ -116,6 +116,23 @@ stop_process "ingestor-server"
 echo ""
 echo "=== [2/6] Stopping Ingestion Services ==="
 stop_process "nv-ingest"
+
+# Ray launches grandchild processes (raylet, gcs_server, plasma_store, dashboard, workers)
+# that are NOT direct children of the Singularity launcher, so pkill -P misses them.
+# Kill them explicitly by name.
+_ray_killed=0
+for _ray_pat in "raylet" "ray::" "gcs_server" "plasma_store_server" "dashboard_agent" "ray/dashboard"; do
+    if pkill -f "$_ray_pat" 2>/dev/null; then
+        _ray_killed=1
+    fi
+done
+if [ $_ray_killed -eq 1 ]; then
+    sleep 2
+    echo "   ✅ Ray sub-processes cleared"
+else
+    echo "   ⊘  No Ray sub-processes found"
+fi
+
 stop_process "redis"
 
 echo ""
@@ -182,6 +199,7 @@ free_port "Ingestor"              $INGESTOR_PORT
 # Ingestion layer
 free_port "NV-Ingest HTTP"        $NVINGEST_PORT
 free_port "NV-Ingest Broker"      $NVINGEST_BROKER_PORT
+free_port "Ray Dashboard"         8265
 free_port "Redis"                 $REDIS_PORT
 
 # NIMs — LLM/VLM family (nim_llm_sdk / vLLM)
