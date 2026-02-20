@@ -118,6 +118,7 @@ mkdir -p $RAG_RUNTIME_DIR/nv-ingest-data
 
 singularity run \
   --nv \
+  --writable-tmpfs \
   --env CUDA_VISIBLE_DEVICES=$NVINGEST_GPU_ID \
   --env NGC_API_KEY=$NGC_API_KEY \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
