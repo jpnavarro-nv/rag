@@ -56,7 +56,7 @@ python cenpes_import.py \
   --root-dir /gaia/b04s/CONSORCIOS \
   --ingestor-host localhost \
   --ingestor-port 8082 \
-  --workers 4 \
+  --parallel-workers 4 \
   --batch-size 16 \
   --log-dir /scratch/cenpes_logs
 
@@ -73,7 +73,7 @@ python cenpes_import.py --workers 6
 | `--root-dir` | `/gaia/b04s/CONSORCIOS` | Root directory to scan |
 | `--ingestor-host` | `localhost` | Ingestor server host (or `$INGESTOR_HOST`) |
 | `--ingestor-port` | `8082` | Ingestor server port (or `$INGESTOR_PORT`) |
-| `--workers` | `4` | Collections processed in parallel |
+| `--parallel-workers` | `4` | Collections processed in parallel |
 | `--batch-size` | `16` | Files per upload batch |
 | `--chunk-size` | `512` | Text chunk size for splitter |
 | `--chunk-overlap` | `150` | Text chunk overlap for splitter |
