@@ -50,6 +50,7 @@ import sys
 import threading
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -704,7 +705,10 @@ def main() -> int:
     args = parse_args()
     console = Console()
     base_url = f"http://{args.ingestor_host}:{args.ingestor_port}"
-    log_dir: Path = args.log_dir
+
+    # Each run gets its own timestamped subdirectory so logs are never overwritten.
+    run_ts  = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_dir: Path = args.log_dir / run_ts
     log_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Discover first-level directories ──────────────────────────────────────
@@ -738,7 +742,7 @@ def main() -> int:
     console.print(f"  Ingestor:   [white]{base_url}[/]")
     console.print(f"  Workers:    [white]{args.workers} parallel collections[/]")
     console.print(f"  Batch size: [white]{args.batch_size} files[/]")
-    console.print(f"  Log dir:    [white]{log_dir.resolve()}[/]")
+    console.print(f"  Log dir:    [white]{args.log_dir.resolve()}/{run_ts}/[/]")
     if args.collections:
         console.print(f"  Collections:[white] {len(subdirs)} selected (of {len(all_subdirs)} available)[/]")
     else:
