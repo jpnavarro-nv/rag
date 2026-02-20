@@ -83,6 +83,12 @@ echo ""
 
 build_image "nv-ingest.def" "nv-ingest.sif" "NV-Ingest v25.9.0" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
 
+echo ""
+echo "=== Application Images ==="
+echo ""
+
+build_image "rag-frontend.def" "rag-frontend.sif" "RAG Frontend UI v2.3.0" && SUCCESS=$((SUCCESS + 1)) || FAILED=$((FAILED + 1))
+
 # Summary
 echo "=== Build Summary ==="
 echo "✅ Success: $SUCCESS"
