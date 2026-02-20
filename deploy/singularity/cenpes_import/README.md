@@ -82,6 +82,42 @@ python cenpes_import.py --workers 6
 | `--skip-dedup` | — | Re-upload all files unconditionally (skip deduplication) |
 | `--collections` | all | Process only these subdirectory names from `--root-dir` |
 
+## Importing specific collections
+
+By default the script processes **every** first-level subdirectory under `--root-dir`.
+Use `--collections` to select only the directories you want:
+
+```bash
+# Import a single collection
+python cenpes_import.py --collections SEISCOPE
+
+# Import several collections in one run
+python cenpes_import.py --collections SEISCOPE CREWES DEEPWAVE
+
+# Combine with other flags (dry-run first, then import)
+python cenpes_import.py --collections SEISCOPE --dry-run
+python cenpes_import.py --collections SEISCOPE
+```
+
+The names passed to `--collections` must match the **directory names** exactly
+(case-sensitive) as they appear on disk, not the sanitized collection names.
+
+```
+/gaia/b04s/CONSORCIOS/
+├── SEISCOPE/       ← use "SEISCOPE"
+├── Dados 2024/     ← use "Dados 2024"   (with the space)
+└── PROJ-ALPHA/     ← use "PROJ-ALPHA"   (with the hyphen)
+```
+
+To discover the available directory names before running:
+
+```bash
+ls /gaia/b04s/CONSORCIOS/
+```
+
+If a name passed to `--collections` does not exist in `--root-dir`, the script
+exits immediately with an error listing the unknown names.
+
 ## Dry run
 
 `--dry-run` scans the filesystem without sending anything to the ingestor.
