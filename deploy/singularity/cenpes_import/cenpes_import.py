@@ -703,6 +703,10 @@ def parse_args() -> argparse.Namespace:
         "--skip-dedup", action="store_true",
         help="Skip server-side deduplication and re-upload all files unconditionally",
     )
+    p.add_argument(
+        "--collections", nargs="+", metavar="NAME",
+        help="Process only these subdirectory names from root-dir (default: all)",
+    )
     return p.parse_args()
 
 
@@ -723,7 +727,18 @@ def main() -> int:
         console.print(f"[red]❌ Root directory not found: {root}[/]")
         return 2
 
-    subdirs = sorted(d for d in root.iterdir() if d.is_dir())
+    all_subdirs = {d.name: d for d in root.iterdir() if d.is_dir()}
+
+    if args.collections:
+        unknown = [n for n in args.collections if n not in all_subdirs]
+        if unknown:
+            for n in unknown:
+                console.print(f"[red]❌ Collection not found in {root}: {n}[/]")
+            return 2
+        subdirs = sorted(all_subdirs[n] for n in args.collections)
+    else:
+        subdirs = sorted(all_subdirs.values())
+
     if not subdirs:
         console.print(f"[yellow]⚠️  No subdirectories found in {root}[/]")
         return 0
@@ -738,7 +753,10 @@ def main() -> int:
     console.print(f"  Workers:    [white]{args.workers} parallel collections[/]")
     console.print(f"  Batch size: [white]{args.batch_size} files[/]")
     console.print(f"  Log dir:    [white]{log_dir.resolve()}[/]")
-    console.print(f"  Collections:[white] {len(subdirs)} found[/]")
+    if args.collections:
+        console.print(f"  Collections:[white] {len(subdirs)} selected (of {len(all_subdirs)} available)[/]")
+    else:
+        console.print(f"  Collections:[white] {len(subdirs)} found[/]")
     if args.dry_run:
         console.print("  [yellow bold]DRY RUN — no files will be uploaded[/]")
     if args.skip_dedup:
