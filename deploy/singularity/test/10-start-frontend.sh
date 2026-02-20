@@ -41,7 +41,9 @@ wait_for_frontend() {
 
     echo "   ⏳ Waiting for Frontend to be ready..."
     while [ $attempt -le $max_attempts ]; do
-        if curl -s -o /dev/null -w "%{http_code}" "http://${host}:${port}/" 2>/dev/null | grep -q "200"; then
+        local status_code
+        status_code=$(curl -s -o /dev/null -w "%{http_code}" "http://${host}:${port}/" 2>/dev/null || echo "000")
+        if [ "$status_code" = "200" ]; then
             echo "   ✅ Frontend is ready"
             return 0
         fi
@@ -112,7 +114,13 @@ echo ""
 # The Node.js server reads VITE_API_CHAT_URL and VITE_API_VDB_URL at runtime
 # to configure its reverse proxy. Since Singularity shares the host network,
 # localhost resolves to the same host where the backends are running.
+#
+# --pwd /app/frontend: the Node.js CMD uses relative path ./dist to serve
+# static files. Docker sets WORKDIR=/app/frontend automatically, but
+# Singularity defaults to the host CWD. Without --pwd, ./dist resolves
+# to a non-existent host path → server returns 404 for all requests.
 singularity run \
+  --pwd /app/frontend \
   --env VITE_API_CHAT_URL="http://localhost:${RAG_SERVER_PORT}/v1" \
   --env VITE_API_VDB_URL="http://localhost:${INGESTOR_PORT}/v1" \
   $RAG_IMAGES_DIR/rag-frontend.sif \
