@@ -149,7 +149,7 @@ check_service_pid "LLM NIM" "$RAG_RUNTIME_DIR/pids/nim-llm.pid"
 check_service_http "LLM NIM" "http://localhost:8999/v1/health/ready"
 
 check_service_pid "VLM NIM" "$RAG_RUNTIME_DIR/pids/vlm.pid"
-check_service_http "VLM NIM" "http://localhost:8997/v1/health/ready"
+check_service_http "VLM NIM" "http://localhost:1977/v1/health/ready"
 
 # Document processing models
 check_service_pid "Page Elements" "$RAG_RUNTIME_DIR/pids/page-elements.pid"
