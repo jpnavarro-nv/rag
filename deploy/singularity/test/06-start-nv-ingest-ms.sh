@@ -116,7 +116,7 @@ echo "Starting NV-Ingest Microservice..."
 # Create data directory for NV-Ingest if needed
 mkdir -p $RAG_RUNTIME_DIR/nv-ingest-data
 
-singularity exec \
+singularity run \
   --nv \
   --env CUDA_VISIBLE_DEVICES=$NVINGEST_GPU_ID \
   --env NGC_API_KEY=$NGC_API_KEY \
