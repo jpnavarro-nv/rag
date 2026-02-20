@@ -135,6 +135,11 @@ echo ""
 # Temp dir for Prometheus multi-process metrics
 mkdir -p $RAG_RUNTIME_DIR/rag-server-temp/prom_data
 
+# Custom prompt file — mounted into the container at /prompt_petrobras.yaml
+# The RAG server merges this over the built-in prompt.yaml via PROMPT_CONFIG_FILE.
+# To revert to the default prompts, comment out the two lines below.
+PROMPT_FILE="$(cd "$(dirname "$0")/../../.." && pwd)/src/nvidia_rag/rag_server/prompt_petrobras.yaml"
+
 singularity exec \
   --env NGC_API_KEY=$NGC_API_KEY \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
@@ -184,7 +189,9 @@ singularity exec \
   --env APP_TRACING_ENABLED=${APP_TRACING_ENABLED:-False} \
   --env PROMETHEUS_MULTIPROC_DIR=/tmp-data/prom_data \
   --env LOGLEVEL=${LOGLEVEL:-INFO} \
+  --env PROMPT_CONFIG_FILE=/prompt_petrobras.yaml \
   --bind $RAG_RUNTIME_DIR/rag-server-temp:/tmp-data \
+  --bind "${PROMPT_FILE}:/prompt_petrobras.yaml" \
   $RAG_IMAGES_DIR/rag-server.sif \
   uvicorn nvidia_rag.rag_server.server:app --host 0.0.0.0 --port $RAG_SERVER_PORT --workers 8 \
   > $RAG_LOGS_DIR/rag-server.log 2>&1 &
