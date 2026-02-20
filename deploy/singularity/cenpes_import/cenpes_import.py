@@ -17,10 +17,9 @@ Behavior:
   - Final summary report printed at the end
 
 Deduplication (on by default, disable with --skip-dedup):
-  - Before uploading, queries the ingestor for existing documents
-  - Compares full source path + SHA-256 hash stored as document metadata
-  - NEW files are uploaded; MODIFIED files are deleted and re-uploaded;
-    UNCHANGED files are skipped — no redundant re-processing
+  - Before uploading, queries the ingestor for document names in the collection
+  - Files whose filename already exists on the server are skipped (name-based)
+  - Note: content-change detection is not available (server rejects extra metadata)
 
 Usage:
   python cenpes_import.py [options]
@@ -43,7 +42,6 @@ Requirements:
 
 import argparse
 import concurrent.futures
-import hashlib
 import json
 import logging
 import os
@@ -74,9 +72,8 @@ DEFAULT_CHUNK_SIZE   = 512
 DEFAULT_CHUNK_OVERLAP = 150
 DEFAULT_LOG_DIR      = Path("cenpes_import_logs")
 
-POLL_INTERVAL_S   = 5
-POLL_TIMEOUT_S    = 6 * 3600   # 6 h — large PDFs take a long time to process
-SHA256_CHUNK_SIZE = 65536       # 64 KB read chunks for hashing
+POLL_INTERVAL_S = 5
+POLL_TIMEOUT_S  = 6 * 3600   # 6 h — large PDFs take a long time to process
 
 # Supported by the NVIDIA RAG Blueprint frontend + ingestor backend
 SUPPORTED_EXTENSIONS = {
@@ -110,20 +107,14 @@ CONTENT_TYPES: dict[str, str] = {
 # ==============================================================================
 
 @dataclass
-class FileRecord:
-    path: Path
-    sha256: str
-
-
-@dataclass
 class CollectionResult:
     dir_path: Path
     collection_name: str
     status: str = "pending"        # pending | running | done | partial | failed | skipped
-    total_files: int = 0           # files to upload this run (new + modified)
+    total_files: int = 0           # files to upload this run (new)
     ingested_files: int = 0
     failed_files: int = 0
-    skipped_files: int = 0         # files skipped because already current in server
+    skipped_files: int = 0         # files skipped because already present in server
     current_step: str = "Queued"
     error: Optional[str] = None
     start_time: Optional[float] = None
@@ -184,15 +175,6 @@ def chunked(lst: list, size: int):
         yield lst[i : i + size]
 
 
-def compute_sha256(path: Path) -> str:
-    """Compute SHA-256 hex digest of a file, reading in 64 KB chunks."""
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        while chunk := f.read(SHA256_CHUNK_SIZE):
-            h.update(chunk)
-    return h.hexdigest()
-
-
 def validate_readable(path: Path) -> Optional[str]:
     """Try to open and read 1 byte from path.
 
@@ -239,19 +221,11 @@ class IngestionClient:
         self.logger = logger
 
     def create_collection(self, collection_name: str, embedding_dimension: int = 2048) -> None:
-        """POST /v1/collection — create the collection (idempotent on server side).
-
-        The metadata_schema declares source_path and sha256 so that deduplication
-        can query existing documents by their origin file and content hash.
-        """
+        """POST /v1/collection — create the collection (idempotent on server side)."""
         url = f"{self.base_url}/v1/collection"
         payload = {
             "collection_name": collection_name,
             "embedding_dimension": embedding_dimension,
-            "metadata_schema": [
-                {"name": "source_path", "type": "string"},
-                {"name": "sha256",      "type": "string"},
-            ],
         }
         resp = requests.post(url, json=payload, timeout=60)
         if resp.status_code >= 400:
@@ -259,75 +233,49 @@ class IngestionClient:
             resp.raise_for_status()
         self.logger.info(f"Collection '{collection_name}' created: {resp.text[:120]}")
 
-    def list_documents(self, collection_name: str) -> dict[str, str]:
-        """GET /v1/documents — return {source_path: sha256} for docs that have dedup metadata."""
+    def list_documents(self, collection_name: str) -> set[str]:
+        """GET /v1/documents — return set of document names already in the collection."""
         url = f"{self.base_url}/v1/documents"
         resp = requests.get(url, params={"collection_name": collection_name}, timeout=60)
         if resp.status_code == 404:
-            return {}
+            return set()
         resp.raise_for_status()
         data = resp.json()
-        existing: dict[str, str] = {}
+        names: set[str] = set()
         for doc in data.get("documents", []):
-            meta = doc.get("metadata", {})
-            src  = meta.get("source_path")
-            sha  = meta.get("sha256")
-            if src and sha:
-                existing[src] = sha
+            name = doc.get("document_name") or doc.get("name", "")
+            if name:
+                names.add(name)
         self.logger.info(
-            f"list_documents: {len(existing)} doc(s) with dedup metadata "
-            f"(total in collection: {data.get('total_documents', 0)})"
+            f"list_documents: {len(names)} existing doc(s) in '{collection_name}' "
+            f"(total reported: {data.get('total_documents', 0)})"
         )
-        return existing
-
-    def delete_documents(self, collection_name: str, document_names: list[str]) -> None:
-        """DELETE /v1/documents — delete documents by name before re-uploading modified files."""
-        if not document_names:
-            return
-        url = f"{self.base_url}/v1/documents"
-        resp = requests.delete(
-            url, params={"collection_name": collection_name},
-            json=document_names, timeout=60,
-        )
-        resp.raise_for_status()
-        self.logger.info(f"Deleted {len(document_names)} modified document(s): {document_names}")
+        return names
 
     def upload_batch(
         self,
-        records: list[FileRecord],
+        paths: list[Path],
         collection_name: str,
         chunk_size: int,
         chunk_overlap: int,
     ) -> str:
-        """POST /v1/documents (multipart) — returns task_id.
-
-        Each record carries source_path and sha256 stored as custom_metadata so
-        subsequent runs can detect already-current files without a local checkpoint.
-        """
+        """POST /v1/documents (multipart) — returns task_id."""
         url = f"{self.base_url}/v1/documents"
-        custom_metadata = [
-            {
-                "filename": r.path.name,
-                "metadata": {"source_path": str(r.path), "sha256": r.sha256},
-            }
-            for r in records
-        ]
         payload = {
             "collection_name": collection_name,
             "blocking": False,
             "split_options": {"chunk_size": chunk_size, "chunk_overlap": chunk_overlap},
-            "custom_metadata": custom_metadata,
             "generate_summary": False,
         }
 
         files_form: list = []
         opened: list = []
         try:
-            for r in records:
-                ct = CONTENT_TYPES.get(r.path.suffix.lower(), "application/octet-stream")
-                fobj = open(r.path, "rb")  # noqa: WPS515
+            for path in paths:
+                ct = CONTENT_TYPES.get(path.suffix.lower(), "application/octet-stream")
+                fobj = open(path, "rb")  # noqa: WPS515
                 opened.append(fobj)
-                files_form.append(("documents", (r.path.name, fobj, ct)))
+                files_form.append(("documents", (path.name, fobj, ct)))
             files_form.append(("data", (None, json.dumps(payload), "application/json")))
 
             resp = requests.post(url, files=files_form, timeout=300)
@@ -417,10 +365,10 @@ def ingest_collection(
     Exceptions are caught so the caller's thread-pool remains healthy.
 
     Deduplication (unless skip_dedup):
-      - Queries existing documents from the ingestor before uploading.
-      - Compares source_path + sha256 stored in document metadata.
-      - NEW files are uploaded; MODIFIED files are deleted then re-uploaded;
-        UNCHANGED files are skipped entirely.
+      - Queries the ingestor for document names already in the collection.
+      - Files whose filename already exists on the server are skipped (NEW only).
+      - Note: content-change detection (SHA-256) is not supported because the
+        ingestor rejects arbitrary per-file metadata fields.
     """
     log_path = log_dir / f"{result.collection_name}.log"
     _update(result, lock, log_path=log_path)
@@ -448,62 +396,39 @@ def ingest_collection(
         except Exception as exc:
             logger.warning(f"create_collection error (may already exist): {exc}")
 
-        # ── 3. Deduplication: query server + classify files ───────────────────
-        existing: dict[str, str] = {}   # {source_path: sha256}
+        # ── 3. Deduplication: query server for existing filenames ─────────────
+        existing_names: set[str] = set()
         if not skip_dedup:
             _update(result, lock, current_step="Querying collection")
             try:
-                existing = client.list_documents(result.collection_name)
+                existing_names = client.list_documents(result.collection_name)
             except Exception as exc:
                 logger.warning(f"list_documents failed — treating all files as new: {exc}")
 
-        _update(result, lock, current_step="Computing file hashes")
-        to_upload: list[FileRecord] = []
-        to_delete: list[str] = []       # document_names of MODIFIED files to remove first
+        to_upload: list[Path] = []
         skipped = 0
 
         for path in all_files:
-            try:
-                sha = compute_sha256(path)
-            except Exception as exc:
-                logger.warning(f"Cannot hash {path.name}: {exc} — treating as new")
-                sha = ""
-
-            src_key = str(path)
-            if src_key in existing:
-                if existing[src_key] == sha:
-                    skipped += 1        # UNCHANGED — skip
-                else:
-                    to_delete.append(path.name)     # MODIFIED — delete old
-                    to_upload.append(FileRecord(path=path, sha256=sha))
+            if path.name in existing_names:
+                skipped += 1   # already present — skip
             else:
-                to_upload.append(FileRecord(path=path, sha256=sha))  # NEW
+                to_upload.append(path)  # NEW
 
-        n_new      = len(to_upload) - len(to_delete)
-        n_modified = len(to_delete)
-        logger.info(f"Classification: {n_new} new, {n_modified} modified, {skipped} unchanged")
+        logger.info(f"Classification: {len(to_upload)} new, {skipped} already present")
 
         _update(result, lock,
                 total_files=len(to_upload),
                 skipped_files=skipped,
-                current_step=_classify_step(n_new, n_modified, skipped))
+                current_step=_classify_step(len(to_upload), skipped))
 
-        # ── 4. Delete modified docs before re-uploading ───────────────────────
-        if to_delete:
-            _update(result, lock, current_step=f"Deleting {len(to_delete)} modified doc(s)")
-            try:
-                client.delete_documents(result.collection_name, to_delete)
-            except Exception as exc:
-                logger.warning(f"delete_documents failed (will re-upload anyway): {exc}")
-
-        # ── 5. All files already current ─────────────────────────────────────
+        # ── 4. All files already present ─────────────────────────────────────
         if not to_upload:
-            step = f"All {skipped} file(s) already current"
+            step = f"All {skipped} file(s) already present"
             _update(result, lock, status="done", end_time=time.time(), current_step=step)
             logger.info(f"=== SKIP  {step} ===")
             return
 
-        # ── 6. Upload batches sequentially ────────────────────────────────────
+        # ── 5. Upload batches sequentially ────────────────────────────────────
         batches = list(chunked(to_upload, batch_size))
         total_batches = len(batches)
         logger.info(f"Uploading {total_batches} batch(es) of up to {batch_size} file(s) each")
@@ -514,7 +439,7 @@ def ingest_collection(
             label = f"batch {batch_idx}/{total_batches} ({len(batch)} files)"
             _update(result, lock, current_step=f"Uploading {label}")
             logger.info(f"--- {label} ---")
-            logger.debug("  Files: " + ", ".join(r.path.name for r in batch))
+            logger.debug("  Files: " + ", ".join(p.name for p in batch))
 
             try:
                 task_id = client.upload_batch(batch, result.collection_name, chunk_size, chunk_overlap)
@@ -530,8 +455,8 @@ def ingest_collection(
                     result.failed_files += len(batch)
                 # Continue with next batch — fault-tolerant
 
-        # ── 7. Finalize ───────────────────────────────────────────────────────
-        skip_note = f" · {skipped} skipped" if skipped else ""
+        # ── 6. Finalize ───────────────────────────────────────────────────────
+        skip_note = f" · {skipped} already present" if skipped else ""
         if failed_files_count == 0:
             _update(result, lock, status="done", end_time=time.time(),
                     current_step=f"Done ({result.ingested_files} files{skip_note})")
@@ -604,15 +529,13 @@ def dry_run_collection(
             error=step if unreadable_n > 0 else None)
 
 
-def _classify_step(n_new: int, n_modified: int, n_skipped: int) -> str:
+def _classify_step(n_new: int, n_skipped: int) -> str:
     """Build a human-readable classification summary for the current_step field."""
     parts = []
     if n_new:
         parts.append(f"{n_new} new")
-    if n_modified:
-        parts.append(f"{n_modified} modified")
     if n_skipped:
-        parts.append(f"{n_skipped} skipped")
+        parts.append(f"{n_skipped} already present")
     return " · ".join(parts) if parts else "No files to upload"
 
 
