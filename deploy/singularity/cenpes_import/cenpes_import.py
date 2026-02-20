@@ -181,6 +181,24 @@ def compute_sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def validate_readable(path: Path) -> Optional[str]:
+    """Try to open and read 1 byte from path.
+
+    Returns None if the file is readable, or an error string describing
+    the problem (PermissionError, OSError, empty file warning, etc.).
+    """
+    try:
+        with open(path, "rb") as f:
+            data = f.read(1)
+        if not data:
+            return "Empty file"
+        return None
+    except PermissionError:
+        return "Permission denied"
+    except OSError as exc:
+        return str(exc)
+
+
 def make_logger(log_path: Path, name: str) -> logging.Logger:
     """Create a file-only logger for one collection."""
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -749,6 +767,9 @@ def main() -> int:
         seen[r.collection_name] = r.dir_path.name
 
     # ── Live display + execution ───────────────────────────────────────────────
+    # Populated during dry-run; used for the post-display unreadable file report.
+    unreadable_by_collection: dict[str, list[tuple[Path, str]]] = {}
+
     with Live(console=console, refresh_per_second=4, screen=False) as live:
 
         def refresh() -> None:
@@ -757,18 +778,54 @@ def main() -> int:
         refresh()
 
         if args.dry_run:
-            # Discover only — no uploads
+            # Discover files and validate readability — no uploads
             for r in results:
                 _update(r, lock, status="running", start_time=time.time(),
                         current_step="Scanning…")
                 refresh()
+
                 files = discover_files(r.dir_path)
+
+                if not files:
+                    _update(r, lock, total_files=0, status="skipped",
+                            end_time=time.time(), current_step="No supported files")
+                    refresh()
+                    continue
+
+                # Validate each file: permissions + readability
+                _update(r, lock, total_files=len(files),
+                        current_step=f"Validating {len(files)} files…")
+                refresh()
+
+                unreadable: list[tuple[Path, str]] = []
+                for path in files:
+                    err = validate_readable(path)
+                    if err is not None:
+                        unreadable.append((path, err))
+
+                readable_n   = len(files) - len(unreadable)
+                unreadable_n = len(unreadable)
+
+                if unreadable:
+                    unreadable_by_collection[r.collection_name] = unreadable
+
+                if unreadable_n == 0:
+                    status = "done"
+                    step   = f"All {readable_n} files readable"
+                elif readable_n > 0:
+                    status = "partial"
+                    step   = f"{readable_n} readable · {unreadable_n} unreadable"
+                else:
+                    status = "failed"
+                    step   = f"All {unreadable_n} files unreadable"
+
                 _update(r, lock,
-                        total_files=len(files),
-                        ingested_files=len(files),
-                        status="done" if files else "skipped",
+                        ingested_files=readable_n,
+                        failed_files=unreadable_n,
+                        status=status,
                         end_time=time.time(),
-                        current_step=f"Found {len(files)} files")
+                        current_step=step,
+                        error=step if unreadable_n > 0 else None)
                 refresh()
 
         else:
@@ -810,44 +867,69 @@ def main() -> int:
     failed_files   = sum(r.failed_files   for r in results)
     skipped_files  = sum(r.skipped_files  for r in results)
 
+    # Labels differ between dry-run (validation) and full run (ingestion)
+    dr = args.dry_run
     console.print()
     console.print("[bold white]══════════════════════════════════════════════[/]")
-    console.print("[bold white]                 IMPORT SUMMARY               [/]")
+    title = "DRY RUN — VALIDATION SUMMARY" if dr else "IMPORT SUMMARY"
+    console.print(f"[bold white]          {title:<34}[/]")
     console.print("[bold white]══════════════════════════════════════════════[/]")
     console.print()
     console.print(f"  Collections total:  [white]{len(results)}[/]")
-    console.print(f"  [green]✅ Successful:      {len(done_results)}[/]")
+    console.print(f"  [green]✅ {'All readable' if dr else 'Successful'}:      {len(done_results)}[/]")
     if partial_results:
-        console.print(f"  [yellow]⚠  Partial:         {len(partial_results)}  (some files failed)[/]")
+        note = "some unreadable" if dr else "some files failed"
+        console.print(f"  [yellow]⚠  Partial:         {len(partial_results)}  ({note})[/]")
     if skipped_results:
         console.print(f"  [dim]⊘  Skipped:         {len(skipped_results)}  (no supported files)[/]")
     if failed_results:
-        console.print(f"  [red]❌ Failed:          {len(failed_results)}[/]")
+        note = "all unreadable" if dr else "no files ingested"
+        console.print(f"  [red]❌ Failed:          {len(failed_results)}  ({note})[/]")
     console.print()
-    console.print(f"  Files uploaded:     [white]{total_files}[/]")
-    console.print(f"  [green]Ingested:           {ingested_files}[/]")
-    if skipped_files:
-        console.print(f"  [dim]Already current:    {skipped_files}  (skipped)[/]")
-    if failed_files:
-        console.print(f"  [red]Failed:             {failed_files}[/]")
+    console.print(f"  Files discovered:   [white]{total_files}[/]")
+    if dr:
+        console.print(f"  [green]Readable:           {ingested_files}[/]")
+        if failed_files:
+            console.print(f"  [red]Unreadable:         {failed_files}[/]")
+    else:
+        console.print(f"  [green]Ingested:           {ingested_files}[/]")
+        if skipped_files:
+            console.print(f"  [dim]Already current:    {skipped_files}  (skipped)[/]")
+        if failed_files:
+            console.print(f"  [red]Failed:             {failed_files}[/]")
     console.print()
-    console.print(f"  Per-collection logs: [dim]{log_dir.resolve()}/[/]")
-    console.print()
+    if not dr:
+        console.print(f"  Per-collection logs: [dim]{log_dir.resolve()}/[/]")
+        console.print()
 
     if partial_results:
-        console.print("[bold yellow]Partial collections (some files failed):[/]")
+        header = "Collections with unreadable files:" if dr else "Partial collections (some files failed):"
+        console.print(f"[bold yellow]{header}[/]")
         for r in partial_results:
             console.print(f"  [yellow]• {r.collection_name}[/]")
-            console.print(f"    Result:  {r.error or 'see log'}")
-            console.print(f"    Log:     {r.log_path}")
+            if not dr:
+                console.print(f"    Result:  {r.error or 'see log'}")
+                console.print(f"    Log:     {r.log_path}")
         console.print()
 
     if failed_results:
-        console.print("[bold red]Failed collections (no files ingested):[/]")
+        header = "Collections entirely unreadable:" if dr else "Failed collections (no files ingested):"
+        console.print(f"[bold red]{header}[/]")
         for r in failed_results:
             console.print(f"  [red]• {r.collection_name}[/]")
-            console.print(f"    Error:   {r.error or 'see log'}")
-            console.print(f"    Log:     {r.log_path}")
+            if not dr:
+                console.print(f"    Error:   {r.error or 'see log'}")
+                console.print(f"    Log:     {r.log_path}")
+        console.print()
+
+    # Dry-run: print each unreadable file with its error
+    if dr and unreadable_by_collection:
+        console.print("[bold red]Unreadable files:[/]")
+        for col, entries in unreadable_by_collection.items():
+            console.print(f"  [yellow]{col}[/]")
+            for path, err in entries:
+                console.print(f"    [red]{path}[/]")
+                console.print(f"      [dim]{err}[/]")
         console.print()
 
     if skipped_results:
