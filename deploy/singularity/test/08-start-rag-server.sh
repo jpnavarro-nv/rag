@@ -152,8 +152,8 @@ singularity exec \
   --env APP_LLM_MODELNAME=${APP_LLM_MODELNAME:-"nvidia/llama-3.3-nemotron-super-49b-v1.5"} \
   --env APP_LLM_SERVERURL="localhost:${LLM_PORT}" \
   --env LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-32768} \
-  --env LLM_TEMPERATURE=${LLM_TEMPERATURE:-0} \
-  --env LLM_TOP_P=${LLM_TOP_P:-1.0} \
+  --env LLM_TEMPERATURE=${LLM_TEMPERATURE:-0.6} \
+  --env LLM_TOP_P=${LLM_TOP_P:-0.95} \
   --env APP_QUERYREWRITER_MODELNAME=${APP_QUERYREWRITER_MODELNAME:-"nvidia/llama-3.3-nemotron-super-49b-v1.5"} \
   --env APP_QUERYREWRITER_SERVERURL="localhost:${LLM_PORT}" \
   --env ENABLE_QUERYREWRITER=${ENABLE_QUERYREWRITER:-False} \

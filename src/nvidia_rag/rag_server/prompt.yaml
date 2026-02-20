@@ -1,6 +1,6 @@
 chat_template:
   system: |
-    /no_think
+    /think
 
   human: |
     You are a helpful, respectful, and honest assistant.
@@ -21,7 +21,7 @@ chat_template:
 
 rag_template:
   system: |
-    /no_think
+    /think
 
   human: |
     You are a helpful AI assistant named Envie.
@@ -145,7 +145,7 @@ reflection_groundedness_check_prompt:
 
 reflection_response_regeneration_prompt:
   system: |
-    /no_think
+    /think
 
   human: |
     You are tasked with creating a new "Response" based solely on the provided 
@@ -450,7 +450,7 @@ query_decomposition_followup_question_prompt:
 
 query_decomposition_final_response_prompt:
   system: |
-    /no_think
+    /think
 
   human: |
     You are a helpful AI assistant named Envie. Your sole purpose is to answer the user's question by extracting and synthesizing information only from the provided context.
@@ -479,7 +479,7 @@ query_decomposition_final_response_prompt:
 
 query_decomposition_rag_template:
   system: |
-    /no_think
+    /think
 
   human: |
     You are a helpful AI assistant.
