@@ -124,28 +124,24 @@ echo "Starting NV-Ingest Microservice..."
 mkdir -p $RAG_RUNTIME_DIR/nv-ingest-data
 
 # ==============================================================================
-# Writable venv for NV-Ingest — two-pronged approach
+# Writable /workspace/.venv for NV-Ingest uv-managed project environment
 #
-# Problem: NV-Ingest (via uv) creates /workspace/.venv at runtime and writes
-# entry-point scripts there (bulk_writer). The SIF is read-only → Errno 30.
+# NV-Ingest (via uv) creates /workspace/.venv at runtime and installs entry-
+# point scripts there (e.g. bulk_writer). The SIF is read-only SquashFS, so
+# any write fails with Errno 30.
 #
-# Why simple --bind to /workspace/.venv fails: Singularity silently ignores a
-# bind mount whose target directory does not exist inside the SIF image.
-# /workspace/.venv is NOT in the SIF — it is created at runtime — so the bind
-# target is absent and the mount is skipped.
-#
-# Fix (two layers):
-#   1. UV_PROJECT_ENVIRONMENT=/tmp/nv-ingest-venv  — tells uv to use a path
-#      inside /tmp, which ALWAYS exists in Singularity containers.
-#   2. --bind host_dir:/tmp/nv-ingest-venv         — makes that path writable
-#      AND persistent across restarts (no re-install on next run).
+# /workspace/.venv does NOT exist in the SIF — it is created at runtime —
+# but Singularity CAN bind-mount over a non-existent single-level path
+# (confirmed by diagnostic: singularity exec --bind /tmp/x:/workspace/.venv
+# succeeds). A writable host directory is bind-mounted over /workspace/.venv
+# and persists across restarts, avoiding re-installation on next run.
 # ==============================================================================
 NVINGEST_VENV="$RAG_RUNTIME_DIR/nv-ingest-venv"
 mkdir -p "$NVINGEST_VENV"
 if [ -z "$(ls -A "$NVINGEST_VENV" 2>/dev/null)" ]; then
-    echo "   Writable venv ready at /tmp/nv-ingest-venv (first run — uv will populate)"
+    echo "   Writable /workspace/.venv ready (first run — uv will populate on startup)"
 else
-    echo "   ✅ Writable venv already populated — reusing ($(ls "$NVINGEST_VENV" 2>/dev/null | wc -l) entries)"
+    echo "   ✅ Writable /workspace/.venv already populated — reusing"
 fi
 
 singularity run \
@@ -180,8 +176,7 @@ singularity run \
   --env MRC_IGNORE_NUMA_CHECK=1 \
   --env READY_CHECK_ALL_COMPONENTS=False \
   --env OTEL_SDK_DISABLED=true \
-  --env UV_PROJECT_ENVIRONMENT=/tmp/nv-ingest-venv \
-  --bind "$NVINGEST_VENV:/tmp/nv-ingest-venv" \
+  --bind "$NVINGEST_VENV:/workspace/.venv" \
   --bind $RAG_RUNTIME_DIR/nv-ingest-data:/workspace/data \
   $RAG_IMAGES_DIR/nv-ingest.sif \
   > $RAG_LOGS_DIR/nv-ingest.log 2>&1 &
