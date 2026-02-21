@@ -145,12 +145,13 @@ SINGULARITY_EXTRA_ARGS=()
 if [ -f "$PATCH_SCRIPT" ]; then
     echo "Applying build_markdown() patch..."
 
-    # Discover table_and_chart.py path inside the SIF
+    # Discover table_and_chart.py path inside the SIF using find (robust
+    # across conda/venv layouts where python3 may not be in PATH)
     TABLE_CHART_SIF_PATH=$(singularity exec \
         "$RAG_IMAGES_DIR/nv-ingest.sif" \
-        python3 -c \
-        "from nv_ingest_api.util.image_processing import table_and_chart; print(table_and_chart.__file__)" \
-        2>/dev/null | tr -d '\r\n')
+        find / -path "*/nv_ingest_api/util/image_processing/table_and_chart.py" \
+               -not -path "*/proc/*" -not -path "*/sys/*" \
+        2>/dev/null | head -1 | tr -d '\r\n')
 
     if [ -z "$TABLE_CHART_SIF_PATH" ]; then
         echo "   ⚠️  Could not locate table_and_chart.py inside SIF — skipping patch"
