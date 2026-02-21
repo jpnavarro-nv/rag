@@ -149,7 +149,7 @@ singularity run \
   --env VLM_CAPTION_ENDPOINT="http://localhost:${VLM_PORT}/v1/chat/completions" \
   --env VLM_CAPTION_MODEL_NAME="nvidia/llama-3.1-nemotron-nano-vl-8b-v1" \
   --env MAX_INGEST_PROCESS_WORKERS=${MAX_INGEST_PROCESS_WORKERS:-16} \
-  --env INGEST_LOG_LEVEL=WARNING \
+  --env INGEST_LOG_LEVEL=DEBUG \
   --env INGEST_RAY_LOG_LEVEL=PRODUCTION \
   --env MRC_IGNORE_NUMA_CHECK=1 \
   --env READY_CHECK_ALL_COMPONENTS=False \
