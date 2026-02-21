@@ -123,27 +123,10 @@ echo "Starting NV-Ingest Microservice..."
 # Create data directory for NV-Ingest if needed
 mkdir -p $RAG_RUNTIME_DIR/nv-ingest-data
 
-# ==============================================================================
-# Writable /workspace/.venv for NV-Ingest uv-managed project environment
-#
-# NV-Ingest (via uv) creates /workspace/.venv at runtime and installs entry-
-# point scripts there (e.g. bulk_writer). The SIF is read-only SquashFS, so
-# any write fails with Errno 30.
-#
-# /workspace/.venv does NOT exist in the SIF — it is created at runtime —
-# but Singularity CAN bind-mount over a non-existent single-level path
-# (confirmed by diagnostic: singularity exec --bind /tmp/x:/workspace/.venv
-# succeeds). A writable host directory is bind-mounted over /workspace/.venv
-# and persists across restarts, avoiding re-installation on next run.
-# ==============================================================================
-NVINGEST_VENV="$RAG_RUNTIME_DIR/nv-ingest-venv"
-mkdir -p "$NVINGEST_VENV"
-if [ -z "$(ls -A "$NVINGEST_VENV" 2>/dev/null)" ]; then
-    echo "   Writable /workspace/.venv ready (first run — uv will populate on startup)"
-else
-    echo "   ✅ Writable /workspace/.venv already populated — reusing"
-fi
-
+# --writable-tmpfs allows uv to create /workspace/.venv at runtime (path does
+# not exist in the read-only SIF). This fixes Errno 30 for bulk_writer and
+# other entry-point scripts without altering the Python packages baked into
+# the SIF image.
 singularity run \
   --nv \
   --writable-tmpfs \
@@ -176,7 +159,6 @@ singularity run \
   --env MRC_IGNORE_NUMA_CHECK=1 \
   --env READY_CHECK_ALL_COMPONENTS=False \
   --env OTEL_SDK_DISABLED=true \
-  --bind "$NVINGEST_VENV:/workspace/.venv" \
   --bind $RAG_RUNTIME_DIR/nv-ingest-data:/workspace/data \
   $RAG_IMAGES_DIR/nv-ingest.sif \
   > $RAG_LOGS_DIR/nv-ingest.log 2>&1 &
