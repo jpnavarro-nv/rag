@@ -32,6 +32,9 @@ docs/_*
 # General ignores
 .DS_Store
 
+# Persistent development context (local only, not shared)
+context_dev.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
