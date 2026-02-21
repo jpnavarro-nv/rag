@@ -35,6 +35,9 @@ docs/_*
 # Persistent development context (local only, not shared)
 context_dev.md
 
+# Debug output dumps (large files from cluster, local only)
+outputs_debug/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
