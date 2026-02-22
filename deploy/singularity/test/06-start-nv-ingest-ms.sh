@@ -137,7 +137,8 @@ if [ ! -d "$NVINGEST_BIN_OVERLAY" ]; then
     echo "   ✅ nv-ingest venv bin overlay created at $NVINGEST_BIN_OVERLAY"
 fi
 # Remove stale bulk_writer on every startup (same rationale as 07).
-rm -f "$NVINGEST_BIN_OVERLAY/bulk_writer"
+# Use rm -rf: bulk_writer can be a directory if extracted from the SIF as such.
+rm -rf "$NVINGEST_BIN_OVERLAY/bulk_writer"
 
 singularity run \
   --nv \
