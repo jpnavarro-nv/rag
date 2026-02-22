@@ -126,6 +126,28 @@ echo "Starting Ingestor Server on port $INGESTOR_PORT..."
 # Create temp directory for ingestor if needed
 mkdir -p $RAG_RUNTIME_DIR/ingestor-temp
 
+# ==============================================================================
+# Setup venv bin overlay (one-time): pre-create missing uv entry points
+# Prevents [Errno 30] when uv tries to lazily create /workspace/.venv/bin/bulk_writer
+# inside the read-only SIF filesystem.
+# ==============================================================================
+INGESTOR_BIN_OVERLAY="$RAG_RUNTIME_DIR/ingestor-venv-bin"
+if [ ! -f "$INGESTOR_BIN_OVERLAY/bulk_writer" ]; then
+    echo "Setting up ingestor venv bin overlay (one-time, ~30s)..."
+    mkdir -p "$INGESTOR_BIN_OVERLAY"
+    singularity exec $RAG_IMAGES_DIR/ingestor-server.sif bash -c "tar -C /workspace/.venv/bin -czf - ." | tar -xzf - -C "$INGESTOR_BIN_OVERLAY/"
+    cat > "$INGESTOR_BIN_OVERLAY/bulk_writer" << 'PYEOF'
+#!/workspace/.venv/bin/python3
+# -*- coding: utf-8 -*-
+from pymilvus.bulk_writer.__main__ import main
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
+PYEOF
+    chmod +x "$INGESTOR_BIN_OVERLAY/bulk_writer"
+    echo "   ✅ bulk_writer entry point created in $INGESTOR_BIN_OVERLAY"
+fi
+
 singularity exec \
   --env NGC_API_KEY=$NGC_API_KEY \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
@@ -166,12 +188,13 @@ singularity exec \
   --env REDIS_HOST=$REDIS_HOST \
   --env REDIS_PORT=$REDIS_PORT \
   --env REDIS_DB=0 \
-  --env ENABLE_MINIO_BULK_UPLOAD=False \
+  --env ENABLE_MINIO_BULK_UPLOAD=True \
   --env UV_NO_SYNC=1 \
   --env TEMP_DIR=/tmp-data \
   --env NV_INGEST_FILES_PER_BATCH=${NV_INGEST_FILES_PER_BATCH:-16} \
   --env NV_INGEST_CONCURRENT_BATCHES=${NV_INGEST_CONCURRENT_BATCHES:-4} \
   --bind $RAG_RUNTIME_DIR/ingestor-temp:/tmp-data \
+  --bind "$INGESTOR_BIN_OVERLAY:/workspace/.venv/bin" \
   $RAG_IMAGES_DIR/ingestor-server.sif \
   uvicorn nvidia_rag.ingestor_server.server:app --host 0.0.0.0 --port $INGESTOR_PORT --workers 1 \
   > $RAG_LOGS_DIR/ingestor-server.log 2>&1 &
