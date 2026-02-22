@@ -132,21 +132,14 @@ mkdir -p $RAG_RUNTIME_DIR/ingestor-temp
 # inside the read-only SIF filesystem.
 # ==============================================================================
 INGESTOR_BIN_OVERLAY="$RAG_RUNTIME_DIR/ingestor-venv-bin"
-if [ ! -f "$INGESTOR_BIN_OVERLAY/bulk_writer" ]; then
+if [ ! -d "$INGESTOR_BIN_OVERLAY" ]; then
     echo "Setting up ingestor venv bin overlay (one-time, ~30s)..."
     mkdir -p "$INGESTOR_BIN_OVERLAY"
     singularity exec $RAG_IMAGES_DIR/ingestor-server.sif bash -c "tar -C /workspace/.venv/bin -czf - ." | tar -xzf - -C "$INGESTOR_BIN_OVERLAY/"
-    cat > "$INGESTOR_BIN_OVERLAY/bulk_writer" << 'PYEOF'
-#!/workspace/.venv/bin/python3
-# -*- coding: utf-8 -*-
-from pymilvus.bulk_writer.__main__ import main
-if __name__ == "__main__":
-    import sys
-    sys.exit(main())
-PYEOF
-    chmod +x "$INGESTOR_BIN_OVERLAY/bulk_writer"
-    echo "   ✅ bulk_writer entry point created in $INGESTOR_BIN_OVERLAY"
+    echo "   ✅ venv bin overlay created at $INGESTOR_BIN_OVERLAY"
 fi
+# NOTE: bulk_writer entry point is absent from the SIF. On first ingest, uv creates it
+# in this writable host directory (via bind-mount). Subsequent runs reuse the cached file.
 
 singularity exec \
   --env NGC_API_KEY=$NGC_API_KEY \
