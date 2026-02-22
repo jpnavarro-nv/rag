@@ -123,6 +123,22 @@ echo "Starting NV-Ingest Microservice..."
 # Create data directory for NV-Ingest if needed
 mkdir -p $RAG_RUNTIME_DIR/nv-ingest-data
 
+# ==============================================================================
+# Setup venv bin overlay (one-time): pre-create missing uv entry points
+# Same pattern as 07: bind-mount only /workspace/.venv/bin (not the whole venv)
+# so uv sees the existing SIF venv and only creates missing entry points (e.g.
+# bulk_writer) in the writable host directory — no PyPI sync triggered.
+# ==============================================================================
+NVINGEST_BIN_OVERLAY="$RAG_RUNTIME_DIR/nv-ingest-venv-bin"
+if [ ! -d "$NVINGEST_BIN_OVERLAY" ]; then
+    echo "Setting up nv-ingest venv bin overlay (one-time, ~30s)..."
+    mkdir -p "$NVINGEST_BIN_OVERLAY"
+    singularity exec $RAG_IMAGES_DIR/nv-ingest.sif bash -c "tar -C /workspace/.venv/bin -czf - ." | tar -xzf - -C "$NVINGEST_BIN_OVERLAY/"
+    echo "   ✅ nv-ingest venv bin overlay created at $NVINGEST_BIN_OVERLAY"
+fi
+# Remove stale bulk_writer on every startup (same rationale as 07).
+rm -f "$NVINGEST_BIN_OVERLAY/bulk_writer"
+
 singularity run \
   --nv \
   --env CUDA_VISIBLE_DEVICES=$NVINGEST_GPU_ID \
@@ -155,6 +171,7 @@ singularity run \
   --env READY_CHECK_ALL_COMPONENTS=False \
   --env OTEL_SDK_DISABLED=true \
   --bind $RAG_RUNTIME_DIR/nv-ingest-data:/workspace/data \
+  --bind "$NVINGEST_BIN_OVERLAY:/workspace/.venv/bin" \
   $RAG_IMAGES_DIR/nv-ingest.sif \
   > $RAG_LOGS_DIR/nv-ingest.log 2>&1 &
 
