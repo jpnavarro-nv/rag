@@ -138,8 +138,9 @@ if [ ! -d "$INGESTOR_BIN_OVERLAY" ]; then
     singularity exec $RAG_IMAGES_DIR/ingestor-server.sif bash -c "tar -C /workspace/.venv/bin -czf - ." | tar -xzf - -C "$INGESTOR_BIN_OVERLAY/"
     echo "   ✅ venv bin overlay created at $INGESTOR_BIN_OVERLAY"
 fi
-# NOTE: bulk_writer entry point is absent from the SIF. On first ingest, uv creates it
-# in this writable host directory (via bind-mount). Subsequent runs reuse the cached file.
+# Remove stale bulk_writer on every startup: uv uses O_CREAT|O_EXCL and fails with
+# EEXIST if the file already exists. Deleting it lets uv recreate it cleanly each run.
+rm -f "$INGESTOR_BIN_OVERLAY/bulk_writer"
 
 singularity exec \
   --env NGC_API_KEY=$NGC_API_KEY \
