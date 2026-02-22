@@ -37,28 +37,21 @@ NVINGEST_PORT=${NVINGEST_PORT:-7670}
 wait_for_ingestor() {
     local host=$1
     local port=$2
-    local pid=$3
-    local start
-    start=$(date +%s)
+    local max_attempts=30
+    local attempt=1
 
-    echo "   ⏳ Waiting for Ingestor Server to be ready (no timeout)..."
-    while true; do
-        local elapsed=$(( $(date +%s) - start ))
-
-        # Check if the process is still alive before polling the endpoint
-        if ! ps -p "$pid" > /dev/null 2>&1; then
-            printf "\r%-70s\n" "   ❌ Ingestor Server process died after ${elapsed}s — check logs"
-            return 1
-        fi
-
-        if curl -s -f "http://${host}:${port}/health" > /dev/null 2>&1; then
-            printf "\r%-70s\n" "   ✅ Ingestor Server is ready (${elapsed}s)"
+    echo "   ⏳ Waiting for Ingestor Server to be ready..."
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s "http://${host}:${port}/health" > /dev/null 2>&1; then
+            echo "   ✅ Ingestor Server is ready"
             return 0
         fi
-
-        printf "\r   ⏳ Loading... %ds" "$elapsed"
         sleep 2
+        attempt=$((attempt + 1))
     done
+
+    echo "   ❌ Ingestor Server failed to become ready after $((max_attempts * 2))s"
+    return 1
 }
 
 # ==============================================================================
@@ -126,23 +119,6 @@ echo "Starting Ingestor Server on port $INGESTOR_PORT..."
 # Create temp directory for ingestor if needed
 mkdir -p $RAG_RUNTIME_DIR/ingestor-temp
 
-# ==============================================================================
-# Setup venv bin overlay (one-time): pre-create missing uv entry points
-# Prevents [Errno 30] when uv tries to lazily create /workspace/.venv/bin/bulk_writer
-# inside the read-only SIF filesystem.
-# ==============================================================================
-INGESTOR_BIN_OVERLAY="$RAG_RUNTIME_DIR/ingestor-venv-bin"
-if [ ! -d "$INGESTOR_BIN_OVERLAY" ]; then
-    echo "Setting up ingestor venv bin overlay (one-time, ~30s)..."
-    mkdir -p "$INGESTOR_BIN_OVERLAY"
-    singularity exec $RAG_IMAGES_DIR/ingestor-server.sif bash -c "tar -C /workspace/.venv/bin -czf - ." | tar -xzf - -C "$INGESTOR_BIN_OVERLAY/"
-    echo "   ✅ venv bin overlay created at $INGESTOR_BIN_OVERLAY"
-fi
-# Remove stale bulk_writer on every startup: uv uses O_CREAT|O_EXCL and fails with
-# EEXIST if the file already exists. Deleting it lets uv recreate it cleanly each run.
-# Use rm -f (not -rf): bulk_writer may be a directory extracted from the SIF; preserve it.
-rm -f "$INGESTOR_BIN_OVERLAY/bulk_writer"
-
 singularity exec \
   --env NGC_API_KEY=$NGC_API_KEY \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
@@ -184,12 +160,10 @@ singularity exec \
   --env REDIS_PORT=$REDIS_PORT \
   --env REDIS_DB=0 \
   --env ENABLE_MINIO_BULK_UPLOAD=True \
-  --env UV_NO_SYNC=1 \
   --env TEMP_DIR=/tmp-data \
   --env NV_INGEST_FILES_PER_BATCH=${NV_INGEST_FILES_PER_BATCH:-16} \
   --env NV_INGEST_CONCURRENT_BATCHES=${NV_INGEST_CONCURRENT_BATCHES:-4} \
   --bind $RAG_RUNTIME_DIR/ingestor-temp:/tmp-data \
-  --bind "$INGESTOR_BIN_OVERLAY:/workspace/.venv/bin" \
   $RAG_IMAGES_DIR/ingestor-server.sif \
   uvicorn nvidia_rag.ingestor_server.server:app --host 0.0.0.0 --port $INGESTOR_PORT --workers 1 \
   > $RAG_LOGS_DIR/ingestor-server.log 2>&1 &
@@ -208,7 +182,7 @@ else
 fi
 
 # Wait for Ingestor to be ready
-if ! wait_for_ingestor $INGESTOR_HOST $INGESTOR_PORT $INGESTOR_PID; then
+if ! wait_for_ingestor $INGESTOR_HOST $INGESTOR_PORT; then
     echo "   Check logs: tail -100 $RAG_LOGS_DIR/ingestor-server.log"
     exit 1
 fi

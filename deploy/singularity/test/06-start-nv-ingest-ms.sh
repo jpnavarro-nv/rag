@@ -38,28 +38,21 @@ PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
 wait_for_nvingest() {
     local host=$1
     local port=$2
-    local pid=$3
-    local start
-    start=$(date +%s)
+    local max_attempts=60
+    local attempt=1
 
-    echo "   ⏳ Waiting for NV-Ingest to be ready (no timeout — may take 1-2 min)..."
-    while true; do
-        local elapsed=$(( $(date +%s) - start ))
-
-        # Check if the process is still alive before polling the endpoint
-        if ! ps -p "$pid" > /dev/null 2>&1; then
-            printf "\r%-70s\n" "   ❌ NV-Ingest process died after ${elapsed}s — check logs"
-            return 1
-        fi
-
-        if curl -s -f "http://${host}:${port}/v1/health/ready" > /dev/null 2>&1; then
-            printf "\r%-70s\n" "   ✅ NV-Ingest is ready (${elapsed}s)"
+    echo "   ⏳ Waiting for NV-Ingest to be ready (may take 1-2 min)..."
+    while [ $attempt -le $max_attempts ]; do
+        if curl -s "http://${host}:${port}/v1/health/ready" > /dev/null 2>&1; then
+            echo "   ✅ NV-Ingest is ready"
             return 0
         fi
-
-        printf "\r   ⏳ Loading... %ds" "$elapsed"
         sleep 2
+        attempt=$((attempt + 1))
     done
+
+    echo "   ❌ NV-Ingest failed to become ready after $((max_attempts * 2))s"
+    return 1
 }
 
 # ==============================================================================
@@ -149,11 +142,10 @@ singularity run \
   --env VLM_CAPTION_ENDPOINT="http://localhost:${VLM_PORT}/v1/chat/completions" \
   --env VLM_CAPTION_MODEL_NAME="nvidia/llama-3.1-nemotron-nano-vl-8b-v1" \
   --env MAX_INGEST_PROCESS_WORKERS=${MAX_INGEST_PROCESS_WORKERS:-16} \
-  --env INGEST_LOG_LEVEL=DEBUG \
+  --env INGEST_LOG_LEVEL=WARNING \
   --env INGEST_RAY_LOG_LEVEL=PRODUCTION \
   --env MRC_IGNORE_NUMA_CHECK=1 \
   --env READY_CHECK_ALL_COMPONENTS=False \
-  --env OTEL_SDK_DISABLED=true \
   --bind $RAG_RUNTIME_DIR/nv-ingest-data:/workspace/data \
   $RAG_IMAGES_DIR/nv-ingest.sif \
   > $RAG_LOGS_DIR/nv-ingest.log 2>&1 &
@@ -172,7 +164,7 @@ else
 fi
 
 # Wait for NV-Ingest to be ready
-if ! wait_for_nvingest $NVINGEST_HOST $NVINGEST_PORT $NVINGEST_PID; then
+if ! wait_for_nvingest $NVINGEST_HOST $NVINGEST_PORT; then
     echo "   Check logs: tail -100 $RAG_LOGS_DIR/nv-ingest.log"
     exit 1
 fi
