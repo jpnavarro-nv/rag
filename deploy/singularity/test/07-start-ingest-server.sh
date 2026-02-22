@@ -119,7 +119,21 @@ echo "Starting Ingestor Server on port $INGESTOR_PORT..."
 # Create temp directory for ingestor if needed
 mkdir -p $RAG_RUNTIME_DIR/ingestor-temp
 
+# Setup venv bin overlay (one-time): allows uv to create missing entry points (e.g. bulk_writer)
+# on the writable host instead of the read-only SIF filesystem (Errno 30).
+INGESTOR_BIN_OVERLAY="$RAG_RUNTIME_DIR/ingestor-venv-bin"
+if [ ! -d "$INGESTOR_BIN_OVERLAY" ]; then
+    echo "Setting up ingestor venv bin overlay (one-time, ~30s)..."
+    mkdir -p "$INGESTOR_BIN_OVERLAY"
+    singularity exec $RAG_IMAGES_DIR/ingestor-server.sif bash -c "tar -C /workspace/.venv/bin -czf - ." | tar -xzf - -C "$INGESTOR_BIN_OVERLAY/"
+    echo "   ✅ venv bin overlay created at $INGESTOR_BIN_OVERLAY"
+fi
+# Remove bulk_writer on every startup so uv recreates it as a file (not directory).
+# Use rm -rf: bulk_writer may have been extracted as a directory from the SIF tar.
+rm -rf "$INGESTOR_BIN_OVERLAY/bulk_writer"
+
 singularity exec \
+  --bind "$INGESTOR_BIN_OVERLAY:/workspace/.venv/bin" \
   --env NGC_API_KEY=$NGC_API_KEY \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
   --env APP_VECTORSTORE_URL="http://${MILVUS_HOST}:${MILVUS_PORT}" \
