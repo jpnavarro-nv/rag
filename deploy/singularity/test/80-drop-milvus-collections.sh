@@ -194,18 +194,6 @@ except S3Error as e:
 fi
 
 # ==============================================================================
-# Limpar overlay cache do ingestor-server (garante setup one-time limpo)
-# ==============================================================================
-
-INGESTOR_BIN_OVERLAY="$RAG_RUNTIME_DIR/ingestor-venv-bin"
-if [ -d "$INGESTOR_BIN_OVERLAY" ]; then
-    echo ""
-    echo "Limpando overlay cache do ingestor-server..."
-    rm -rf "$INGESTOR_BIN_OVERLAY"
-    echo "   ✅ $INGESTOR_BIN_OVERLAY removido (será recriado no próximo start do 07)"
-fi
-
-# ==============================================================================
 # Resultado
 # ==============================================================================
 
