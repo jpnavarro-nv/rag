@@ -32,7 +32,7 @@ TABLE_STRUCTURE_PORT=${TABLE_STRUCTURE_PORT:-8016}
 PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
 
 # ==============================================================================
-# Healthcheck Function
+# Healthcheck Functions
 # ==============================================================================
 
 wait_for_nvingest() {
@@ -43,7 +43,7 @@ wait_for_nvingest() {
     echo "   ⏳ Waiting for NV-Ingest to be ready (cold start may take several minutes)..."
     while true; do
         if curl -s "http://${host}:${port}/v1/health/ready" > /dev/null 2>&1; then
-            echo "   ✅ NV-Ingest is ready (after $((attempt * 2))s)"
+            echo "   ✅ NV-Ingest HTTP ready (after $((attempt * 2))s)"
             return 0
         fi
         # Bail out if the process died while we were waiting
@@ -57,6 +57,108 @@ wait_for_nvingest() {
         fi
         sleep 2
         attempt=$((attempt + 1))
+    done
+}
+
+# Verify that the Ray pipeline inside nv-ingest is truly ready to process jobs.
+#
+# The HTTP health endpoint (/v1/health/ready) returns 200 as soon as gunicorn
+# is up — BEFORE Ray's GCS and pipeline actors finish initialising.  When Ray
+# is not yet ready, nv-ingest accepts job submissions but returns the null UUID
+# (00000000-0000-0000-0000-000000000000) instead of a real one.  The ingestor
+# server then receives 0 elements from nv-ingest, which causes an IndexError in
+# add_metadata() / iloc[0].
+#
+# Strategy: submit a minimal probe job; if the returned task_id is a real UUID,
+# Ray is ready.  If the probe endpoint is not accepting our payload format we
+# fall back to checking the Ray dashboard port (8265).
+wait_for_nvingest_ray() {
+    local host=$1
+    local port=$2
+    local attempt=0
+    local max_wait=600   # 10 min — abort if GCS crashed permanently
+    local start_time=$SECONDS
+    local NULL_UUID="00000000-0000-0000-0000-000000000000"
+    local PROBE='{"payload":[],"tasks":[]}'
+    local probe_errors=0
+    local use_dashboard=false
+
+    echo "   ⏳ Waiting for NV-Ingest Ray pipeline (not just HTTP) to be ready..."
+    while true; do
+        attempt=$((attempt + 1))
+
+        if ! $use_dashboard; then
+            # Primary probe: POST a minimal job — real UUID means Ray is processing
+            local response job_id
+            response=$(curl -s -X POST \
+                -H "Content-Type: application/json" \
+                -d "$PROBE" \
+                --connect-timeout 5 \
+                "http://${host}:${port}/v1/submit_job" 2>/dev/null) || response=""
+
+            job_id=$(printf '%s' "$response" | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    jid = d.get('task_id') or d.get('job_id') or d.get('id') or ''
+    print(str(jid).strip())
+except Exception:
+    print('')" 2>/dev/null) || job_id=""
+
+            if [ -n "$job_id" ] && \
+               [ "$job_id" != "null" ] && \
+               [ "$job_id" != "None" ] && \
+               [ "$job_id" != "$NULL_UUID" ]; then
+                echo "   ✅ NV-Ingest Ray pipeline ready (submit_job probe, attempt $attempt)"
+                return 0
+            fi
+
+            # If job_id is empty (can't parse a UUID from the response), the
+            # payload format may not match this nv-ingest version.  After 3
+            # consecutive empty-UUID responses switch to the dashboard probe.
+            # A null UUID (all zeros) means the probe format IS correct — Ray
+            # is just not ready yet — so we reset the error counter.
+            if [ -z "$job_id" ]; then
+                probe_errors=$((probe_errors + 1))
+                if [ $probe_errors -ge 3 ]; then
+                    echo "   ⚠️  submit_job probe inconclusive (API format?) — switching to Ray dashboard probe"
+                    use_dashboard=true
+                fi
+            else
+                probe_errors=0  # null-UUID response confirms probe format is correct
+            fi
+        else
+            # Fallback: Ray dashboard port 8265 is served by the GCS process.
+            # When it accepts TCP connections, Ray GCS is running.
+            if nc -z localhost 8265 > /dev/null 2>&1; then
+                echo "   ✅ NV-Ingest Ray GCS started (dashboard probe, attempt $attempt)"
+                echo "      ⚠️  submit_job probe was inconclusive — monitor first import carefully"
+                return 0
+            fi
+        fi
+
+        # Timeout guard — if GCS crashed permanently the probe loops forever otherwise
+        if [ $((SECONDS - start_time)) -gt $max_wait ]; then
+            echo "   ❌ NV-Ingest Ray pipeline not ready after ${max_wait}s"
+            echo "      Ray may have crashed — check:"
+            echo "      grep -i 'GCS\\|Failed to connect\\|killed' $RAG_LOGS_DIR/nv-ingest.log"
+            return 1
+        fi
+
+        # Bail out immediately if the nv-ingest process itself died
+        if [ -f "$RAG_RUNTIME_DIR/pids/nv-ingest.pid" ]; then
+            local pid
+            pid=$(cat "$RAG_RUNTIME_DIR/pids/nv-ingest.pid")
+            if ! ps -p "$pid" > /dev/null 2>&1; then
+                echo "   ❌ NV-Ingest process died while waiting for Ray"
+                return 1
+            fi
+        fi
+
+        if [ $attempt -eq 1 ] || [ $((attempt % 6)) -eq 0 ]; then
+            echo "   ⏳ Ray not ready yet (attempt $attempt, uuid='${job_id:-none}') — waiting 10s..."
+        fi
+        sleep 10
     done
 }
 
@@ -169,8 +271,16 @@ else
     exit 1
 fi
 
-# Wait for NV-Ingest to be ready
+# Wait for NV-Ingest HTTP layer to be ready
 if ! wait_for_nvingest $NVINGEST_HOST $NVINGEST_PORT; then
+    echo "   Check logs: tail -100 $RAG_LOGS_DIR/nv-ingest.log"
+    exit 1
+fi
+
+# Wait for the Ray pipeline inside nv-ingest to be truly ready.
+# The HTTP check above passes before Ray actors finish initialising.
+# Without this check, jobs get null UUIDs → 0 elements → IndexError (B2).
+if ! wait_for_nvingest_ray $NVINGEST_HOST $NVINGEST_PORT; then
     echo "   Check logs: tail -100 $RAG_LOGS_DIR/nv-ingest.log"
     exit 1
 fi
