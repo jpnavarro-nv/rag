@@ -82,14 +82,29 @@ wait_for_nvingest_ray() {
     local PROBE='{"payload":[],"tasks":[]}'
     local probe_errors=0
     local use_dashboard=false
+    # Declare outside the loop so values are always explicitly reset each iteration
+    local response="" job_id=""
 
     echo "   ⏳ Waiting for NV-Ingest Ray pipeline (not just HTTP) to be ready..."
     while true; do
         attempt=$((attempt + 1))
+        # Explicit reset every iteration — `local` inside the loop would be a no-op
+        # for already-declared local variables, leaving stale values on curl/python3 failures.
+        response=""
+        job_id=""
+
+        # Bail out first if the nv-ingest process itself died — most specific cause
+        if [ -f "$RAG_RUNTIME_DIR/pids/nv-ingest.pid" ]; then
+            local pid
+            pid=$(cat "$RAG_RUNTIME_DIR/pids/nv-ingest.pid")
+            if ! ps -p "$pid" > /dev/null 2>&1; then
+                echo "   ❌ NV-Ingest process died while waiting for Ray"
+                return 1
+            fi
+        fi
 
         if ! $use_dashboard; then
             # Primary probe: POST a minimal job — real UUID means Ray is processing
-            local response job_id
             response=$(curl -s -X POST \
                 -H "Content-Type: application/json" \
                 -d "$PROBE" \
@@ -130,14 +145,20 @@ except Exception:
         else
             # Fallback: Ray dashboard port 8265 is served by the GCS process.
             # When it accepts TCP connections, Ray GCS is running.
+            # IMPORTANT: GCS starting does NOT mean pipeline actors are ready yet.
+            # Wait an extra 30 s after detecting GCS to allow actors to initialise
+            # before declaring the pipeline ready.  Without this sleep, the first
+            # ingest job would still get null UUIDs and reproduce the B2 IndexError.
             if nc -z localhost 8265 > /dev/null 2>&1; then
                 echo "   ✅ NV-Ingest Ray GCS started (dashboard probe, attempt $attempt)"
-                echo "      ⚠️  submit_job probe was inconclusive — monitor first import carefully"
+                echo "      ⚠️  submit_job probe was inconclusive — waiting 30s for Ray actors..."
+                sleep 30
                 return 0
             fi
         fi
 
-        # Timeout guard — if GCS crashed permanently the probe loops forever otherwise
+        # Timeout guard — if GCS crashed permanently the probe loops forever otherwise.
+        # Checked after the PID guard above so the more specific message appears first.
         if [ $((SECONDS - start_time)) -gt $max_wait ]; then
             echo "   ❌ NV-Ingest Ray pipeline not ready after ${max_wait}s"
             echo "      Ray may have crashed — check:"
@@ -145,18 +166,12 @@ except Exception:
             return 1
         fi
 
-        # Bail out immediately if the nv-ingest process itself died
-        if [ -f "$RAG_RUNTIME_DIR/pids/nv-ingest.pid" ]; then
-            local pid
-            pid=$(cat "$RAG_RUNTIME_DIR/pids/nv-ingest.pid")
-            if ! ps -p "$pid" > /dev/null 2>&1; then
-                echo "   ❌ NV-Ingest process died while waiting for Ray"
-                return 1
-            fi
-        fi
-
         if [ $attempt -eq 1 ] || [ $((attempt % 6)) -eq 0 ]; then
-            echo "   ⏳ Ray not ready yet (attempt $attempt, uuid='${job_id:-none}') — waiting 10s..."
+            if $use_dashboard; then
+                echo "   ⏳ Waiting for Ray GCS (attempt $attempt) — waiting 10s..."
+            else
+                echo "   ⏳ Ray not ready yet (attempt $attempt, uuid='${job_id:-none}') — waiting 10s..."
+            fi
         fi
         sleep 10
     done
