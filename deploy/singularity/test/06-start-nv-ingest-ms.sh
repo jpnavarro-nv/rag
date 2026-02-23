@@ -38,21 +38,26 @@ PADDLE_OCR_PORT=${PADDLE_OCR_PORT:-8009}
 wait_for_nvingest() {
     local host=$1
     local port=$2
-    local max_attempts=60
     local attempt=1
 
-    echo "   ⏳ Waiting for NV-Ingest to be ready (may take 1-2 min)..."
-    while [ $attempt -le $max_attempts ]; do
+    echo "   ⏳ Waiting for NV-Ingest to be ready (cold start may take several minutes)..."
+    while true; do
         if curl -s "http://${host}:${port}/v1/health/ready" > /dev/null 2>&1; then
-            echo "   ✅ NV-Ingest is ready"
+            echo "   ✅ NV-Ingest is ready (after $((attempt * 2))s)"
             return 0
+        fi
+        # Bail out if the process died while we were waiting
+        if [ -f "$RAG_RUNTIME_DIR/pids/nv-ingest.pid" ]; then
+            local pid
+            pid=$(cat "$RAG_RUNTIME_DIR/pids/nv-ingest.pid")
+            if ! ps -p "$pid" > /dev/null 2>&1; then
+                echo "   ❌ NV-Ingest process died while waiting (PID $pid)"
+                return 1
+            fi
         fi
         sleep 2
         attempt=$((attempt + 1))
     done
-
-    echo "   ❌ NV-Ingest failed to become ready after $((max_attempts * 2))s"
-    return 1
 }
 
 # ==============================================================================
@@ -146,6 +151,7 @@ singularity run \
   --env INGEST_RAY_LOG_LEVEL=PRODUCTION \
   --env MRC_IGNORE_NUMA_CHECK=1 \
   --env READY_CHECK_ALL_COMPONENTS=False \
+  --env OTEL_SDK_DISABLED=true \
   --bind $RAG_RUNTIME_DIR/nv-ingest-data:/workspace/data \
   $RAG_IMAGES_DIR/nv-ingest.sif \
   > $RAG_LOGS_DIR/nv-ingest.log 2>&1 &
