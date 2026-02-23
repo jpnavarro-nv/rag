@@ -31,16 +31,17 @@ mkdir -p "$LLM_CACHE_DIR"
 # ==============================================================================
 # Triton Python backend instance count patch
 # ==============================================================================
-# The embedding and ranking NIMs default to workers_count = nproc (e.g. 16),
-# spawning 16 concurrent Triton Python backend stubs. In Singularity the stubs
-# race on SquashFS imports and several exceed their health-check timeout.
+# The embedding and ranking NIMs set instance_group { count: N } in config.pbtxt
+# where N = nproc (e.g. 16), spawning 16 concurrent Python backend stubs.
+# On Singularity SquashFS the stubs race on imports and exceed the 10s timeout.
 #
-# The NIM regenerates the Triton model-repository only on first run (or when
-# --force-recompile is set). Once generated, it reuses the existing config.pbtxt.
-# We patch the instance count to TRITON_INSTANCE_COUNT (default: 2) after
-# generation so subsequent runs use the reduced count.
+# Fix: _watch_and_patch_triton (below) runs in background on the HOST, watching
+# the bind-mounted /opt/nim/tmp for service_config.yaml (written last by the NIM
+# when the model repo is complete).  When detected, it patches all config.pbtxt
+# files to TRITON_INSTANCE_COUNT (default: 2) within the ~1.5s window before
+# Triton reads them.  Works on every session (no persistent nim-work required).
 #
-# To force re-generation (e.g. after a NIM update): remove the triton-model-repository:
+# To force model-repo re-generation (e.g. after a NIM update):
 #   rm -rf $EMBEDDING_WORK_DIR/tmp/run/triton-model-repository
 #   rm -rf $RANKING_WORK_DIR/tmp/run/triton-model-repository
 TRITON_INSTANCE_COUNT=${TRITON_INSTANCE_COUNT:-2}
@@ -61,17 +62,35 @@ _patch_triton_instances() {
     done
 }
 
+# _watch_and_patch_triton: background host-side patcher for Triton Python stubs.
+#
+# The NIM generates the Triton model repository with instance_group { count: N }
+# where N = nproc (e.g. 16).  On Singularity SquashFS, all N stubs import Python
+# simultaneously, racing for I/O and exceeding the 10s health-check timeout.
+#
+# Fix: watch for service_config.yaml on the HOST (visible via the /opt/nim/tmp
+# bind mount) — repository.py writes this file LAST, ~1.5s before Triton reads
+# the config.pbtxt files.  Patch immediately after detection.
+#
+# Timeline observed in nemoretriever-embedding.log:
+#   13:14:41.478  repository.py:770 — service_config.yaml written (repo done)
+#   13:14:43.050  Triton starts loading models (reads config.pbtxt)
+#   window ≈ 1.57s — patcher fires within 100ms, completes well before Triton reads
+_watch_and_patch_triton() {
+    local repo_dir="$1"
+    local count="$2"
+    local service_cfg="$repo_dir/service_config.yaml"
+    local n=0
+    while [ ! -f "$service_cfg" ]; do
+        sleep 0.1
+        n=$((n+1))
+        if [ "$n" -gt 6000 ]; then return 0; fi  # 10-minute safety timeout
+    done
+    _patch_triton_instances "$repo_dir" "$count"
+}
+
 EMBEDDING_TRITON_REPO="$EMBEDDING_WORK_DIR/tmp/run/triton-model-repository"
 RANKING_TRITON_REPO="$RANKING_WORK_DIR/tmp/run/triton-model-repository"
-
-if [ -d "$EMBEDDING_TRITON_REPO" ]; then
-    echo "   Patching embedding Triton instance count to $TRITON_INSTANCE_COUNT..."
-    _patch_triton_instances "$EMBEDDING_TRITON_REPO" "$TRITON_INSTANCE_COUNT"
-fi
-if [ -d "$RANKING_TRITON_REPO" ]; then
-    echo "   Patching ranking Triton instance count to $TRITON_INSTANCE_COUNT..."
-    _patch_triton_instances "$RANKING_TRITON_REPO" "$TRITON_INSTANCE_COUNT"
-fi
 
 echo "=== Starting Retrieval NIMs ==="
 echo "   Embedding:  localhost:$EMBEDDING_PORT  (GPU $EMBEDDING_GPU_ID)"
@@ -81,14 +100,19 @@ echo ""
 
 # Triton NIMs: singularity run (Docker entrypoint), port via NIM_HTTP_API_PORT
 #
-# NIM_HTTP_API_WORKERS: controls uvicorn HTTP workers AND the number of Triton
-# Python backend stub instances spawned simultaneously. In Singularity, Python
-# imports run against a read-only SquashFS filesystem which is slower than
-# Docker's overlay. With the default workers=<nproc> (e.g. 16), all 16 stubs
-# start concurrently and exceed the Triton Python backend health-check timeout.
-# Reducing to 2 avoids the thundering-herd startup failure while still allowing
-# some request concurrency.  Increase NIM_HTTP_API_WORKERS if throughput matters.
+# NIM_HTTP_API_WORKERS: controls uvicorn HTTP workers only. It does NOT affect
+# the Triton Python backend stub count — the NIM sets that from cpu_count()
+# in bls_model_builder.py regardless of NIM_HTTP_API_WORKERS.  The thundering-
+# herd fix is handled by _watch_and_patch_triton above.
 _RETRIEVAL_WORKERS=${NIM_HTTP_API_WORKERS:-2}
+
+# Launch background patchers before starting NIMs.  Each watcher detects
+# service_config.yaml (written when the Triton model repo is complete) and
+# immediately patches config.pbtxt instance_group counts to TRITON_INSTANCE_COUNT,
+# within the ~1.5s window before Triton reads the files.
+echo "   Launching Triton instance-count patchers (target: $TRITON_INSTANCE_COUNT)..."
+_watch_and_patch_triton "$EMBEDDING_TRITON_REPO" "$TRITON_INSTANCE_COUNT" &
+_watch_and_patch_triton "$RANKING_TRITON_REPO" "$TRITON_INSTANCE_COUNT" &
 
 start_nim_service "nemoretriever-embedding" "$EMBEDDING_PORT" "$EMBEDDING_GPU_ID" \
     "nemoretriever-embedding.sif" \
