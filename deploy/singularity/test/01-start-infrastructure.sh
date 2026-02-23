@@ -129,9 +129,15 @@ wait_for_minio() {
 wait_for_milvus() {
     local host=$1
     local port=$2
+    local pid=$3
     local attempt=1
     echo "   ⏳ Waiting for Milvus to be ready (may take 30-90s)..."
     while true; do
+        if ! ps -p "$pid" > /dev/null 2>&1; then
+            echo "   ❌ Milvus process died (PID $pid)"
+            echo "   Check logs: $RAG_LOGS_DIR/milvus.log"
+            return 1
+        fi
         if timeout 2 bash -c "cat < /dev/null > /dev/tcp/${host}/${port}" 2>/dev/null; then
             echo "   ✅ Milvus is ready ($((attempt * 2))s)"
             return 0
@@ -216,6 +222,10 @@ if [ ! -f "$RAG_MILVUS_CONFIG_DIR/milvus.yaml" ]; then
     echo "   ✅ Milvus config ready"
 fi
 
+# Ensure glog.conf exists — required by Knowhere (C++ glog) at IndexNode init.
+# The SIF's /milvus/configs/ does not ship glog.conf; an empty file is valid.
+touch "$RAG_MILVUS_CONFIG_DIR/glog.conf"
+
 singularity exec \
   --nv \
   --env ETCD_ENDPOINTS=$ETCD_HOST:$ETCD_PORT \
@@ -238,7 +248,7 @@ else
     echo "   Check logs: tail -50 $RAG_LOGS_DIR/milvus.log"
     exit 1
 fi
-wait_for_milvus $MILVUS_HOST $MILVUS_PORT
+wait_for_milvus $MILVUS_HOST $MILVUS_PORT $MILVUS_PID
 
 # ==============================================================================
 # Summary
