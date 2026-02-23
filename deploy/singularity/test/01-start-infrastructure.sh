@@ -1,81 +1,144 @@
 #!/bin/bash
 # Start infrastructure services: etcd, MinIO, Milvus
-# Run this FIRST before starting RAG services
+#
+# Must be the FIRST script run in every new session.
+# - Stops any services left over from the previous session
+# - Creates a fresh exec_YYYY_MM_DD_N directory for logs and runtime state
+# - Starts etcd, MinIO, and Milvus (data persisted in db/ across sessions)
 
 set -e
 
-# Load configuration
-source "$(dirname "$0")/00-config.sh"
+# ==============================================================================
+# Step 1: Determine base directory (same default as 00-config.sh)
+# ==============================================================================
+_RAG_BASE_DIR=${RAG_BASE_DIR:-$HOME/rag-test}
 
-# Create PID directory
-mkdir -p $RAG_RUNTIME_DIR/pids
+# ==============================================================================
+# Step 2: Stop any services left over from the previous session
+# ==============================================================================
+echo "=== Cleaning up previous session ==="
+_PREV_EXEC_FILE="$_RAG_BASE_DIR/.current_exec"
+if [ -f "$_PREV_EXEC_FILE" ]; then
+    _PREV_EXEC=$(cat "$_PREV_EXEC_FILE")
+    _PREV_NAME=$(basename "$_PREV_EXEC")
+    echo "   Previous session: $_PREV_NAME"
+    if [ -d "$_PREV_EXEC/runtime/pids" ]; then
+        for _pid_file in "$_PREV_EXEC/runtime/pids/"*.pid; do
+            [ -f "$_pid_file" ] || continue
+            _pid=$(cat "$_pid_file")
+            _svc=$(basename "$_pid_file" .pid)
+            if ps -p "$_pid" > /dev/null 2>&1; then
+                echo "   Stopping $_svc (PID $_pid)..."
+                kill "$_pid" 2>/dev/null || true
+                pkill -P "$_pid" 2>/dev/null || true
+            fi
+        done
+        sleep 3
+        # Force-kill anything still alive
+        for _pid_file in "$_PREV_EXEC/runtime/pids/"*.pid; do
+            [ -f "$_pid_file" ] || continue
+            _pid=$(cat "$_pid_file")
+            if ps -p "$_pid" > /dev/null 2>&1; then
+                kill -9 "$_pid" 2>/dev/null || true
+            fi
+            rm -f "$_pid_file"
+        done
+    else
+        echo "   No PID files found in previous session"
+    fi
+else
+    echo "   No previous session found"
+fi
+
+# Kill Ray grandchild processes (not tracked in PID files)
+for _pat in "raylet" "ray::" "gcs_server" "plasma_store_server" "dashboard_agent" "ray/dashboard"; do
+    pkill -f "$_pat" 2>/dev/null || true
+done
+
+# Free critical ports
+if command -v fuser > /dev/null 2>&1; then
+    for _port in 2379 6379 7670 7671 8081 8082 3000 8265 9010 9011 19530; do
+        fuser -k "${_port}/tcp" 2>/dev/null || true
+    done
+fi
+
+echo "   ✅ Cleanup done"
+echo ""
+
+# ==============================================================================
+# Step 3: Create new exec directory
+# ==============================================================================
+_DATE=$(date +%Y_%m_%d)
+_IDX=1
+while [ -d "$_RAG_BASE_DIR/exec_${_DATE}_${_IDX}" ]; do
+    _IDX=$((_IDX + 1))
+done
+_EXEC_DIR="$_RAG_BASE_DIR/exec_${_DATE}_${_IDX}"
+
+mkdir -p "$_EXEC_DIR/logs"
+mkdir -p "$_EXEC_DIR/tmp"
+mkdir -p "$_EXEC_DIR/runtime/pids"
+mkdir -p "$_EXEC_DIR/runtime/nim-work"
+mkdir -p "$_EXEC_DIR/runtime/ingestor-temp"
+mkdir -p "$_EXEC_DIR/runtime/ingestor-venv-bin"
+mkdir -p "$_EXEC_DIR/runtime/nv-ingest-data"
+
+echo "$_EXEC_DIR" > "$_RAG_BASE_DIR/.current_exec"
+echo "=== New session: $(basename $_EXEC_DIR) ==="
+echo ""
+
+# ==============================================================================
+# Step 4: Load configuration (now reads .current_exec → sets all path vars)
+# ==============================================================================
+source "$(dirname "$0")/00-config.sh"
 
 # ==============================================================================
 # Healthcheck Functions
 # ==============================================================================
 
-# Wait for etcd to be ready
 wait_for_etcd() {
     local host=$1
     local port=$2
-    local max_attempts=30
     local attempt=1
-
     echo "   ⏳ Waiting for etcd to be ready..."
-    while [ $attempt -le $max_attempts ]; do
+    while true; do
         if curl -s "http://${host}:${port}/health" > /dev/null 2>&1; then
-            echo "   ✅ etcd is ready"
+            echo "   ✅ etcd is ready (${attempt}s)"
             return 0
         fi
         sleep 1
         attempt=$((attempt + 1))
     done
-
-    echo "   ❌ etcd failed to become ready after ${max_attempts}s"
-    return 1
 }
 
-# Wait for MinIO to be ready
 wait_for_minio() {
     local host=$1
     local port=$2
-    local max_attempts=30
     local attempt=1
-
     echo "   ⏳ Waiting for MinIO to be ready..."
-    while [ $attempt -le $max_attempts ]; do
+    while true; do
         if curl -s "http://${host}:${port}/minio/health/live" > /dev/null 2>&1; then
-            echo "   ✅ MinIO is ready"
+            echo "   ✅ MinIO is ready (${attempt}s)"
             return 0
         fi
         sleep 1
         attempt=$((attempt + 1))
     done
-
-    echo "   ❌ MinIO failed to become ready after ${max_attempts}s"
-    return 1
 }
 
-# Wait for Milvus to be ready
 wait_for_milvus() {
     local host=$1
     local port=$2
-    local max_attempts=60
     local attempt=1
-
     echo "   ⏳ Waiting for Milvus to be ready (may take 30-60s)..."
-    while [ $attempt -le $max_attempts ]; do
-        # Check if Milvus health endpoint responds
+    while true; do
         if curl -s "http://${host}:9091/healthz" > /dev/null 2>&1; then
-            echo "   ✅ Milvus is ready"
+            echo "   ✅ Milvus is ready ($((attempt * 2))s)"
             return 0
         fi
         sleep 2
         attempt=$((attempt + 1))
     done
-
-    echo "   ❌ Milvus failed to become ready after $((max_attempts * 2))s"
-    return 1
 }
 
 echo "=== Starting RAG Infrastructure Services ==="
@@ -86,186 +149,108 @@ echo ""
 # ==============================================================================
 echo "[1/3] Starting etcd..."
 
-# Check if already running
-if [ -f $RAG_RUNTIME_DIR/pids/etcd.pid ]; then
-    EXISTING_PID=$(cat $RAG_RUNTIME_DIR/pids/etcd.pid)
-    if ps -p $EXISTING_PID > /dev/null 2>&1; then
-        echo "   ⊘  etcd already running (PID $EXISTING_PID)"
-        ETCD_PID=$EXISTING_PID
-    else
-        echo "   ⚠️  Stale PID file found, starting fresh..."
-        rm -f $RAG_RUNTIME_DIR/pids/etcd.pid
-    fi
+singularity exec \
+  --bind $RAG_ETCD_DATA_DIR:/etcd-data \
+  $RAG_IMAGES_DIR/etcd.sif \
+  /usr/local/bin/etcd \
+    --data-dir=/etcd-data \
+    --listen-client-urls=http://0.0.0.0:$ETCD_PORT \
+    --advertise-client-urls=http://$ETCD_HOST:$ETCD_PORT \
+    > $RAG_LOGS_DIR/etcd.log 2>&1 &
+
+ETCD_PID=$!
+echo $ETCD_PID > $RAG_RUNTIME_DIR/pids/etcd.pid
+
+sleep 1
+if ps -p $ETCD_PID > /dev/null; then
+    echo "   ✅ etcd started (port $ETCD_PORT, PID $ETCD_PID)"
+else
+    echo "   ❌ etcd failed to start"
+    echo "   Check logs: tail -20 $RAG_LOGS_DIR/etcd.log"
+    exit 1
 fi
-
-# Start if not running
-if [ -z "$ETCD_PID" ]; then
-    singularity exec \
-      --bind $RAG_RUNTIME_DIR/etcd-data:/etcd-data \
-      $RAG_IMAGES_DIR/etcd.sif \
-      /usr/local/bin/etcd \
-        --data-dir=/etcd-data \
-        --listen-client-urls=http://0.0.0.0:$ETCD_PORT \
-        --advertise-client-urls=http://$ETCD_HOST:$ETCD_PORT \
-        > $RAG_LOGS_DIR/etcd.log 2>&1 &
-
-    ETCD_PID=$!
-    echo $ETCD_PID > $RAG_RUNTIME_DIR/pids/etcd.pid
-
-    # Verify process started
-    sleep 1
-    if ps -p $ETCD_PID > /dev/null; then
-        echo "   ✅ etcd process started (port $ETCD_PORT, PID $ETCD_PID)"
-    else
-        echo "   ❌ etcd failed to start"
-        echo "   Check logs: tail -20 $RAG_LOGS_DIR/etcd.log"
-        exit 1
-    fi
-
-    # Wait for etcd to be ready
-    if ! wait_for_etcd $ETCD_HOST $ETCD_PORT; then
-        echo "   Check logs: tail -20 $RAG_LOGS_DIR/etcd.log"
-        exit 1
-    fi
-fi
+wait_for_etcd $ETCD_HOST $ETCD_PORT
 
 # ==============================================================================
 # 2. Start MinIO (object storage)
 # ==============================================================================
 echo "[2/3] Starting MinIO..."
 
-# Check if already running
-if [ -f $RAG_RUNTIME_DIR/pids/minio.pid ]; then
-    EXISTING_PID=$(cat $RAG_RUNTIME_DIR/pids/minio.pid)
-    if ps -p $EXISTING_PID > /dev/null 2>&1; then
-        echo "   ⊘  MinIO already running (PID $EXISTING_PID)"
-        MINIO_PID=$EXISTING_PID
-    else
-        echo "   ⚠️  Stale PID file found, starting fresh..."
-        rm -f $RAG_RUNTIME_DIR/pids/minio.pid
-    fi
+singularity exec \
+  --env MINIO_ROOT_USER=$MINIO_ROOT_USER \
+  --env MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD \
+  --bind $RAG_MINIO_DATA_DIR:/data \
+  $RAG_IMAGES_DIR/minio.sif \
+  minio server /data \
+    --console-address :$MINIO_CONSOLE_PORT \
+    --address :$MINIO_PORT \
+    > $RAG_LOGS_DIR/minio.log 2>&1 &
+
+MINIO_PID=$!
+echo $MINIO_PID > $RAG_RUNTIME_DIR/pids/minio.pid
+
+sleep 1
+if ps -p $MINIO_PID > /dev/null; then
+    echo "   ✅ MinIO started (port $MINIO_PORT, PID $MINIO_PID)"
+else
+    echo "   ❌ MinIO failed to start"
+    echo "   Check logs: tail -20 $RAG_LOGS_DIR/minio.log"
+    exit 1
 fi
-
-# Start if not running
-if [ -z "$MINIO_PID" ]; then
-    singularity exec \
-      --env MINIO_ROOT_USER=$MINIO_ROOT_USER \
-      --env MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD \
-      --bind $RAG_RUNTIME_DIR/minio-data:/data \
-      $RAG_IMAGES_DIR/minio.sif \
-      minio server /data \
-        --console-address :$MINIO_CONSOLE_PORT \
-        --address :$MINIO_PORT \
-        > $RAG_LOGS_DIR/minio.log 2>&1 &
-
-    MINIO_PID=$!
-    echo $MINIO_PID > $RAG_RUNTIME_DIR/pids/minio.pid
-
-    # Verify process started
-    sleep 1
-    if ps -p $MINIO_PID > /dev/null; then
-        echo "   ✅ MinIO process started (port $MINIO_PORT, console $MINIO_CONSOLE_PORT, PID $MINIO_PID)"
-    else
-        echo "   ❌ MinIO failed to start"
-        echo "   Check logs: tail -20 $RAG_LOGS_DIR/minio.log"
-        exit 1
-    fi
-
-    # Wait for MinIO to be ready
-    if ! wait_for_minio $MINIO_HOST $MINIO_PORT; then
-        echo "   Check logs: tail -20 $RAG_LOGS_DIR/minio.log"
-        exit 1
-    fi
-fi
+wait_for_minio $MINIO_HOST $MINIO_PORT
 
 # ==============================================================================
 # 3. Start Milvus (vector database)
 # ==============================================================================
 echo "[3/3] Starting Milvus standalone..."
 
-# Check if already running
-if [ -f $RAG_RUNTIME_DIR/pids/milvus.pid ]; then
-    EXISTING_PID=$(cat $RAG_RUNTIME_DIR/pids/milvus.pid)
-    if ps -p $EXISTING_PID > /dev/null 2>&1; then
-        echo "   ⊘  Milvus already running (PID $EXISTING_PID)"
-        MILVUS_PID=$EXISTING_PID
-    else
-        echo "   ⚠️  Stale PID file found, starting fresh..."
-        rm -f $RAG_RUNTIME_DIR/pids/milvus.pid
-    fi
+# Extract default Milvus configs from SIF on first use (persists in db/)
+if [ ! -f "$RAG_MILVUS_CONFIG_DIR/milvus.yaml" ]; then
+    echo "   Setting up Milvus config (one-time)..."
+    singularity exec $RAG_IMAGES_DIR/milvus.sif \
+      tar czf /tmp/milvus-configs.tar.gz -C /milvus configs/ > /dev/null 2>&1
+    tar xzf /tmp/milvus-configs.tar.gz -C "$RAG_DB_DIR" > /dev/null 2>&1
+    mv "$RAG_DB_DIR/configs" "$RAG_MILVUS_CONFIG_DIR"
+    rm -f /tmp/milvus-configs.tar.gz
+    cp "$(dirname "$0")/../configs/milvus.yaml" "$RAG_MILVUS_CONFIG_DIR/milvus.yaml"
+    echo "   ✅ Milvus config ready"
 fi
 
-# Start if not running
-if [ -z "$MILVUS_PID" ]; then
-    # Milvus needs custom config to set component ports correctly
-    # Must change to /milvus directory before running, as Milvus looks for configs relative to PWD
-    MILVUS_CONFIG_DIR="$RAG_RUNTIME_DIR/milvus-configs"
+singularity exec \
+  --nv \
+  --env ETCD_ENDPOINTS=$ETCD_HOST:$ETCD_PORT \
+  --env MINIO_ADDRESS=$MINIO_HOST:$MINIO_PORT \
+  --env "KNOWHERE_GPU_MEM_POOL_SIZE=2048;4096" \
+  --bind $RAG_MILVUS_DATA_DIR:/var/lib/milvus \
+  --bind $RAG_MILVUS_CONFIG_DIR:/milvus/configs \
+  $RAG_IMAGES_DIR/milvus.sif \
+  bash -c "cd /milvus && milvus run standalone" \
+    > $RAG_LOGS_DIR/milvus.log 2>&1 &
 
-    # Ensure config directory exists with all required files
-    if [ ! -d "$MILVUS_CONFIG_DIR" ] || [ ! -f "$MILVUS_CONFIG_DIR/milvus.yaml" ]; then
-        echo "   Setting up Milvus config directory..."
-        # Extract default configs from container
-        singularity exec $RAG_IMAGES_DIR/milvus.sif \
-          tar czf /tmp/milvus-configs.tar.gz -C /milvus configs/ > /dev/null 2>&1
-        # Extract to runtime dir (creates configs/ subdirectory)
-        tar xzf /tmp/milvus-configs.tar.gz -C "$RAG_RUNTIME_DIR" > /dev/null 2>&1
-        # Rename to milvus-configs for consistency
-        mv "$RAG_RUNTIME_DIR/configs" "$MILVUS_CONFIG_DIR"
-        rm -f /tmp/milvus-configs.tar.gz
-        # Overwrite with our custom config
-        cp "$(dirname "$0")/../configs/milvus.yaml" "$MILVUS_CONFIG_DIR/milvus.yaml"
-    fi
+MILVUS_PID=$!
+echo $MILVUS_PID > $RAG_RUNTIME_DIR/pids/milvus.pid
 
-    # Milvus uses GPU for CAGRA indexing and GPU-accelerated search
-    # Part of 4-GPU strategy: GPU 0 (Embedding & Retrieval) with Embedding/Ranking NIMs
-    # No CUDA_VISIBLE_DEVICES needed - Singularity --nv exposes all GPUs,
-    # Milvus internally manages GPU selection via KNOWHERE_GPU_MEM_POOL_SIZE
-    singularity exec \
-      --nv \
-      --env ETCD_ENDPOINTS=$ETCD_HOST:$ETCD_PORT \
-      --env MINIO_ADDRESS=$MINIO_HOST:$MINIO_PORT \
-      --env "KNOWHERE_GPU_MEM_POOL_SIZE=2048;4096" \
-      --bind $RAG_RUNTIME_DIR/milvus-data:/var/lib/milvus \
-      --bind $MILVUS_CONFIG_DIR:/milvus/configs \
-      $RAG_IMAGES_DIR/milvus.sif \
-      bash -c "cd /milvus && milvus run standalone" \
-        > $RAG_LOGS_DIR/milvus.log 2>&1 &
-
-    MILVUS_PID=$!
-    echo $MILVUS_PID > $RAG_RUNTIME_DIR/pids/milvus.pid
-
-    # Verify process started
-    sleep 1
-    if ps -p $MILVUS_PID > /dev/null; then
-        echo "   ✅ Milvus process started (port $MILVUS_PORT, PID $MILVUS_PID)"
-    else
-        echo "   ❌ Milvus failed to start"
-        echo "   Check logs: tail -20 $RAG_LOGS_DIR/milvus.log"
-        exit 1
-    fi
-
-    # Wait for Milvus to fully initialize
-    if ! wait_for_milvus $MILVUS_HOST 9091; then
-        echo "   Check logs: tail -50 $RAG_LOGS_DIR/milvus.log"
-        exit 1
-    fi
+sleep 1
+if ps -p $MILVUS_PID > /dev/null; then
+    echo "   ✅ Milvus started (port $MILVUS_PORT, PID $MILVUS_PID)"
+else
+    echo "   ❌ Milvus failed to start"
+    echo "   Check logs: tail -50 $RAG_LOGS_DIR/milvus.log"
+    exit 1
 fi
+wait_for_milvus $MILVUS_HOST 9091
 
 # ==============================================================================
-# Verify services are running
+# Summary
 # ==============================================================================
-echo ""
-echo "=== Running Processes ==="
-echo "etcd:   PID $ETCD_PID ($(ps -p $ETCD_PID -o state= 2>/dev/null || echo 'not running'))"
-echo "MinIO:  PID $MINIO_PID ($(ps -p $MINIO_PID -o state= 2>/dev/null || echo 'not running'))"
-echo "Milvus: PID $MILVUS_PID ($(ps -p $MILVUS_PID -o state= 2>/dev/null || echo 'not running'))"
-
 echo ""
 echo "=== Infrastructure Started ==="
-echo "✅ etcd:   $ETCD_HOST:$ETCD_PORT"
-echo "✅ MinIO:  $MINIO_HOST:$MINIO_PORT"
-echo "✅ Milvus: $MILVUS_HOST:$MILVUS_PORT"
+echo "✅ etcd:   $ETCD_HOST:$ETCD_PORT   (PID $ETCD_PID)"
+echo "✅ MinIO:  $MINIO_HOST:$MINIO_PORT   (PID $MINIO_PID)"
+echo "✅ Milvus: $MILVUS_HOST:$MILVUS_PORT  (PID $MILVUS_PID)"
 echo ""
-echo "Logs available at: $RAG_LOGS_DIR/"
+echo "Session: $(basename $RAG_EXEC_DIR)"
+echo "Logs:    $RAG_LOGS_DIR/"
+echo "DB:      $RAG_DB_DIR/"
 echo ""
-echo "Next: Run 02-test-connectivity.sh to verify connectivity"
+echo "Next: Run 03-start-redis.sh"

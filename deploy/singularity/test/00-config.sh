@@ -1,44 +1,76 @@
 #!/bin/bash
-# Configuration file for RAG Singularity test deployment
-# Source this file before running other scripts
+# Configuration file for RAG Singularity deployment
+# Source this file before running other scripts.
+#
+# 01-start-infrastructure.sh must run first — it creates the exec directory
+# and writes its path to $RAG_BASE_DIR/.current_exec.
 #
 # Required environment variables (set before sourcing):
 #   NGC_API_KEY     - NVIDIA NGC API key for NIMs
 #   RAG_BASE_DIR    - Base directory for all RAG data (optional, defaults to $HOME/rag-test)
 
 # ==============================================================================
-# Base Directories
+# Permanent Base Directories
 # ==============================================================================
 export RAG_BASE_DIR=${RAG_BASE_DIR:-$HOME/rag-test}
-
-# Derived directories
 export RAG_IMAGES_DIR=$RAG_BASE_DIR/containers/images
 export RAG_CACHE_DIR=$RAG_BASE_DIR/containers/cache
-export RAG_RUNTIME_DIR=$RAG_BASE_DIR/runtime
-export RAG_TMP_DIR=$RAG_BASE_DIR/tmp
-export RAG_LOGS_DIR=$RAG_BASE_DIR/logs
+
+# ==============================================================================
+# Persistent Database Directories (shared across all exec sessions)
+# ==============================================================================
+export RAG_DB_DIR=$RAG_BASE_DIR/db
+export RAG_MILVUS_DATA_DIR=$RAG_DB_DIR/milvus-data
+export RAG_MILVUS_CONFIG_DIR=$RAG_DB_DIR/milvus-configs
+export RAG_ETCD_DATA_DIR=$RAG_DB_DIR/etcd-data
+export RAG_MINIO_DATA_DIR=$RAG_DB_DIR/minio-data
+
+# ==============================================================================
+# Current Execution Directory (written by 01-start-infrastructure.sh)
+# Each ./01 run creates exec_YYYY_MM_DD_N and records it here.
+# ==============================================================================
+_CURRENT_EXEC_FILE="$RAG_BASE_DIR/.current_exec"
+if [ -f "$_CURRENT_EXEC_FILE" ]; then
+    export RAG_EXEC_DIR=$(cat "$_CURRENT_EXEC_FILE")
+    export RAG_RUNTIME_DIR=$RAG_EXEC_DIR/runtime
+    export RAG_LOGS_DIR=$RAG_EXEC_DIR/logs
+    export RAG_TMP_DIR=$RAG_EXEC_DIR/tmp
+else
+    export RAG_EXEC_DIR=""
+    export RAG_RUNTIME_DIR=""
+    export RAG_LOGS_DIR=""
+    export RAG_TMP_DIR=""
+fi
 
 # ==============================================================================
 # Apptainer/Singularity Configuration
 # ==============================================================================
-# Configure Apptainer cache and temp directories automatically
-# Using APPTAINER_ prefix (SINGULARITY_ is deprecated but still works)
 export APPTAINER_CACHEDIR=$RAG_CACHE_DIR
-export APPTAINER_TMPDIR=$RAG_TMP_DIR
+export APPTAINER_TMPDIR=${RAG_TMP_DIR:-$RAG_BASE_DIR/.apptainer-tmp}
 
 # ==============================================================================
-# Create Required Directories
+# Create Permanent Directories
 # ==============================================================================
-mkdir -p $RAG_IMAGES_DIR
-mkdir -p $RAG_CACHE_DIR
-mkdir -p $RAG_TMP_DIR
-mkdir -p $RAG_LOGS_DIR
-mkdir -p $RAG_RUNTIME_DIR/{etcd-data,minio-data,milvus-data,milvus-logs,pids}
+mkdir -p "$RAG_IMAGES_DIR"
+mkdir -p "$RAG_CACHE_DIR"
+mkdir -p "$RAG_MILVUS_DATA_DIR" "$RAG_MILVUS_CONFIG_DIR" "$RAG_ETCD_DATA_DIR" "$RAG_MINIO_DATA_DIR"
+
+# ==============================================================================
+# Create Exec Directories (only when an exec dir is active)
+# ==============================================================================
+if [ -n "$RAG_EXEC_DIR" ]; then
+    mkdir -p "$RAG_LOGS_DIR"
+    mkdir -p "$RAG_TMP_DIR"
+    mkdir -p "$RAG_RUNTIME_DIR/pids"
+    mkdir -p "$RAG_RUNTIME_DIR/nim-work"
+    mkdir -p "$RAG_RUNTIME_DIR/ingestor-temp"
+    mkdir -p "$RAG_RUNTIME_DIR/ingestor-venv-bin"
+    mkdir -p "$RAG_RUNTIME_DIR/nv-ingest-data"
+fi
 
 # ==============================================================================
 # Network Configuration
 # ==============================================================================
-# All services run on localhost (Singularity uses host network)
 export ETCD_HOST=localhost
 export ETCD_PORT=2379
 export MINIO_HOST=localhost
@@ -63,20 +95,21 @@ export NGC_API_KEY=${NGC_API_KEY:-""}
 # ==============================================================================
 echo "✅ Configuration loaded"
 echo ""
-echo "Directories:"
-echo "   Base:       $RAG_BASE_DIR"
-echo "   Images:     $RAG_IMAGES_DIR"
-echo "   Cache:      $RAG_CACHE_DIR"
-echo "   Tmp:        $RAG_TMP_DIR"
-echo "   Runtime:    $RAG_RUNTIME_DIR"
-echo "   Logs:       $RAG_LOGS_DIR"
-echo ""
-echo "Apptainer:"
-echo "   Cache dir:  $APPTAINER_CACHEDIR"
-echo "   Tmp dir:    $APPTAINER_TMPDIR"
+echo "Permanent:"
+echo "   Base:     $RAG_BASE_DIR"
+echo "   Images:   $RAG_IMAGES_DIR"
+echo "   DB:       $RAG_DB_DIR"
+if [ -n "$RAG_EXEC_DIR" ]; then
+    echo ""
+    echo "Exec: $(basename $RAG_EXEC_DIR)"
+    echo "   Logs:    $RAG_LOGS_DIR"
+    echo "   Runtime: $RAG_RUNTIME_DIR"
+else
+    echo ""
+    echo "⚠️  No active exec directory (run 01-start-infrastructure.sh first)"
+fi
 echo ""
 
-# Check NGC_API_KEY
 if [ -z "$NGC_API_KEY" ]; then
     echo "⚠️  WARNING: NGC_API_KEY not set"
     echo "   NIMs will not start without it. Set with:"
