@@ -122,7 +122,7 @@ mkdir -p $RAG_RUNTIME_DIR/ingestor-temp
 # Setup venv bin overlay (one-time): allows uv to create missing entry points (e.g. bulk_writer)
 # on the writable host instead of the read-only SIF filesystem (Errno 30).
 INGESTOR_BIN_OVERLAY="$RAG_RUNTIME_DIR/ingestor-venv-bin"
-if [ ! -d "$INGESTOR_BIN_OVERLAY" ]; then
+if [ ! -f "$INGESTOR_BIN_OVERLAY/uvicorn" ]; then
     echo "Setting up ingestor venv bin overlay (one-time, ~30s)..."
     mkdir -p "$INGESTOR_BIN_OVERLAY"
     singularity exec $RAG_IMAGES_DIR/ingestor-server.sif bash -c "tar -C /workspace/.venv/bin -czf - ." | tar -xzf - -C "$INGESTOR_BIN_OVERLAY/"
@@ -179,7 +179,7 @@ singularity exec \
   --env NV_INGEST_CONCURRENT_BATCHES=${NV_INGEST_CONCURRENT_BATCHES:-4} \
   --bind $RAG_RUNTIME_DIR/ingestor-temp:/tmp-data \
   $RAG_IMAGES_DIR/ingestor-server.sif \
-  uvicorn nvidia_rag.ingestor_server.server:app --host 0.0.0.0 --port $INGESTOR_PORT --workers 1 \
+  /workspace/.venv/bin/uvicorn nvidia_rag.ingestor_server.server:app --host 0.0.0.0 --port $INGESTOR_PORT --workers 1 \
   > $RAG_LOGS_DIR/ingestor-server.log 2>&1 &
 
 INGESTOR_PID=$!
