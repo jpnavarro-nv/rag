@@ -22,19 +22,15 @@ echo "   Table Structure:  localhost:$TABLE_STRUCTURE_PORT  (GPU $TABLE_STRUCTUR
 echo "   PaddleOCR:        localhost:$PADDLE_OCR_PORT  (GPU $PADDLE_OCR_GPU_ID)"
 echo ""
 
-# Persistent dirs for model weights, manifests and workspace
-PAGE_ELEMENTS_CACHE_DIR="$RAG_BASE_DIR/models/page-elements-cache"
-GRAPHIC_ELEMENTS_CACHE_DIR="$RAG_BASE_DIR/models/graphic-elements-cache"
-TABLE_STRUCTURE_CACHE_DIR="$RAG_BASE_DIR/models/table-structure-cache"
-PADDLE_OCR_CACHE_DIR="$RAG_BASE_DIR/models/paddle-ocr-cache"
+# Runtime work dirs (session-specific, under RAG_RUNTIME_DIR)
 PAGE_ELEMENTS_WORK_DIR="$RAG_RUNTIME_DIR/nim-work/page-elements"
 GRAPHIC_ELEMENTS_WORK_DIR="$RAG_RUNTIME_DIR/nim-work/graphic-elements"
 TABLE_STRUCTURE_WORK_DIR="$RAG_RUNTIME_DIR/nim-work/table-structure"
 PADDLE_OCR_WORK_DIR="$RAG_RUNTIME_DIR/nim-work/paddle-ocr"
-mkdir -p "$PAGE_ELEMENTS_CACHE_DIR"    "$PAGE_ELEMENTS_WORK_DIR/tmp"    "$PAGE_ELEMENTS_WORK_DIR/workspace"
-mkdir -p "$GRAPHIC_ELEMENTS_CACHE_DIR" "$GRAPHIC_ELEMENTS_WORK_DIR/tmp" "$GRAPHIC_ELEMENTS_WORK_DIR/workspace"
-mkdir -p "$TABLE_STRUCTURE_CACHE_DIR"  "$TABLE_STRUCTURE_WORK_DIR/tmp"  "$TABLE_STRUCTURE_WORK_DIR/workspace"
-mkdir -p "$PADDLE_OCR_CACHE_DIR"       "$PADDLE_OCR_WORK_DIR/tmp"       "$PADDLE_OCR_WORK_DIR/workspace"
+mkdir -p "$RAG_PAGE_ELEMENTS_CACHE_DIR"    "$PAGE_ELEMENTS_WORK_DIR/tmp"    "$PAGE_ELEMENTS_WORK_DIR/workspace"
+mkdir -p "$RAG_GRAPHIC_ELEMENTS_CACHE_DIR" "$GRAPHIC_ELEMENTS_WORK_DIR/tmp" "$GRAPHIC_ELEMENTS_WORK_DIR/workspace"
+mkdir -p "$RAG_TABLE_STRUCTURE_CACHE_DIR"  "$TABLE_STRUCTURE_WORK_DIR/tmp"  "$TABLE_STRUCTURE_WORK_DIR/workspace"
+mkdir -p "$RAG_PADDLE_OCR_CACHE_DIR"       "$PADDLE_OCR_WORK_DIR/tmp"       "$PADDLE_OCR_WORK_DIR/workspace"
 
 # ==============================================================================
 # Triton port isolation — Singularity has no network namespace
@@ -105,22 +101,22 @@ _INGEST_WORKERS=${NIM_HTTP_API_WORKERS:-2}
 export NIM_TRITON_EXTRA_ARGS="${_INGEST_CUDA_ARGS} --grpc-port=8001"
 start_nim_service "page-elements" "$PAGE_ELEMENTS_PORT" "$PAGE_ELEMENTS_GPU_ID" \
     "page-elements.sif" \
-    "$NVML_BIND --bind $PAGE_ELEMENTS_CACHE_DIR:/opt/nim/.cache --bind $PAGE_ELEMENTS_WORK_DIR/tmp:/opt/nim/tmp --bind $PAGE_ELEMENTS_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$PAGE_ELEMENTS_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8001 --env NIM_HTTP_TRITON_PORT=8020 --env NIM_TRITON_METRICS_PORT=8021"
+    "$NVML_BIND --bind $RAG_PAGE_ELEMENTS_CACHE_DIR:/opt/nim/.cache --bind $PAGE_ELEMENTS_WORK_DIR/tmp:/opt/nim/tmp --bind $PAGE_ELEMENTS_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$PAGE_ELEMENTS_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8001 --env NIM_HTTP_TRITON_PORT=8020 --env NIM_TRITON_METRICS_PORT=8021"
 
 export NIM_TRITON_EXTRA_ARGS="${_INGEST_CUDA_ARGS} --grpc-port=8004"
 start_nim_service "graphic-elements" "$GRAPHIC_ELEMENTS_PORT" "$GRAPHIC_ELEMENTS_GPU_ID" \
     "graphic-elements.sif" \
-    "$NVML_BIND --bind $GRAPHIC_ELEMENTS_CACHE_DIR:/opt/nim/.cache --bind $GRAPHIC_ELEMENTS_WORK_DIR/tmp:/opt/nim/tmp --bind $GRAPHIC_ELEMENTS_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$GRAPHIC_ELEMENTS_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8004 --env NIM_HTTP_TRITON_PORT=8030 --env NIM_TRITON_METRICS_PORT=8031"
+    "$NVML_BIND --bind $RAG_GRAPHIC_ELEMENTS_CACHE_DIR:/opt/nim/.cache --bind $GRAPHIC_ELEMENTS_WORK_DIR/tmp:/opt/nim/tmp --bind $GRAPHIC_ELEMENTS_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$GRAPHIC_ELEMENTS_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8004 --env NIM_HTTP_TRITON_PORT=8030 --env NIM_TRITON_METRICS_PORT=8031"
 
 export NIM_TRITON_EXTRA_ARGS="${_INGEST_CUDA_ARGS} --grpc-port=8017"
 start_nim_service "table-structure" "$TABLE_STRUCTURE_PORT" "$TABLE_STRUCTURE_GPU_ID" \
     "table-structure.sif" \
-    "$NVML_BIND --bind $TABLE_STRUCTURE_CACHE_DIR:/opt/nim/.cache --bind $TABLE_STRUCTURE_WORK_DIR/tmp:/opt/nim/tmp --bind $TABLE_STRUCTURE_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$TABLE_STRUCTURE_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8017 --env NIM_HTTP_TRITON_PORT=8040 --env NIM_TRITON_METRICS_PORT=8041"
+    "$NVML_BIND --bind $RAG_TABLE_STRUCTURE_CACHE_DIR:/opt/nim/.cache --bind $TABLE_STRUCTURE_WORK_DIR/tmp:/opt/nim/tmp --bind $TABLE_STRUCTURE_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$TABLE_STRUCTURE_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8017 --env NIM_HTTP_TRITON_PORT=8040 --env NIM_TRITON_METRICS_PORT=8041"
 
 export NIM_TRITON_EXTRA_ARGS="${_INGEST_CUDA_ARGS} --grpc-port=8010"
 start_nim_service "paddle-ocr" "$PADDLE_OCR_PORT" "$PADDLE_OCR_GPU_ID" \
     "paddle.sif" \
-    "$NVML_BIND $LIBXEXT_BIND --bind $PADDLE_OCR_CACHE_DIR:/opt/nim/.cache --bind $PADDLE_OCR_WORK_DIR/tmp:/opt/nim/tmp --bind $PADDLE_OCR_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$PADDLE_OCR_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8010 --env NIM_HTTP_TRITON_PORT=8050 --env NIM_TRITON_METRICS_PORT=8051"
+    "$NVML_BIND $LIBXEXT_BIND --bind $RAG_PADDLE_OCR_CACHE_DIR:/opt/nim/.cache --bind $PADDLE_OCR_WORK_DIR/tmp:/opt/nim/tmp --bind $PADDLE_OCR_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$PADDLE_OCR_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_INGEST_WORKERS --env NIM_TRITON_GRPC_PORT=8010 --env NIM_HTTP_TRITON_PORT=8050 --env NIM_TRITON_METRICS_PORT=8051"
 
 unset NIM_TRITON_EXTRA_ARGS
 

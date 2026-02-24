@@ -3,9 +3,11 @@
 
 set -e
 
-source "$(dirname "$0")/00-config.sh"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-DEF_FILE="../definitions/vlm.def"
+source "$SCRIPT_DIR/00-config.sh"
+
+DEF_FILE="$SCRIPT_DIR/../definitions/vlm.def"
 OUTPUT_FILE="$RAG_IMAGES_DIR/vlm.sif"
 
 echo "=== Rebuilding VLM Image ==="
@@ -29,7 +31,7 @@ if [ -f "$OUTPUT_FILE" ]; then
     echo "✅ VLM image rebuilt successfully"
     ls -lh "$OUTPUT_FILE"
     echo ""
-    echo "Test with: ./test-vlm-only.sh"
+    echo "Use nim-vlm.sh to start it, then: curl http://localhost:\$VLM_PORT/v1/health/ready"
 else
     echo ""
     echo "❌ Build failed"

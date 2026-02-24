@@ -6,14 +6,12 @@ This document describes all container images required for self-hosted deployment
 
 ```bash
 # Set environment variables (adjust paths for your environment)
-export RAG_IMAGES_DIR=/scratch/rag/containers/images
-export APPTAINER_CACHEDIR=/scratch/rag/containers/cache
 export NGC_API_KEY="your-key-here"
+export RAG_BASE_DIR=/scratch/rag   # images → $RAG_BASE_DIR/containers/images
 
-# Setup all images (builds + pulls)
+# Build/pull all images
 cd deploy/singularity/scripts
-./setup-images.sh minimal    # For testing
-# ./setup-images.sh all      # For production
+./build-images.sh
 ```
 
 ---
@@ -101,7 +99,7 @@ cd deploy/singularity/scripts
 | `riva-asr.sif` | Audio transcription | ~3 GB | Optional |
 | `guardrails-microservice.sif` | Guardrails orchestration | ~2 GB | Optional |
 
-**Docker sources:** (see `pull-all-images.sh` for complete list)
+**Docker sources:** (not yet deployed — optional NIMs are not included in `build-images.sh`)
 
 ---
 
@@ -118,27 +116,19 @@ cd deploy/singularity/scripts
 
 ## Deployment Strategies
 
-### Minimal Deployment (for testing)
-**Total: ~50 GB**
+### Standard Deployment
+**Total: ~100 GB**
 ```bash
-./pull-minimal-images.sh
+cd deploy/singularity/scripts
+./build-images.sh
 ```
 
 Includes:
-- Core services (3)
-- Primary AI models (3)
-- Essential infrastructure (3)
-
-### Full Deployment (production-ready)
-**Total: ~100 GB**
-```bash
-./pull-all-images.sh
-```
-
-Includes everything above plus:
-- Document processing NIMs
-- Optional NIMs (guardrails, VLM, etc.)
-- Observability stack
+- Core services (rag-server, ingestor-server, rag-frontend)
+- Primary AI models (LLM, Embedding, Ranking, VLM)
+- Document processing NIMs (page-elements, graphic-elements, table-structure, PaddleOCR)
+- NV-Ingest pipeline
+- Infrastructure (etcd, MinIO, Milvus)
 
 ---
 

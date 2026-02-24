@@ -13,17 +13,9 @@
 # Permanent Base Directories
 # ==============================================================================
 export RAG_BASE_DIR=${RAG_BASE_DIR:-$HOME/rag-test}
-export RAG_IMAGES_DIR=$RAG_BASE_DIR/containers/images
-export RAG_CACHE_DIR=$RAG_BASE_DIR/containers/cache
 
-# ==============================================================================
-# Persistent Database Directories (shared across all exec sessions)
-# ==============================================================================
-export RAG_DB_DIR=$RAG_BASE_DIR/db
-export RAG_MILVUS_DATA_DIR=$RAG_DB_DIR/milvus-data
-export RAG_MILVUS_CONFIG_DIR=$RAG_DB_DIR/milvus-configs
-export RAG_ETCD_DATA_DIR=$RAG_DB_DIR/etcd-data
-export RAG_MINIO_DATA_DIR=$RAG_DB_DIR/minio-data
+# All permanent paths (containers, db, models) are defined centrally in dirs.sh
+source "$(dirname "${BASH_SOURCE[0]}")/dirs.sh"
 
 # ==============================================================================
 # Current Execution Directory (written by 01-start-infrastructure.sh)
@@ -45,15 +37,20 @@ fi
 # ==============================================================================
 # Apptainer/Singularity Configuration
 # ==============================================================================
-export APPTAINER_CACHEDIR=$RAG_CACHE_DIR
-export APPTAINER_TMPDIR=${RAG_TMP_DIR:-$RAG_BASE_DIR/.apptainer-tmp}
+# APPTAINER_CACHEDIR is defined in dirs.sh (sourced above).
+# APPTAINER_TMPDIR uses the exec-session tmp when available; falls back to the
+# permanent RAG_APPTAINER_TMP_DIR (also from dirs.sh) for the window before
+# 01-start-infrastructure.sh creates the exec dir and writes .current_exec.
+export APPTAINER_TMPDIR=${RAG_TMP_DIR:-$RAG_APPTAINER_TMP_DIR}
 
 # ==============================================================================
 # Create Permanent Directories
 # ==============================================================================
 mkdir -p "$RAG_IMAGES_DIR"
 mkdir -p "$RAG_CACHE_DIR"
+mkdir -p "$RAG_APPTAINER_TMP_DIR"
 mkdir -p "$RAG_MILVUS_DATA_DIR" "$RAG_MILVUS_CONFIG_DIR" "$RAG_ETCD_DATA_DIR" "$RAG_MINIO_DATA_DIR"
+mkdir -p "$RAG_MODELS_DIR"
 
 # ==============================================================================
 # Create Exec Directories (only when an exec dir is active)

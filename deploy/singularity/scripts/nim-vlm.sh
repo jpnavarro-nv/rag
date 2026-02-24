@@ -6,7 +6,7 @@
 # Run standalone:  bash nim-vlm.sh
 # Or via full stack: bash 04-start-nim-models.sh
 #
-# Note: for isolated testing with health check loop, use test-vlm-only.sh instead.
+# Note: for isolated health check loop, use diagnose-vlm.sh instead.
 set -e
 
 source "$(dirname "$0")/00-config.sh"
@@ -17,13 +17,11 @@ if [ -z "$NGC_API_KEY" ]; then
     exit 1
 fi
 
-# Writable cache for model weights
-NIM_CACHE_DIR="$RAG_BASE_DIR/models/vlm-cache"
-mkdir -p "$NIM_CACHE_DIR"
+mkdir -p "$RAG_VLM_CACHE_DIR"
 
 echo "=== Starting VLM NIM ==="
 echo "   VLM: localhost:$VLM_PORT  (GPU $VLM_GPU_ID)"
-echo "   Cache: $NIM_CACHE_DIR"
+echo "   Cache: $RAG_VLM_CACHE_DIR"
 echo ""
 
 # nim_llm_sdk NIM:
@@ -31,7 +29,7 @@ echo ""
 #   --bind: writable cache for model weights
 #   --env OMPI/PMIX: suppress MPI warnings in HPC environments
 #   exec_cmd: port passed via start_server.sh "$@" -> api_server.py --port
-VLM_OPTS="--cleanenv --bind $NIM_CACHE_DIR:/opt/nim/.cache --env NIM_TENSOR_PARALLEL_SIZE=1 --env NIM_PIPELINE_PARALLEL_SIZE=1 --env NIM_CACHE_PATH=/opt/nim/.cache --env OMPI_MCA_pmix=^all --env OMPI_MCA_pml=ob1 --env PMIX_MCA_gds=^ds12,ds21 --env PMIX_MCA_psec=^munge"
+VLM_OPTS="--cleanenv --bind $RAG_VLM_CACHE_DIR:/opt/nim/.cache --env NIM_TENSOR_PARALLEL_SIZE=1 --env NIM_PIPELINE_PARALLEL_SIZE=1 --env NIM_CACHE_PATH=/opt/nim/.cache --env OMPI_MCA_pmix=^all --env OMPI_MCA_pml=ob1 --env PMIX_MCA_gds=^ds12,ds21 --env PMIX_MCA_psec=^munge"
 
 start_nim_service "vlm" "$VLM_PORT" "$VLM_GPU_ID" \
     "vlm.sif" \

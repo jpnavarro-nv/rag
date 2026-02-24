@@ -15,18 +15,15 @@ if [ -z "$NGC_API_KEY" ]; then
     exit 1
 fi
 
-# Persistent dirs for model weights, manifests and workspace
+# Persistent cache dirs defined in dirs.sh; runtime work dirs are session-specific.
 # /opt/nim/.cache    → model weights (persistent, large)
 # /opt/nim/tmp       → manifest downloads (persistent, small)
 # /opt/nim/workspace → NIM working files during init (persistent, small)
-EMBEDDING_CACHE_DIR="$RAG_BASE_DIR/models/embedding-cache"
-RANKING_CACHE_DIR="$RAG_BASE_DIR/models/ranking-cache"
-LLM_CACHE_DIR="$RAG_BASE_DIR/models/llm-cache"
 EMBEDDING_WORK_DIR="$RAG_RUNTIME_DIR/nim-work/embedding"
 RANKING_WORK_DIR="$RAG_RUNTIME_DIR/nim-work/ranking"
-mkdir -p "$EMBEDDING_CACHE_DIR" "$EMBEDDING_WORK_DIR/tmp" "$EMBEDDING_WORK_DIR/workspace"
-mkdir -p "$RANKING_CACHE_DIR"   "$RANKING_WORK_DIR/tmp"   "$RANKING_WORK_DIR/workspace"
-mkdir -p "$LLM_CACHE_DIR"
+mkdir -p "$RAG_EMBEDDING_CACHE_DIR" "$EMBEDDING_WORK_DIR/tmp" "$EMBEDDING_WORK_DIR/workspace"
+mkdir -p "$RAG_RANKING_CACHE_DIR"   "$RANKING_WORK_DIR/tmp"   "$RANKING_WORK_DIR/workspace"
+mkdir -p "$RAG_LLM_CACHE_DIR"       # nim_llm_sdk (non-Triton) — no tmp/workspace needed
 
 # ==============================================================================
 # Triton Python backend instance count patch
@@ -116,15 +113,15 @@ _watch_and_patch_triton "$RANKING_TRITON_REPO" "$TRITON_INSTANCE_COUNT" &
 
 start_nim_service "nemoretriever-embedding" "$EMBEDDING_PORT" "$EMBEDDING_GPU_ID" \
     "nemoretriever-embedding.sif" \
-    "$NVML_BIND --bind $EMBEDDING_CACHE_DIR:/opt/nim/.cache --bind $EMBEDDING_WORK_DIR/tmp:/opt/nim/tmp --bind $EMBEDDING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$EMBEDDING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_RETRIEVAL_WORKERS --env NIM_TRITON_GRPC_PORT=9001 --env NIM_HTTP_TRITON_PORT=9000 --env NIM_TRITON_METRICS_PORT=9002"
+    "$NVML_BIND --bind $RAG_EMBEDDING_CACHE_DIR:/opt/nim/.cache --bind $EMBEDDING_WORK_DIR/tmp:/opt/nim/tmp --bind $EMBEDDING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$EMBEDDING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_RETRIEVAL_WORKERS --env NIM_TRITON_GRPC_PORT=9001 --env NIM_HTTP_TRITON_PORT=9000 --env NIM_TRITON_METRICS_PORT=9002"
 
 start_nim_service "nemoretriever-ranking" "$RANKING_PORT" "$RANKING_GPU_ID" \
     "nemoretriever-ranking.sif" \
-    "$NVML_BIND --bind $RANKING_CACHE_DIR:/opt/nim/.cache --bind $RANKING_WORK_DIR/tmp:/opt/nim/tmp --bind $RANKING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_RETRIEVAL_WORKERS --env NIM_TRITON_GRPC_PORT=8011 --env NIM_HTTP_TRITON_PORT=8060 --env NIM_TRITON_METRICS_PORT=8061"
+    "$NVML_BIND --bind $RAG_RANKING_CACHE_DIR:/opt/nim/.cache --bind $RANKING_WORK_DIR/tmp:/opt/nim/tmp --bind $RANKING_WORK_DIR/workspace:/opt/nim/workspace --env NIM_HTTP_API_PORT=$RANKING_PORT --env NIM_CACHE_PATH=/opt/nim/.cache --env NIM_HTTP_API_WORKERS=$_RETRIEVAL_WORKERS --env NIM_TRITON_GRPC_PORT=8011 --env NIM_HTTP_TRITON_PORT=8060 --env NIM_TRITON_METRICS_PORT=8061"
 
 # nim_llm_sdk NIM: singularity exec with explicit start_server.sh --port
 # --cleanenv + MPI suppression same as VLM (same family, same HPC issues)
-LLM_OPTS="--cleanenv --bind $LLM_CACHE_DIR:/opt/nim/.cache --env NIM_CACHE_PATH=/opt/nim/.cache --env OMPI_MCA_pmix=^all --env OMPI_MCA_pml=ob1 --env PMIX_MCA_gds=^ds12,ds21 --env PMIX_MCA_psec=^munge"
+LLM_OPTS="--cleanenv --bind $RAG_LLM_CACHE_DIR:/opt/nim/.cache --env NIM_CACHE_PATH=/opt/nim/.cache --env OMPI_MCA_pmix=^all --env OMPI_MCA_pml=ob1 --env PMIX_MCA_gds=^ds12,ds21 --env PMIX_MCA_psec=^munge"
 
 start_nim_service "nim-llm" "$LLM_PORT" "$LLM_GPU_ID" \
     "nim-llm.sif" \
