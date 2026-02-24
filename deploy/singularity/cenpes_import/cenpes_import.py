@@ -445,10 +445,22 @@ def ingest_collection(
 
             try:
                 task_id = client.upload_batch(batch, result.collection_name, chunk_size, chunk_overlap)
-                client.poll_task(task_id)
+                task_result = client.poll_task(task_id)
+                failed_docs = task_result.get("result", {}).get("failed_documents", [])
+                batch_failed = len(failed_docs)
+                batch_ok = len(batch) - batch_failed
+                failed_files_count += batch_failed
                 with lock:
-                    result.ingested_files += len(batch)
-                logger.info(f"✅ {label} complete")
+                    result.ingested_files += batch_ok
+                    result.failed_files += batch_failed
+                if batch_failed == 0:
+                    logger.info(f"✅ {label} complete")
+                elif batch_ok > 0:
+                    names = [d.get("document_name") for d in failed_docs]
+                    logger.warning(f"⚠ {label} partial: {batch_failed} doc(s) failed — {names}")
+                else:
+                    names = [d.get("document_name") for d in failed_docs]
+                    logger.error(f"❌ {label} all failed — {names}")
 
             except Exception as exc:
                 logger.error(f"❌ {label} failed: {exc}", exc_info=True)
