@@ -83,14 +83,16 @@ wait_for_nvingest_ray() {
     local probe_errors=0
     local use_dashboard=false
     # Declare outside the loop so values are always explicitly reset each iteration
-    local response="" job_id=""
+    local http_response="" response="" http_code="" job_id=""
 
     echo "   ⏳ Waiting for NV-Ingest Ray pipeline (not just HTTP) to be ready..."
     while true; do
         attempt=$((attempt + 1))
         # Explicit reset every iteration — `local` inside the loop would be a no-op
         # for already-declared local variables, leaving stale values on curl/python3 failures.
+        http_response=""
         response=""
+        http_code=""
         job_id=""
 
         # Bail out first if the nv-ingest process itself died — most specific cause
@@ -104,18 +106,38 @@ wait_for_nvingest_ray() {
         fi
 
         if ! $use_dashboard; then
-            # Primary probe: POST a minimal job — real UUID means Ray is processing
-            response=$(curl -s -X POST \
+            # Primary probe: POST a minimal job — real UUID means Ray is processing.
+            # nv-ingest returns a bare JSON string (the UUID), NOT a JSON object.
+            # Capture HTTP status code separately to distinguish:
+            #   • 4xx   → payload format rejected by this nv-ingest version
+            #   • 200 + null UUID  → Ray not yet ready (sync/fallback mode)
+            #   • 200 + real UUID  → Ray pipeline fully initialised
+            http_response=$(curl -s -w '\n%{http_code}' -X POST \
                 -H "Content-Type: application/json" \
                 -d "$PROBE" \
                 --connect-timeout 5 \
-                "http://${host}:${port}/v1/submit_job" 2>/dev/null) || response=""
+                "http://${host}:${port}/v1/submit_job" 2>/dev/null) || http_response=""
 
+            # Last line written by -w is the status code; everything before is the body.
+            http_code=$(printf '%s\n' "$http_response" | tail -n 1)
+            response=$(printf '%s\n' "$http_response" | head -n -1)
+
+            # Parse UUID from response.  nv-ingest returns a bare JSON string
+            # (e.g. "97eba8bf-01ef-4bd1-9dd0-876ab3e5dea5"), not {"task_id":"..."}.
+            # A UUID regex guards against treating error messages as valid UUIDs.
             job_id=$(printf '%s' "$response" | python3 -c "
-import sys, json
+import sys, json, re
+UUID_RE = re.compile(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
 try:
     d = json.load(sys.stdin)
-    jid = d.get('task_id') or d.get('job_id') or d.get('id') or ''
+    if isinstance(d, str):
+        jid = d.strip()
+    elif isinstance(d, dict):
+        jid = d.get('task_id') or d.get('job_id') or d.get('id') or ''
+    else:
+        jid = ''
+    jid = jid if UUID_RE.match(str(jid)) else ''
     print(str(jid).strip())
 except Exception:
     print('')" 2>/dev/null) || job_id=""
@@ -124,35 +146,43 @@ except Exception:
                [ "$job_id" != "null" ] && \
                [ "$job_id" != "None" ] && \
                [ "$job_id" != "$NULL_UUID" ]; then
-                echo "   ✅ NV-Ingest Ray pipeline ready (submit_job probe, attempt $attempt)"
+                echo "   ✅ NV-Ingest Ray pipeline ready (submit_job probe, attempt $attempt, http=$http_code)"
                 return 0
             fi
 
-            # If job_id is empty (can't parse a UUID from the response), the
-            # payload format may not match this nv-ingest version.  After 3
-            # consecutive empty-UUID responses switch to the dashboard probe.
-            # A null UUID (all zeros) means the probe format IS correct — Ray
-            # is just not ready yet — so we reset the error counter.
+            # If job_id is empty the response was not a UUID at all.
+            # This happens when the API returns a 4xx error (payload format rejected)
+            # or an unexpected response body.  After 3 consecutive non-UUID responses
+            # fall back to the Ray dashboard port probe.
+            # A null UUID means the format IS accepted — Ray is initialising — so
+            # we reset the error counter and keep waiting.
             if [ -z "$job_id" ]; then
                 probe_errors=$((probe_errors + 1))
+                if [ "$attempt" -eq 1 ] || [ $((attempt % 3)) -eq 0 ]; then
+                    echo "   ⏳ submit_job probe: http=$http_code body='${response:0:60}' — attempt $attempt"
+                fi
                 if [ $probe_errors -ge 3 ]; then
-                    echo "   ⚠️  submit_job probe inconclusive (API format?) — switching to Ray dashboard probe"
+                    echo "   ⚠️  submit_job probe inconclusive (non-UUID response, http=${http_code}) — switching to Ray dashboard probe"
                     use_dashboard=true
                 fi
             else
                 probe_errors=0  # null-UUID response confirms probe format is correct
+                if [ $((attempt % 6)) -eq 0 ]; then
+                    echo "   ⏳ Ray not ready yet (attempt $attempt, uuid=null, http=$http_code) — waiting 10s..."
+                fi
             fi
         else
             # Fallback: Ray dashboard port 8265 is served by the GCS process.
             # When it accepts TCP connections, Ray GCS is running.
             # IMPORTANT: GCS starting does NOT mean pipeline actors are ready yet.
-            # Wait an extra 30 s after detecting GCS to allow actors to initialise
-            # before declaring the pipeline ready.  Without this sleep, the first
-            # ingest job would still get null UUIDs and reproduce the B2 IndexError.
+            # In the test run (exec_2026_02_23_1) GCS was detected and only 30 s
+            # were waited — Ray actors were still initialising and null UUIDs were
+            # returned for the next 6+ minutes, causing B2 IndexError on SEP/SEISCOPE.
+            # Use 300 s (5 min) to give actors time to fully initialise after GCS.
             if nc -z localhost 8265 > /dev/null 2>&1; then
                 echo "   ✅ NV-Ingest Ray GCS started (dashboard probe, attempt $attempt)"
-                echo "      ⚠️  submit_job probe was inconclusive — waiting 30s for Ray actors..."
-                sleep 30
+                echo "      ⚠️  submit_job probe was inconclusive — waiting 300s for Ray actors..."
+                sleep 300
                 return 0
             fi
         fi
@@ -166,11 +196,13 @@ except Exception:
             return 1
         fi
 
-        if [ $attempt -eq 1 ] || [ $((attempt % 6)) -eq 0 ]; then
-            if $use_dashboard; then
+        if ! $use_dashboard; then
+            if [ $((attempt % 6)) -eq 0 ]; then
+                echo "   ⏳ Waiting for Ray pipeline (attempt $attempt) — waiting 10s..."
+            fi
+        else
+            if [ $attempt -eq 1 ] || [ $((attempt % 6)) -eq 0 ]; then
                 echo "   ⏳ Waiting for Ray GCS (attempt $attempt) — waiting 10s..."
-            else
-                echo "   ⏳ Ray not ready yet (attempt $attempt, uuid='${job_id:-none}') — waiting 10s..."
             fi
         fi
         sleep 10
