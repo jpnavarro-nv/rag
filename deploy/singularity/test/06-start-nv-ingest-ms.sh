@@ -63,15 +63,26 @@ wait_for_nvingest() {
 # Verify that the Ray pipeline inside nv-ingest is truly ready to process jobs.
 #
 # The HTTP health endpoint (/v1/health/ready) returns 200 as soon as gunicorn
-# is up — BEFORE Ray's GCS and pipeline actors finish initialising.  When Ray
-# is not yet ready, nv-ingest accepts job submissions but returns the null UUID
-# (00000000-0000-0000-0000-000000000000) instead of a real one.  The ingestor
-# server then receives 0 elements from nv-ingest, which causes an IndexError in
-# add_metadata() / iloc[0].
+# is up — BEFORE Ray's GCS and pipeline actors finish initialising.
+#
+# UUID generation in nv-ingest (/v1/submit_job) is derived exclusively from the
+# OpenTelemetry trace_id: job_id = trace_id_to_uuid(span.get_span_context().trace_id)
+# There is no fallback to uuid4().  When OTEL_SDK_DISABLED=true the SDK returns
+# INVALID_SPAN_CONTEXT (trace_id=0) → null UUID "00000000-...-000000000000" for
+# EVERY job submission regardless of Ray state.  With null UUIDs all concurrent
+# jobs collide on the same Redis result slot → race condition → 0 elements →
+# add_metadata() iloc[0] IndexError (B2).
+#
+# Fix: use OTEL_TRACES/METRICS/LOGS_EXPORTER=none instead of OTEL_SDK_DISABLED.
+# The SDK stays active (real per-request trace_ids), exports are suppressed
+# (no connection errors in logs).  Each job now gets a unique UUID; jobs
+# submitted before Ray is ready queue in Redis and are processed when Ray comes
+# up — no IndexError, just a wait bounded by POLL_TIMEOUT_S (6 h).
 #
 # Strategy: submit a minimal probe job; if the returned task_id is a real UUID,
-# Ray is ready.  If the probe endpoint is not accepting our payload format we
-# fall back to checking the Ray dashboard port (8265).
+# gunicorn is accepting jobs (Ray may still be warming up but jobs will queue
+# correctly).  If the probe endpoint rejects our payload format, fall back to
+# checking the Ray dashboard port (8265) and sleeping 300 s for actor init.
 wait_for_nvingest_ray() {
     local host=$1
     local port=$2
@@ -300,7 +311,9 @@ singularity run \
   --env INGEST_RAY_LOG_LEVEL=PRODUCTION \
   --env MRC_IGNORE_NUMA_CHECK=1 \
   --env READY_CHECK_ALL_COMPONENTS=True \
-  --env OTEL_SDK_DISABLED=true \
+  --env OTEL_TRACES_EXPORTER=none \
+  --env OTEL_METRICS_EXPORTER=none \
+  --env OTEL_LOGS_EXPORTER=none \
   --bind $RAG_RUNTIME_DIR/nv-ingest-data:/workspace/data \
   $RAG_IMAGES_DIR/nv-ingest.sif \
   > $RAG_LOGS_DIR/nv-ingest.log 2>&1 &
