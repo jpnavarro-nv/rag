@@ -9,7 +9,7 @@
 # from RAG_BASE_DIR.
 #
 # OUT OF SCOPE: Runtime/exec-session paths (logs, pids, nim-work, tmp) are
-# transient — they are derived from RAG_RUNTIME_DIR and managed by 00-config.sh
+# transient — they are derived from RAG_RUNTIME_DIR and managed by config.sh
 # via .current_exec. Do NOT add session-specific paths here.
 
 # ==============================================================================
@@ -30,8 +30,8 @@ export RAG_MINIO_DATA_DIR="$RAG_DB_DIR/minio-data"
 
 # ==============================================================================
 # Apptainer working directory (permanent fallback when no exec session is active)
-# Used by 00-config.sh as APPTAINER_TMPDIR fallback for 01-start-infrastructure.sh,
-# which sources 00-config.sh before the exec dir exists.
+# Used by config.sh as APPTAINER_TMPDIR fallback for 01-start-infrastructure.sh,
+# which sources config.sh before the exec dir exists.
 # ==============================================================================
 export RAG_APPTAINER_TMP_DIR="$RAG_BASE_DIR/.apptainer-tmp"
 

@@ -50,7 +50,7 @@ export RAG_BASE_DIR='/path/to/rag-workdir'
 
 | Script | Purpose | Dependencies | Ports |
 |--------|---------|--------------|-------|
-| `00-config.sh` | Shared configuration (sourced by other scripts) | — | — |
+| `config.sh` | Shared configuration (sourced by other scripts) | — | — |
 | `01-start-infrastructure.sh` | etcd, MinIO, Milvus | — | 2379, 9010, 19530 |
 | `02-test-connectivity.sh` | Connectivity test (optional) | 01 | — |
 | `03-start-redis.sh` | Redis message queue | — | 6379 |

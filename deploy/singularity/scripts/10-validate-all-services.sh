@@ -13,7 +13,7 @@
 # NOTE: no set -e — validation must continue past individual failures
 
 # Load configuration
-source "$(dirname "$0")/00-config.sh"
+source "$(dirname "$0")/config.sh"
 
 # Colors for output
 RED='\033[0;31m'

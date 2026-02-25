@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEF_DIR="$SCRIPT_DIR/../definitions"
 
 # build-images.sh is a one-time setup script independent of the exec-session
-# lifecycle managed by 00-config.sh / 01-start-infrastructure.sh.
+# lifecycle managed by config.sh / 01-start-infrastructure.sh.
 # It only needs the permanent container paths defined in dirs.sh.
 export RAG_BASE_DIR="${RAG_BASE_DIR:-$HOME/rag-test}"
 source "$SCRIPT_DIR/dirs.sh"
@@ -71,7 +71,7 @@ build_image() {
     fi
 
     echo "    Building from $def_file..."
-    if singularity build "$OUTPUT_DIR/$sif_name" "$DEF_DIR/$def_file"; then
+    if singularity build --fakeroot "$OUTPUT_DIR/$sif_name" "$DEF_DIR/$def_file"; then
         echo "    ✅ Built successfully"
         ls -lh "$OUTPUT_DIR/$sif_name" 2>/dev/null | awk '{print "       Size:", $5}' || true
         SUCCESS=$((SUCCESS + 1))

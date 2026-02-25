@@ -16,7 +16,7 @@
 set -e
 
 # Load configuration
-source "$(dirname "$0")/00-config.sh"
+source "$(dirname "$0")/config.sh"
 
 # ==============================================================================
 # Configuration

@@ -17,7 +17,7 @@ echo "=== Stopping App-Layer Services (06–09) ==="
 echo ""
 
 # Load configuration (RAG_RUNTIME_DIR, RAG_LOGS_DIR, ports, etc.)
-source "$(dirname "$0")/00-config.sh"
+source "$(dirname "$0")/config.sh"
 
 # Ports defined in individual scripts (not in nim-lib.sh)
 NVINGEST_PORT=${NVINGEST_PORT:-7670}

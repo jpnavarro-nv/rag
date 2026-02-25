@@ -2,7 +2,7 @@
 # Diagnostic script for ALL NIMs startup commands
 OUTPUT_FILE="/tmp/all-nims-diagnosis.txt"
 
-source "$(dirname "$0")/00-config.sh" > /dev/null 2>&1
+source "$(dirname "$0")/config.sh" > /dev/null 2>&1
 
 echo "=== ALL NIMs Startup Commands Diagnostic ===" > "$OUTPUT_FILE"
 echo "Generated: $(date)" >> "$OUTPUT_FILE"

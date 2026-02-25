@@ -13,7 +13,7 @@
 
 set -e
 
-source "$(dirname "$0")/00-config.sh"
+source "$(dirname "$0")/config.sh"
 
 DEF_DIR="$(dirname "$0")/../definitions"
 

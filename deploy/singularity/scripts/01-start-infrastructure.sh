@@ -9,7 +9,7 @@
 set -e
 
 # ==============================================================================
-# Step 1: Determine base directory (same default as 00-config.sh)
+# Step 1: Determine base directory (same default as config.sh)
 # ==============================================================================
 _RAG_BASE_DIR=${RAG_BASE_DIR:-$HOME/rag-test}
 
@@ -90,7 +90,7 @@ echo ""
 # ==============================================================================
 # Step 4: Load configuration (now reads .current_exec → sets all path vars)
 # ==============================================================================
-source "$(dirname "$0")/00-config.sh"
+source "$(dirname "$0")/config.sh"
 
 # ==============================================================================
 # Healthcheck Functions

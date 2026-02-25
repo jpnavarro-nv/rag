@@ -7,7 +7,7 @@
 set -e
 
 # Load configuration
-source "$(dirname "$0")/00-config.sh"
+source "$(dirname "$0")/config.sh"
 
 # ==============================================================================
 # Configuration
@@ -16,7 +16,7 @@ source "$(dirname "$0")/00-config.sh"
 RAG_SERVER_PORT=${RAG_SERVER_PORT:-8081}
 RAG_SERVER_HOST=${RAG_SERVER_HOST:-localhost}
 
-# Infrastructure — must match 00-config.sh
+# Infrastructure — must match config.sh
 MILVUS_HOST=${MILVUS_HOST:-localhost}
 MILVUS_PORT=${MILVUS_PORT:-19530}
 MINIO_HOST=${MINIO_HOST:-localhost}

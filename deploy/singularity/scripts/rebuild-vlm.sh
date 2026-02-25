@@ -5,7 +5,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-source "$SCRIPT_DIR/00-config.sh"
+source "$SCRIPT_DIR/config.sh"
 
 DEF_FILE="$SCRIPT_DIR/../definitions/vlm.def"
 OUTPUT_FILE="$RAG_IMAGES_DIR/vlm.sif"

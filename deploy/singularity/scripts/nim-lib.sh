@@ -1,6 +1,6 @@
 #!/bin/bash
 # nim-lib.sh - Shared library for NIM startup scripts
-# Source this file after 00-config.sh
+# Source this file after config.sh
 #
 # Provides:
 #   - Port variables (overridable via env)

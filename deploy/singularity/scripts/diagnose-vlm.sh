@@ -6,7 +6,7 @@ echo "=== VLM NIM Diagnostic Report ===" > "$OUTPUT_FILE"
 echo "Generated: $(date)" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
-source "$(dirname "$0")/00-config.sh" >> "$OUTPUT_FILE" 2>&1
+source "$(dirname "$0")/config.sh" >> "$OUTPUT_FILE" 2>&1
 
 echo "=== 1. Container Image Path ===" >> "$OUTPUT_FILE"
 echo "$RAG_IMAGES_DIR/vlm.sif" >> "$OUTPUT_FILE"
