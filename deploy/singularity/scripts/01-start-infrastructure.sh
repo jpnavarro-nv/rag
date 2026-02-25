@@ -213,7 +213,7 @@ echo "[3/3] Starting Milvus standalone..."
 # Extract default Milvus configs from SIF on first use (persists in db/)
 if [ ! -f "$RAG_MILVUS_CONFIG_DIR/milvus.yaml" ]; then
     echo "   Setting up Milvus config (one-time)..."
-    singularity exec $RAG_IMAGES_DIR/milvus.sif \
+    singularity exec --nv $RAG_IMAGES_DIR/milvus.sif \
       tar czf /tmp/milvus-configs.tar.gz -C /milvus configs/ > /dev/null 2>&1
     tar xzf /tmp/milvus-configs.tar.gz -C "$RAG_DB_DIR" > /dev/null 2>&1
     mv "$RAG_DB_DIR/configs" "$RAG_MILVUS_CONFIG_DIR"
