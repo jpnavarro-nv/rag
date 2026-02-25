@@ -71,7 +71,7 @@ build_image() {
     fi
 
     echo "    Building from $def_file..."
-    if singularity build --fakeroot "$OUTPUT_DIR/$sif_name" "$DEF_DIR/$def_file"; then
+    if singularity build --proot "$OUTPUT_DIR/$sif_name" "$DEF_DIR/$def_file"; then
         echo "    ✅ Built successfully"
         ls -lh "$OUTPUT_DIR/$sif_name" 2>/dev/null | awk '{print "       Size:", $5}' || true
         SUCCESS=$((SUCCESS + 1))
