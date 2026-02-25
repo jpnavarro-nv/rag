@@ -5,7 +5,7 @@
 #   1. SIGTERM to saved PID + pkill -P to kill direct children
 #   2. Wait up to 8 s for graceful shutdown; SIGKILL if still alive
 #   3. fuser -k PORT/tcp as final sweep for any orphan port holders
-#   4. Stop any stray Apptainer instances and remove PID files
+#   4. Stop any stray Singularity instances and remove PID files
 
 echo "=== Stopping All RAG Services ==="
 echo ""
