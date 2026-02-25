@@ -216,7 +216,8 @@ if [ ! -f "$RAG_MILVUS_CONFIG_DIR/milvus.yaml" ]; then
     singularity exec --nv $RAG_IMAGES_DIR/milvus.sif \
       tar czf /tmp/milvus-configs.tar.gz -C /milvus configs/ > /dev/null 2>&1
     tar xzf /tmp/milvus-configs.tar.gz -C "$RAG_DB_DIR" > /dev/null 2>&1
-    mv "$RAG_DB_DIR/configs" "$RAG_MILVUS_CONFIG_DIR"
+    cp -r "$RAG_DB_DIR/configs/." "$RAG_MILVUS_CONFIG_DIR/"
+    rm -rf "$RAG_DB_DIR/configs"
     rm -f /tmp/milvus-configs.tar.gz
     cp "$(dirname "$0")/../configs/milvus.yaml" "$RAG_MILVUS_CONFIG_DIR/milvus.yaml"
     echo "   ✅ Milvus config ready"
