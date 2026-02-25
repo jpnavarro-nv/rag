@@ -22,13 +22,13 @@ source "$SCRIPT_DIR/dirs.sh"
 OUTPUT_DIR="$RAG_IMAGES_DIR"
 
 mkdir -p "$OUTPUT_DIR"
-mkdir -p "$APPTAINER_CACHEDIR"
+mkdir -p "$SINGULARITY_CACHEDIR"
 
 echo "=== NVIDIA RAG Blueprint — Image Setup ==="
 echo ""
 echo "RAG_BASE_DIR:      $RAG_BASE_DIR"
 echo "Output directory:  $OUTPUT_DIR"
-echo "Apptainer cache:   $APPTAINER_CACHEDIR"
+echo "Singularity cache: $SINGULARITY_CACHEDIR"
 echo ""
 echo "ℹ️  To use a different deployment directory:"
 echo "   RAG_BASE_DIR=/your/path ./build-images.sh"
@@ -41,8 +41,6 @@ echo ""
 if [ -n "$NGC_API_KEY" ]; then
     export SINGULARITY_DOCKER_USERNAME='$oauthtoken'
     export SINGULARITY_DOCKER_PASSWORD="$NGC_API_KEY"
-    export APPTAINER_DOCKER_USERNAME='$oauthtoken'
-    export APPTAINER_DOCKER_PASSWORD="$NGC_API_KEY"
     echo "✅ NGC auth configured for nvcr.io"
     echo ""
 else
@@ -81,7 +79,6 @@ pull_image() {
         # Run in a subshell so credential vars are unset only for this pull
         if (
             unset SINGULARITY_DOCKER_USERNAME SINGULARITY_DOCKER_PASSWORD
-            unset APPTAINER_DOCKER_USERNAME APPTAINER_DOCKER_PASSWORD
             singularity pull "$OUTPUT_DIR/$sif_name" "docker://$docker_uri"
         ); then
             echo "    ✅ Pulled successfully"

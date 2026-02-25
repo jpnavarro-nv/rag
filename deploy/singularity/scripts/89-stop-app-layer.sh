@@ -141,22 +141,13 @@ fi
 echo ""
 echo "=== [3/4] Cleaning Up Stray Instances & PID Files ==="
 
-# Stop any Apptainer/Singularity instances started via 'instance start'
-_INSTANCE_CMD=""
-if command -v apptainer > /dev/null 2>&1; then
-    _INSTANCE_CMD="apptainer"
-elif command -v singularity > /dev/null 2>&1; then
-    _INSTANCE_CMD="singularity"
-fi
-
-if [ -n "$_INSTANCE_CMD" ]; then
-    _INSTANCES=$($_INSTANCE_CMD instance list 2>/dev/null | tail -n +2 | awk '{print $1}' | grep -v '^$' || true)
-    if [ -n "$_INSTANCES" ]; then
-        $_INSTANCE_CMD instance stop --all >/dev/null 2>&1 || true
-        echo "   ✅ $_INSTANCE_CMD instances cleared"
-    else
-        echo "   ⊘  No $_INSTANCE_CMD instances running"
-    fi
+# Stop any Singularity instances started via 'instance start'
+_INSTANCES=$(singularity instance list 2>/dev/null | tail -n +2 | awk '{print $1}' | grep -v '^$' || true)
+if [ -n "$_INSTANCES" ]; then
+    singularity instance stop --all >/dev/null 2>&1 || true
+    echo "   ✅ singularity instances cleared"
+else
+    echo "   ⊘  No singularity instances running"
 fi
 
 # Remove any remaining PID files for app-layer services

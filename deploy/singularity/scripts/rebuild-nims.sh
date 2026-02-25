@@ -27,8 +27,6 @@ fi
 
 export SINGULARITY_DOCKER_USERNAME='$oauthtoken'
 export SINGULARITY_DOCKER_PASSWORD="$NGC_API_KEY"
-export APPTAINER_DOCKER_USERNAME='$oauthtoken'
-export APPTAINER_DOCKER_PASSWORD="$NGC_API_KEY"
 
 echo "✅ NGC auth configured for nvcr.io"
 echo ""

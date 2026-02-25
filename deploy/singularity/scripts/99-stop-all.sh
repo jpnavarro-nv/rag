@@ -155,26 +155,17 @@ stop_process "etcd"
 echo ""
 echo "=== [5/6] Cleaning Up Stray Instances & PID Files ==="
 
-# Stop any Apptainer/Singularity instances started via 'instance start'
+# Stop any Singularity instances started via 'instance start'
 # (our scripts don't use them, but belt-and-suspenders for manual runs)
 # Note: check 'instance list' first — 'instance stop --all' prints usage
-# to stdout (not stderr) when no instances exist on some Apptainer versions,
+# to stdout (not stderr) when no instances exist on some Singularity versions,
 # bypassing 2>/dev/null. Only attempt stop when instances are actually running.
-_INSTANCE_CMD=""
-if command -v apptainer > /dev/null 2>&1; then
-    _INSTANCE_CMD="apptainer"
-elif command -v singularity > /dev/null 2>&1; then
-    _INSTANCE_CMD="singularity"
-fi
-
-if [ -n "$_INSTANCE_CMD" ]; then
-    _INSTANCES=$($_INSTANCE_CMD instance list 2>/dev/null | tail -n +2 | awk '{print $1}' | grep -v '^$' || true)
-    if [ -n "$_INSTANCES" ]; then
-        $_INSTANCE_CMD instance stop --all >/dev/null 2>&1 || true
-        echo "   ✅ $_INSTANCE_CMD instances cleared"
-    else
-        echo "   ⊘  No $_INSTANCE_CMD instances running"
-    fi
+_INSTANCES=$(singularity instance list 2>/dev/null | tail -n +2 | awk '{print $1}' | grep -v '^$' || true)
+if [ -n "$_INSTANCES" ]; then
+    singularity instance stop --all >/dev/null 2>&1 || true
+    echo "   ✅ singularity instances cleared"
+else
+    echo "   ⊘  No singularity instances running"
 fi
 
 # Remove any remaining PID files (handles services added later without updating this script)

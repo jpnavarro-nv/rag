@@ -17,7 +17,7 @@
 # ==============================================================================
 export RAG_IMAGES_DIR="$RAG_BASE_DIR/containers/images"
 export RAG_CACHE_DIR="$RAG_BASE_DIR/containers/cache"
-export APPTAINER_CACHEDIR="$RAG_CACHE_DIR"
+export SINGULARITY_CACHEDIR="$RAG_CACHE_DIR"
 
 # ==============================================================================
 # Persistent databases (shared across all exec sessions)
@@ -29,11 +29,11 @@ export RAG_ETCD_DATA_DIR="$RAG_DB_DIR/etcd-data"
 export RAG_MINIO_DATA_DIR="$RAG_DB_DIR/minio-data"
 
 # ==============================================================================
-# Apptainer working directory (permanent fallback when no exec session is active)
-# Used by config.sh as APPTAINER_TMPDIR fallback for 01-start-infrastructure.sh,
+# Singularity working directory (permanent fallback when no exec session is active)
+# Used by config.sh as SINGULARITY_TMPDIR fallback for 01-start-infrastructure.sh,
 # which sources config.sh before the exec dir exists.
 # ==============================================================================
-export RAG_APPTAINER_TMP_DIR="$RAG_BASE_DIR/.apptainer-tmp"
+export RAG_SINGULARITY_TMP_DIR="$RAG_BASE_DIR/.singularity-tmp"
 
 # ==============================================================================
 # NIM model caches (persistent — model weights survive across exec sessions)

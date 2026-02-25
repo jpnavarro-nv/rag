@@ -35,20 +35,20 @@ else
 fi
 
 # ==============================================================================
-# Apptainer/Singularity Configuration
+# Singularity Configuration
 # ==============================================================================
-# APPTAINER_CACHEDIR is defined in dirs.sh (sourced above).
-# APPTAINER_TMPDIR uses the exec-session tmp when available; falls back to the
-# permanent RAG_APPTAINER_TMP_DIR (also from dirs.sh) for the window before
+# SINGULARITY_CACHEDIR is defined in dirs.sh (sourced above).
+# SINGULARITY_TMPDIR uses the exec-session tmp when available; falls back to the
+# permanent RAG_SINGULARITY_TMP_DIR (also from dirs.sh) for the window before
 # 01-start-infrastructure.sh creates the exec dir and writes .current_exec.
-export APPTAINER_TMPDIR=${RAG_TMP_DIR:-$RAG_APPTAINER_TMP_DIR}
+export SINGULARITY_TMPDIR=${RAG_TMP_DIR:-$RAG_SINGULARITY_TMP_DIR}
 
 # ==============================================================================
 # Create Permanent Directories
 # ==============================================================================
 mkdir -p "$RAG_IMAGES_DIR"
 mkdir -p "$RAG_CACHE_DIR"
-mkdir -p "$RAG_APPTAINER_TMP_DIR"
+mkdir -p "$RAG_SINGULARITY_TMP_DIR"
 mkdir -p "$RAG_MILVUS_DATA_DIR" "$RAG_MILVUS_CONFIG_DIR" "$RAG_ETCD_DATA_DIR" "$RAG_MINIO_DATA_DIR"
 mkdir -p "$RAG_MODELS_DIR"
 
