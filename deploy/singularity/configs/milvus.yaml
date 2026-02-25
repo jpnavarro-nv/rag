@@ -1,5 +1,5 @@
 # Minimal Milvus configuration for Singularity deployment
-# Based on default config from milvusdb/milvus:v2.5.3-gpu
+# Based on default config from milvusdb/milvus:v2.6.2-gpu
 
 # etcd configuration
 etcd:
