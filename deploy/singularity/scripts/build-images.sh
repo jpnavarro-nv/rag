@@ -27,8 +27,13 @@ mkdir -p "$APPTAINER_CACHEDIR"
 
 echo "=== NVIDIA RAG Blueprint — Image Setup ==="
 echo ""
-echo "Definition files: $DEF_DIR"
-echo "Output directory: $OUTPUT_DIR"
+echo "RAG_BASE_DIR:      $RAG_BASE_DIR"
+echo "Definition files:  $DEF_DIR"
+echo "Output directory:  $OUTPUT_DIR"
+echo "Apptainer cache:   $APPTAINER_CACHEDIR"
+echo ""
+echo "ℹ️  To use a different deployment directory:"
+echo "   RAG_BASE_DIR=/your/path ./build-images.sh"
 echo ""
 
 # ==============================================================================
