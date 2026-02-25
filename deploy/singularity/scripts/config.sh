@@ -38,17 +38,18 @@ fi
 # Singularity Configuration
 # ==============================================================================
 # SINGULARITY_CACHEDIR is defined in dirs.sh (sourced above).
-# SINGULARITY_TMPDIR uses the exec-session tmp when available; falls back to the
-# permanent RAG_SINGULARITY_TMP_DIR (also from dirs.sh) for the window before
-# 01-start-infrastructure.sh creates the exec dir and writes .current_exec.
-export SINGULARITY_TMPDIR=${RAG_TMP_DIR:-$RAG_SINGULARITY_TMP_DIR}
+#
+# SINGULARITY_TMPDIR must point to a local POSIX filesystem (not Lustre/NFS).
+# Singularity uses it to create the --nv driver-libs bundle and other namespace
+# structures that require overlayfs/hard-link support unavailable on Lustre.
+# Using the exec-session tmp (on Lustre) breaks --nv → Milvus fails to start.
+export SINGULARITY_TMPDIR=/tmp
 
 # ==============================================================================
 # Create Permanent Directories
 # ==============================================================================
 mkdir -p "$RAG_IMAGES_DIR"
 mkdir -p "$RAG_CACHE_DIR"
-mkdir -p "$RAG_SINGULARITY_TMP_DIR"
 mkdir -p "$RAG_MILVUS_DATA_DIR" "$RAG_MILVUS_CONFIG_DIR" "$RAG_ETCD_DATA_DIR" "$RAG_MINIO_DATA_DIR"
 mkdir -p "$RAG_MODELS_DIR"
 

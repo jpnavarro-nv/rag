@@ -29,13 +29,6 @@ export RAG_ETCD_DATA_DIR="$RAG_DB_DIR/etcd-data"
 export RAG_MINIO_DATA_DIR="$RAG_DB_DIR/minio-data"
 
 # ==============================================================================
-# Singularity working directory (permanent fallback when no exec session is active)
-# Used by config.sh as SINGULARITY_TMPDIR fallback for 01-start-infrastructure.sh,
-# which sources config.sh before the exec dir exists.
-# ==============================================================================
-export RAG_SINGULARITY_TMP_DIR="$RAG_BASE_DIR/.singularity-tmp"
-
-# ==============================================================================
 # NIM model caches (persistent — model weights survive across exec sessions)
 # ==============================================================================
 export RAG_MODELS_DIR="$RAG_BASE_DIR/models"
