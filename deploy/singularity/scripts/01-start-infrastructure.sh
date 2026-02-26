@@ -228,7 +228,8 @@ cp "$(dirname "$0")/../configs/milvus.yaml" "$RAG_MILVUS_CONFIG_DIR/milvus.yaml"
 echo "   ✅ Milvus config ready"
 
 # Ensure glog.conf exists — required by Knowhere (C++ glog) at IndexNode init.
-# The SIF's /milvus/configs/ does not ship glog.conf; an empty file is valid.
+# The SIF ships a non-empty glog.conf; touch is a no-op after first extraction
+# and a safe fallback (empty file → glog logs to stdout) on partial failures.
 touch "$RAG_MILVUS_CONFIG_DIR/glog.conf"
 
 singularity exec \
