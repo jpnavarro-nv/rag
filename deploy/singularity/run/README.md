@@ -14,6 +14,7 @@ cd deploy/singularity
 ./build-images.sh
 
 # 3. Start the stack
+cd run/
 ./01-start-infrastructure.sh   # etcd, MinIO, Milvus
 ./03-start-redis.sh            # Redis message queue
 ./04-start-nim-models.sh       # Launch 8 NIMs (non-blocking)
@@ -38,6 +39,7 @@ Builds and pulls all required Singularity images:
 export NGC_API_KEY='your-ngc-api-key'
 export RAG_BASE_DIR='/path/to/rag-workdir'
 
+cd deploy/singularity
 ./build-images.sh
 ```
 
@@ -91,13 +93,6 @@ ssh -L 8081:localhost:8081 -L 8082:localhost:8082 login-node \
 
 - RAG Server API: http://localhost:8081/docs
 - Ingestor API:   http://localhost:8082/docs
-
-## NIM Maintenance
-
-```bash
-./rebuild-nims.sh   # Rebuild all NIM images (after def file changes)
-./rebuild-vlm.sh    # Rebuild VLM image only
-```
 
 ## Troubleshooting
 

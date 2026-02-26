@@ -202,7 +202,7 @@ echo ""
 if [ $FAILED -eq 0 ]; then
     echo "All images ready at: $OUTPUT_DIR"
     echo ""
-    echo "Next step: ./01-start-infrastructure.sh"
+    echo "Next step: cd run && ./01-start-infrastructure.sh"
 else
     echo "⚠️  Some images failed. Check errors above."
     exit 1
