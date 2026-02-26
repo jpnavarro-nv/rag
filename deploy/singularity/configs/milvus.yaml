@@ -39,6 +39,8 @@ rootCoord:
 dataCoord:
   address: 0.0.0.0
   port: 13333
+  segment:
+    minSizeFromIdleToSealed: 16   # MB - required by StreamingNode (Milvus 2.6+)
 
 queryCoord:
   address: 0.0.0.0
