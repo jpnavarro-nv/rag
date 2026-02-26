@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-CENPES Collection Importer
-==========================
+Collection Importer
+===================
 
-Scans a root directory (default: /gaia/b04s/CONSORCIOS) and imports each
-first-level subdirectory as a separate collection in the NVIDIA RAG Blueprint.
+Scans a root directory and imports each first-level subdirectory as a separate
+collection in the NVIDIA RAG Blueprint.
 
 Behavior:
   - Each first-level subdirectory  →  one collection
@@ -22,19 +22,19 @@ Deduplication (on by default, disable with --skip-dedup):
   - Note: content-change detection is not available (server rejects extra metadata)
 
 Usage:
-  python cenpes_import.py [options]
+  python ingest_collections.py --root-dir /path/to/data [options]
 
   # Dry run — validate readability/permissions, no upload:
-  python cenpes_import.py --dry-run
+  python ingest_collections.py --root-dir /path/to/data --dry-run
 
   # Process only specific collections:
-  python cenpes_import.py --collections SEISCOPE CREWES
+  python ingest_collections.py --root-dir /path/to/data --collections PROJ_A PROJ_B
 
   # Full import:
-  python cenpes_import.py --ingestor-host localhost --parallel-workers 4
+  python ingest_collections.py --root-dir /path/to/data --ingestor-host localhost --parallel-workers 4
 
   # Force full re-upload ignoring deduplication:
-  python cenpes_import.py --skip-dedup
+  python ingest_collections.py --root-dir /path/to/data --skip-dedup
 
 Requirements:
   pip install requests rich
@@ -64,14 +64,13 @@ from rich.table import Table
 # Constants
 # ==============================================================================
 
-DEFAULT_ROOT_DIR     = "/gaia/b04s/CONSORCIOS"
 DEFAULT_INGESTOR_HOST = "localhost"
 DEFAULT_INGESTOR_PORT = 8082
 DEFAULT_PARALLEL_WORKERS = 4
 DEFAULT_BATCH_SIZE   = 16     # files per upload batch (matches NV-Ingest default)
 DEFAULT_CHUNK_SIZE   = 512
 DEFAULT_CHUNK_OVERLAP = 150
-DEFAULT_LOG_DIR      = Path("cenpes_import_logs")
+DEFAULT_LOG_DIR      = Path("import_logs")
 
 POLL_INTERVAL_S = 5
 POLL_TIMEOUT_S  = 6 * 3600   # 6 h — large PDFs take a long time to process
@@ -374,7 +373,7 @@ def ingest_collection(
     """
     log_path = log_dir / f"{result.collection_name}.log"
     _update(result, lock, log_path=log_path)
-    logger = make_logger(log_path, f"cenpes.{result.collection_name}")
+    logger = make_logger(log_path, f"importer.{result.collection_name}")
 
     logger.info(f"=== START  dir='{result.dir_path}'  collection='{result.collection_name}' ===")
     _update(result, lock, status="running", start_time=time.time(), current_step="Discovering files")
@@ -654,11 +653,11 @@ def build_table(results: list[CollectionResult], lock: threading.Lock) -> Table:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(
-        description="Import CONSORCIOS subdirectories as NVIDIA RAG Blueprint collections",
+        description="Import subdirectories as NVIDIA RAG Blueprint collections",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p.add_argument(
-        "--root-dir", default=DEFAULT_ROOT_DIR,
+        "--root-dir", required=True,
         help="Root directory whose first-level subdirs become collections",
     )
     p.add_argument(
@@ -745,7 +744,7 @@ def main() -> int:
     # ── Print header ──────────────────────────────────────────────────────────
     console.print()
     console.print("[bold cyan]╔══════════════════════════════════════════╗[/]")
-    console.print("[bold cyan]║     CENPES Collection Importer            ║[/]")
+    console.print("[bold cyan]║        RAG Collection Importer           ║[/]")
     console.print("[bold cyan]╚══════════════════════════════════════════╝[/]")
     console.print(f"  Root dir:   [white]{root}[/]")
     console.print(f"  Ingestor:   [white]{base_url}[/]")

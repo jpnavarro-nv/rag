@@ -1,21 +1,21 @@
-# CENPES Collection Importer
+# Collection Importer
 
-Imports all first-level subdirectories of `/gaia/b04s/CONSORCIOS` as
-separate collections into the NVIDIA RAG Blueprint.
+Imports all first-level subdirectories of a root directory as separate collections
+into the NVIDIA RAG Blueprint.
 
 ## How it works
 
 ```
-/gaia/b04s/CONSORCIOS/
-├── CWP/          →  collection: CWP         (all files inside, recursively)
-├── PROJ_ALPHA/   →  collection: PROJ_ALPHA
-└── Dados 2024/   →  collection: Dados_2024  (spaces → underscores)
+/path/to/data/
+├── PROJECT_A/    →  collection: PROJECT_A   (all files inside, recursively)
+├── PROJECT_B/    →  collection: PROJECT_B
+└── Data 2024/    →  collection: Data_2024   (spaces → underscores)
 ```
 
-- Collections are processed **in parallel** (configurable `--workers`)
+- Collections are processed **in parallel** (configurable `--parallel-workers`)
 - Within each collection, upload batches are **sequential** (safer for the ingestor)
 - A failure in one collection does **not** stop the others
-- A per-collection log file is written to `--log-dir` (default: `cenpes_import_logs/`)
+- A per-collection log file is written to `--log-dir` (default: `import_logs/`)
 - A real-time progress table is shown in the terminal
 - A final summary report is printed at the end
 
@@ -29,55 +29,55 @@ separate collections into the NVIDIA RAG Blueprint.
 pip install -r requirements.txt
 ```
 
-If pip install fails (e.g. corporate SSL proxy), use the `alpine/httpie` Singularity
-container which ships `requests` and `rich` pre-installed:
+If pip install fails (e.g. network-restricted cluster), use a container that ships
+`requests` and `rich` pre-installed:
 
 ```bash
-apptainer exec --bind /gaia:/gaia httpie_latest.sif python3 cenpes_import.py
+singularity exec httpie_latest.sif python3 ingest_collections.py --root-dir /path/to/data
 ```
 
 ## Usage
 
 ```bash
 # 1. Dry run — discover files, validate readability/permissions, no upload
-python cenpes_import.py --dry-run
+python ingest_collections.py --root-dir /path/to/data --dry-run
 
 # 2. Full import with defaults
-python cenpes_import.py
+python ingest_collections.py --root-dir /path/to/data
 
 # 3. Process only specific collections
-python cenpes_import.py --collections SEISCOPE CREWES
+python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A PROJECT_B
 
 # 4. Force full re-upload (ignore deduplication)
-python cenpes_import.py --skip-dedup
+python ingest_collections.py --root-dir /path/to/data --skip-dedup
 
 # 5. Custom options
-python cenpes_import.py \
-  --root-dir /gaia/b04s/CONSORCIOS \
+python ingest_collections.py \
+  --root-dir /path/to/data \
   --ingestor-host localhost \
   --ingestor-port 8082 \
   --parallel-workers 4 \
   --batch-size 16 \
-  --log-dir /scratch/cenpes_logs
+  --log-dir /scratch/import_logs
 
 # 6. Via environment variables (useful in cluster job scripts)
 export INGESTOR_HOST=localhost
 export INGESTOR_PORT=8082
-python cenpes_import.py --workers 6
+python ingest_collections.py --root-dir /path/to/data --parallel-workers 6
 ```
 
 ## Options
 
 | Option | Default | Description |
 |---|---|---|
-| `--root-dir` | `/gaia/b04s/CONSORCIOS` | Root directory to scan |
+| `--root-dir` | **required** | Root directory to scan |
 | `--ingestor-host` | `localhost` | Ingestor server host (or `$INGESTOR_HOST`) |
 | `--ingestor-port` | `8082` | Ingestor server port (or `$INGESTOR_PORT`) |
 | `--parallel-workers` | `4` | Collections processed in parallel |
 | `--batch-size` | `16` | Files per upload batch |
 | `--chunk-size` | `512` | Text chunk size for splitter |
 | `--chunk-overlap` | `150` | Text chunk overlap for splitter |
-| `--log-dir` | `cenpes_import_logs/` | Directory for per-collection log files |
+| `--log-dir` | `import_logs/` | Directory for per-collection log files |
 | `--dry-run` | — | Discover files and validate readability; no upload |
 | `--skip-dedup` | — | Re-upload all files unconditionally (skip deduplication) |
 | `--collections` | all | Process only these subdirectory names from `--root-dir` |
@@ -89,30 +89,30 @@ Use `--collections` to select only the directories you want:
 
 ```bash
 # Import a single collection
-python cenpes_import.py --collections SEISCOPE
+python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A
 
 # Import several collections in one run
-python cenpes_import.py --collections SEISCOPE CREWES DEEPWAVE
+python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A PROJECT_B PROJECT_C
 
 # Combine with other flags (dry-run first, then import)
-python cenpes_import.py --collections SEISCOPE --dry-run
-python cenpes_import.py --collections SEISCOPE
+python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A --dry-run
+python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A
 ```
 
 The names passed to `--collections` must match the **directory names** exactly
 (case-sensitive) as they appear on disk, not the sanitized collection names.
 
 ```
-/gaia/b04s/CONSORCIOS/
-├── SEISCOPE/       ← use "SEISCOPE"
-├── Dados 2024/     ← use "Dados 2024"   (with the space)
-└── PROJ-ALPHA/     ← use "PROJ-ALPHA"   (with the hyphen)
+/path/to/data/
+├── PROJECT_A/    ← use "PROJECT_A"
+├── Data 2024/    ← use "Data 2024"   (with the space)
+└── PROJ-BETA/    ← use "PROJ-BETA"   (with the hyphen)
 ```
 
-To discover the available directory names before running:
+To discover available directory names before running:
 
 ```bash
-ls /gaia/b04s/CONSORCIOS/
+ls /path/to/data/
 ```
 
 If a name passed to `--collections` does not exist in `--root-dir`, the script
@@ -139,20 +139,12 @@ Use `--dry-run` before a real import to catch permission issues early.
 Deduplication is **enabled by default**. Before uploading, the script:
 
 1. Queries the ingestor for documents already in the collection
-2. Computes the SHA-256 hash of each local file (streaming, 64 KB chunks)
-3. Classifies each file:
-   - **NEW** — not present on server → uploaded
-   - **MODIFIED** — path matches but SHA-256 differs → old doc deleted, then re-uploaded
-   - **UNCHANGED** — path and SHA-256 match → skipped
-
-The `source_path` (full disk path) and `sha256` are stored as `custom_metadata`
-on every uploaded document, so subsequent runs can detect already-current files
-without any local checkpoint.
+2. Skips files whose filename already exists on the server
 
 To force a full re-upload (e.g. after changing chunk settings):
 
 ```bash
-python cenpes_import.py --skip-dedup
+python ingest_collections.py --root-dir /path/to/data --skip-dedup
 ```
 
 ## Status indicators
@@ -200,11 +192,10 @@ starting with a letter or underscore. The script sanitizes directory names autom
 ## Re-running
 
 The script uses **server-side deduplication** by default — re-running it is safe and
-efficient. Files already ingested with the same content are detected via SHA-256 and
-skipped automatically.
+efficient. Files already ingested with the same filename are skipped automatically.
 
 If a previous import was interrupted partway through a collection, simply re-run the
-script. Only the missing or changed files will be uploaded.
+script. Only the missing files will be uploaded.
 
 To reset a collection completely before re-importing, use the blueprint's API:
 
@@ -212,5 +203,5 @@ To reset a collection completely before re-importing, use the blueprint's API:
 curl -X DELETE http://localhost:8082/v1/collection \
   -H "Content-Type: application/json" \
   -d '{"collection_name": "MY_COLLECTION"}'
-python cenpes_import.py --collections MY_COLLECTION
+python ingest_collections.py --root-dir /path/to/data --collections MY_COLLECTION
 ```
