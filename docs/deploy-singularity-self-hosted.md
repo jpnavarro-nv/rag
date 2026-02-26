@@ -537,6 +537,30 @@ lsof -i :3000
 ```
 
 
+## Optional Modules Not Yet Supported
+
+The following optional features available in the Docker Compose deployment are not
+yet implemented in the Singularity deployment. They are planned for future versions.
+
+| Module | Docker Compose | Status | Notes |
+|--------|---------------|--------|-------|
+| **NeMo Guardrails** | `docker-compose-nemo-guardrails.yaml` | Not supported | Requires a separate NeMo Guardrails service container; no Singularity startup script exists yet |
+| **Observability** | `observability.yaml` | Not supported | Requires OTEL collector, Prometheus and Grafana containers; significant infrastructure addition |
+| **NeMo Retriever OCR** | Alternative to PaddleOCR | Not supported | Requires swapping the OCR NIM; not yet wired into the NIM startup scripts |
+| **MIG (Multi-Instance GPU)** | `mig-deployment.md` | Not supported | Requires GPU partitioning configuration specific to the cluster scheduler |
+
+Feature flags that are purely env-var controlled — such as `ENABLE_QUERYREWRITER`,
+`ENABLE_REFLECTION`, `ENABLE_QUERY_DECOMPOSITION`, `ENABLE_FILTER_GENERATOR`, and
+`ENABLE_VLM_INFERENCE` — are already supported. Export the flag before running
+`07-start-rag-server.sh` to enable them.
+
+```bash
+export ENABLE_QUERYREWRITER=True
+export ENABLE_REFLECTION=true
+./07-start-rag-server.sh
+```
+
+
 ## Related Topics
 
 - [NVIDIA RAG Blueprint Documentation](readme.md)
