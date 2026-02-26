@@ -2,7 +2,7 @@
 # Wait for NIM Models to become ready - Real-Time Parallel Monitor
 # Run after 04-start-nim-models.sh
 #
-# This script monitors all 8 NIMs simultaneously with real-time status updates.
+# This script monitors all NIMs simultaneously with real-time status updates.
 # There is NO timeout: the LLM NIM (49B) can take up to 60 min on first load
 # while weights are downloaded and cached. The script waits indefinitely until
 # every NIM is ready or its process dies.
@@ -167,7 +167,7 @@ draw_dashboard() {
     local total_elapsed=$(($(date +%s) - $START_TIME))
 
     # Language Models Section
-    echo -e "${CYAN}Language Models (GPU 0, 1, 3):${NC}"
+    echo -e "${CYAN}Language Models (GPU 0, 1+2, 3):${NC}"
     draw_service_line "embedding"
     draw_service_line "ranking"
     draw_service_line "llm"
@@ -176,7 +176,7 @@ draw_dashboard() {
     echo ""
 
     # Document Processing Section
-    echo -e "${CYAN}Document Processing Models (GPU 2):${NC}"
+    echo -e "${CYAN}Document Processing Models (GPU 0):${NC}"
     draw_service_line "page-elements"
     draw_service_line "graphic-elements"
     draw_service_line "table-structure"
@@ -200,7 +200,7 @@ draw_dashboard() {
         fi
     done
 
-    echo -e "Progress: ${GREEN}${ready_count}/8 Ready${NC} | Elapsed: ${total_elapsed}s"
+    echo -e "Progress: ${GREEN}${ready_count}/${#SERVICES[@]} Ready${NC} | Elapsed: ${total_elapsed}s"
 
     echo ""
 }
@@ -256,7 +256,7 @@ draw_service_line() {
 # ==============================================================================
 
 echo ""
-echo -e "${BLUE}Starting parallel monitoring of all 8 NIMs...${NC}"
+echo -e "${BLUE}Starting parallel monitoring of all ${#SERVICES[@]} NIMs...${NC}"
 echo "Waiting without timeout — LLM NIM (49B) can take up to 60 min on first load..."
 sleep 2
 
@@ -325,7 +325,7 @@ echo "════════════════════════�
 echo "Summary"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
-echo "Total NIMs:    8"
+echo "Total NIMs:    ${#SERVICES[@]}"
 echo -e "Ready:         ${GREEN}${READY_COUNT}${NC}"
 echo -e "Failed:        ${RED}${FAILED_COUNT}${NC}"
 echo "Total time:    ${TOTAL_TIME}s"

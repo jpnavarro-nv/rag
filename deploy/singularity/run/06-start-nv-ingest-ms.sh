@@ -2,7 +2,8 @@
 # Start NV-Ingest Microservice Runtime
 # Run after 03-start-redis.sh and 05-wait-nim-models.sh
 #
-# NV-Ingest is the engine that processes documents using Ray and the NIM models
+# NV-Ingest uses Ray for parallel document processing. Startup blocks until the
+# Ray pipeline is ready (not just HTTP) — expect 2–5 min cold start.
 
 set -e
 
@@ -257,8 +258,8 @@ if [ $MISSING_PREREQS -gt 0 ]; then
     echo ""
     echo "❌ Missing $MISSING_PREREQS prerequisite(s)"
     echo "   Run the previous scripts first:"
-    echo "   - 04-start-redis.sh"
-    echo "   - 05-start-nim-models.sh"
+    echo "   - 03-start-redis.sh"
+    echo "   - 04-start-nim-models.sh + 05-wait-nim-models.sh"
     exit 1
 fi
 

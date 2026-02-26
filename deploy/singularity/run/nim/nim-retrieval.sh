@@ -16,9 +16,9 @@ if [ -z "$NGC_API_KEY" ]; then
 fi
 
 # Persistent cache dirs defined in dirs.sh; runtime work dirs are session-specific.
-# /opt/nim/.cache    → model weights (persistent, large)
-# /opt/nim/tmp       → manifest downloads (persistent, small)
-# /opt/nim/workspace → NIM working files during init (persistent, small)
+# /opt/nim/.cache    → model weights (persistent across sessions, large)
+# /opt/nim/tmp       → manifest downloads (session-scoped, small)
+# /opt/nim/workspace → NIM working files during init (session-scoped, small)
 EMBEDDING_WORK_DIR="$RAG_RUNTIME_DIR/nim-work/embedding"
 RANKING_WORK_DIR="$RAG_RUNTIME_DIR/nim-work/ranking"
 mkdir -p "$RAG_EMBEDDING_CACHE_DIR" "$EMBEDDING_WORK_DIR/tmp" "$EMBEDDING_WORK_DIR/workspace"

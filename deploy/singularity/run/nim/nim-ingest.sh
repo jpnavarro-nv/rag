@@ -68,7 +68,7 @@ mkdir -p "$RAG_PADDLE_OCR_CACHE_DIR"       "$PADDLE_OCR_WORK_DIR/tmp"       "$PA
 #   NIM               uvicorn  gRPC   Triton-HTTP  metrics
 #   page-elements     8000     8001   8020         8021
 #   graphic-elements  8003     8004   8030         8031
-#   table-structure   8016     8017   8040         8041   (8006 is a cluster system port)
+#   table-structure   8016     8017   8040         8041   (8006 skipped — used by a system service on some HPC clusters)
 #   paddle-ocr        8009     8010   8050         8051
 #
 # NIM_TRITON_EXTRA_ARGS cuda args:
@@ -77,6 +77,7 @@ mkdir -p "$RAG_PADDLE_OCR_CACHE_DIR"       "$PADDLE_OCR_WORK_DIR/tmp"       "$PA
 #   We preserve those args and append --grpc-port.  The 402663424 value (384 MiB,
 #   formatted as a float by the NIM) is the NIM's own default and is safe to
 #   hard-code here — it does not depend on GPU model or GPU memory size.
+#   Observed on page/graphic/table-structure/paddle v1.5.0.
 _INGEST_CUDA_ARGS="--cuda-memory-pool-byte-size=0:402663424.0 --backend-config=tensorrt,version-compatible=true"
 
 # NIM_HTTP_API_WORKERS: controls uvicorn HTTP workers spawned at startup.

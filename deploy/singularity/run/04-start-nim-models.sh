@@ -4,7 +4,7 @@
 #
 # For partial deployment, run the individual group scripts directly:
 #   nim-retrieval.sh  — Embedding + Ranking + LLM   (profile: rag)
-#   nim-ingest.sh     — YOLOX x3 + PaddleOCR        (profile: ingest)
+#   nim-ingest.sh     — page-elements + graphic-elements + table-structure + paddle-ocr  (profile: ingest)
 #   nim-vlm.sh        — VLM                          (profile: vlm)
 #
 # GPU distribution (4× A100 80GB):

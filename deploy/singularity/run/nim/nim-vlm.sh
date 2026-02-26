@@ -5,8 +5,6 @@
 #
 # Run standalone:  bash nim-vlm.sh
 # Or via full stack: bash 04-start-nim-models.sh
-#
-# Note: for isolated health check loop, use diagnose-vlm.sh instead.
 set -e
 
 source "$(dirname "$0")/../config.sh"

@@ -1,12 +1,10 @@
 #!/bin/bash
-# Build and pull all Singularity images for NVIDIA RAG Blueprint deployment.
-#
-# Images that require custom startscripts (instance start support) are built
-# locally from .def files. Images distributed ready-to-use from NGC are
-# pulled automatically when not already present.
+# Pull all Singularity images for NVIDIA RAG Blueprint deployment.
+# All images are pulled from their registries (NGC for NIMs/blueprints,
+# public registries for infrastructure). Already-existing SIFs are skipped.
 #
 # Usage:
-#   ./build-images.sh            # build/pull everything
+#   ./build-images.sh            # pull everything
 #   RAG_BASE_DIR=/path ./build-images.sh
 
 set -e
@@ -154,6 +152,7 @@ echo ""
 pull_image "quay.io/coreos/etcd:$ETCD_VERSION"                   "etcd.sif"   "etcd $ETCD_VERSION - Key-value store"           false
 pull_image "minio/minio:$MINIO_VERSION"                          "minio.sif"  "MinIO $MINIO_VERSION - Object storage"          false
 pull_image "milvusdb/milvus:$MILVUS_VERSION"                     "milvus.sif" "Milvus $MILVUS_VERSION - Vector database"        false
+# redis-stack (not plain redis) — matches compose; nv-ingest expects it
 pull_image "redis/redis-stack:$REDIS_VERSION"                    "redis.sif"  "Redis Stack $REDIS_VERSION"                     false
 
 # ==============================================================================

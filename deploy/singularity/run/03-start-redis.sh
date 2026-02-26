@@ -41,7 +41,6 @@ wait_for_redis() {
 echo "=== Starting Redis ==="
 echo ""
 
-# Redis configuration
 REDIS_PORT=${REDIS_PORT:-6379}
 REDIS_HOST=${REDIS_HOST:-localhost}
 
@@ -83,7 +82,6 @@ if [ -z "$REDIS_PID" ]; then
         exit 1
     fi
 
-    # Wait for Redis to be ready
     if ! wait_for_redis $REDIS_HOST $REDIS_PORT; then
         echo "   Check logs: tail -20 $RAG_LOGS_DIR/redis.log"
         exit 1

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test connectivity to infrastructure services
+# Test connectivity to infrastructure services (optional — run after 01)
 
 set -e
 
@@ -45,17 +45,11 @@ else
 fi
 
 echo ""
-echo "=== Service Status ==="
-singularity instance list
-
-echo ""
-echo "=== Instance Logs ==="
-echo "To check logs:"
+echo "=== Logs ==="
 echo "  tail -f $RAG_LOGS_DIR/etcd.log"
 echo "  tail -f $RAG_LOGS_DIR/minio.log"
 echo "  tail -f $RAG_LOGS_DIR/milvus.log"
 echo ""
-echo "To check instance output:"
-echo "  singularity instance list"
+echo "  PIDs: ls $RAG_RUNTIME_DIR/pids/"
 echo ""
 echo "Next: If all OK, run 03-start-redis.sh"

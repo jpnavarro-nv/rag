@@ -94,8 +94,8 @@ if [ $MISSING_PREREQS -gt 0 ]; then
     echo "❌ Missing $MISSING_PREREQS prerequisite(s)"
     echo "   Run the previous scripts first:"
     echo "   - 01-start-infrastructure.sh (Milvus, MinIO)"
-    echo "   - 04-start-redis.sh"
-    echo "   - 05-start-nim-models.sh"
+    echo "   - 03-start-redis.sh"
+    echo "   - 04-start-nim-models.sh + 05-wait-nim-models.sh"
     echo "   - 06-start-nv-ingest-ms.sh"
     exit 1
 fi
@@ -116,7 +116,6 @@ fi
 
 echo "Starting Ingestor Server on port $INGESTOR_PORT..."
 
-# Create temp directory for ingestor if needed
 mkdir -p $RAG_RUNTIME_DIR/ingestor-temp
 
 # Setup venv bin overlay (one-time): allows uv to create missing entry points (e.g. bulk_writer)
@@ -129,7 +128,8 @@ if [ ! -f "$INGESTOR_BIN_OVERLAY/uvicorn" ]; then
     echo "   ✅ venv bin overlay created at $INGESTOR_BIN_OVERLAY"
 fi
 # Remove bulk_writer on every startup so uv recreates it as a file (not directory).
-# Use rm -rf: bulk_writer may have been extracted as a directory from the SIF tar.
+# bulk_writer is a PEP 660 editable stub — uv installs it as a directory, not a
+# script file, which is why rm -rf (not rm -f) is needed.
 rm -rf "$INGESTOR_BIN_OVERLAY/bulk_writer"
 
 singularity exec \

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Start RAG Server
-# Run after 01-start-infrastructure.sh and 04-start-nim-models.sh (NIMs must be ready)
+# Run after 01-start-infrastructure.sh. NIMs (04+05) and app layer (06+07) must be
+# running for queries to work — not verified here, server starts regardless.
 #
 # RAG Server orchestrates all calls to NIMs, Milvus, and MinIO to answer user queries
 

@@ -50,7 +50,7 @@ else
     echo "   No previous session found"
 fi
 
-# Kill Ray grandchild processes (not tracked in PID files)
+# Kill Ray orphans from a previous session — grandchild processes (raylet, gcs_server, etc.) bypass PID tracking
 for _pat in "raylet" "ray::" "gcs_server" "plasma_store_server" "dashboard_agent" "ray/dashboard"; do
     pkill -f "$_pat" 2>/dev/null || true
 done

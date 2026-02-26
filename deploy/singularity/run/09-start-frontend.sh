@@ -11,6 +11,10 @@
 # In Docker this maps externally to 8090, but in Singularity (shared
 # host network) there is no port mapping — the UI is at port 3000.
 #
+# VITE_API_CHAT_URL/VITE_API_VDB_URL are injected at runtime (not baked into
+# the image) because Docker Compose sets these at compose level; Singularity
+# requires explicit --env passing.
+#
 # Access: http://<compute-node-IP>:3000
 
 set -e
