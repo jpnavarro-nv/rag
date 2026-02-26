@@ -6,8 +6,8 @@ Singularity/Apptainer deployment for the NVIDIA RAG Blueprint on HPC clusters.
 
 - `build-images.sh` — pull all SIF images (one-time setup)
 - `configs/` — Milvus and other service configuration files
-- `definitions/` — Singularity definition files (.def)
 - `run/` — orchestration scripts (01–99 numbered startup sequence)
+- `scripts/` — utility scripts (collection importer, drop collection)
 
 See `run/README.md` for the full startup sequence and script reference.
 
