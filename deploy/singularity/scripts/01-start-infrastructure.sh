@@ -210,8 +210,9 @@ wait_for_minio $MINIO_HOST $MINIO_PORT
 # ==============================================================================
 echo "[3/3] Starting Milvus standalone..."
 
-# Extract default Milvus configs from SIF on first use (persists in db/)
-if [ ! -f "$RAG_MILVUS_CONFIG_DIR/milvus.yaml" ]; then
+# Extract auxiliary Milvus configs from SIF on first use (persists in db/).
+# Only runs once; extracts glog.conf, advanced/etcd.yaml, etc.
+if [ ! -f "$RAG_MILVUS_CONFIG_DIR/glog.conf" ]; then
     echo "   Setting up Milvus config (one-time)..."
     singularity exec --nv $RAG_IMAGES_DIR/milvus.sif \
       tar czf /tmp/milvus-configs.tar.gz -C /milvus configs/ > /dev/null 2>&1
@@ -219,9 +220,12 @@ if [ ! -f "$RAG_MILVUS_CONFIG_DIR/milvus.yaml" ]; then
     cp -r "$RAG_DB_DIR/configs/." "$RAG_MILVUS_CONFIG_DIR/"
     rm -rf "$RAG_DB_DIR/configs"
     rm -f /tmp/milvus-configs.tar.gz
-    cp "$(dirname "$0")/../configs/milvus.yaml" "$RAG_MILVUS_CONFIG_DIR/milvus.yaml"
-    echo "   ✅ Milvus config ready"
+    echo "   ✅ Milvus auxiliary configs extracted"
 fi
+
+# Always apply our custom milvus.yaml (may be updated between sessions).
+cp "$(dirname "$0")/../configs/milvus.yaml" "$RAG_MILVUS_CONFIG_DIR/milvus.yaml"
+echo "   ✅ Milvus config ready"
 
 # Ensure glog.conf exists — required by Knowhere (C++ glog) at IndexNode init.
 # The SIF's /milvus/configs/ does not ship glog.conf; an empty file is valid.
