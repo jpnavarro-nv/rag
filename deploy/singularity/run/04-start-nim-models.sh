@@ -15,11 +15,11 @@ set -e
 
 DIR="$(dirname "$0")"
 
-bash "$DIR/nim-retrieval.sh"
+bash "$DIR/nim/nim-retrieval.sh"
 echo ""
-bash "$DIR/nim-ingest.sh"
+bash "$DIR/nim/nim-ingest.sh"
 echo ""
-bash "$DIR/nim-vlm.sh"
+bash "$DIR/nim/nim-vlm.sh"
 echo ""
 echo "=== All NIM groups launched ==="
 echo "Next: bash 05-wait-nim-models.sh"

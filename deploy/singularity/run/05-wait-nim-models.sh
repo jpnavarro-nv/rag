@@ -11,7 +11,7 @@ set -e
 
 # Load configuration and port definitions
 source "$(dirname "$0")/config.sh"
-source "$(dirname "$0")/nim-lib.sh"
+source "$(dirname "$0")/nim/nim-lib.sh"
 
 # Colors for output
 RED='\033[0;31m'

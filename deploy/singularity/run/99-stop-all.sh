@@ -12,7 +12,7 @@ echo ""
 
 # Load configuration (RAG_RUNTIME_DIR, RAG_LOGS_DIR, ports, etc.)
 source "$(dirname "$0")/config.sh"
-source "$(dirname "$0")/nim-lib.sh"
+source "$(dirname "$0")/nim/nim-lib.sh"
 
 # Ports defined in individual scripts (not in nim-lib.sh)
 REDIS_PORT=${REDIS_PORT:-6379}
