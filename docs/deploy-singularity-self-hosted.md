@@ -527,8 +527,49 @@ re-running scripts 03–05.
 
 ### Port conflicts
 
-`01-start-infrastructure.sh` attempts to free all required ports at startup.
-To check for conflicts manually.
+HPC clusters often have ports already occupied by other services — MPI daemons,
+scheduler agents, monitoring exporters, or other users' workloads. Because
+Singularity runs on the **shared host network**, every port used by the blueprint
+must be free on the compute node.
+
+Every service port has a configurable default. To override a port, export the
+corresponding variable **before** running the startup scripts.
+
+```bash
+export TABLE_STRUCTURE_PORT=8026   # change only what conflicts
+./03-start-nim-models.sh
+```
+
+The full port table, with Singularity defaults:
+
+| Variable | Default | Service |
+|---|---|---|
+| `ETCD_PORT` | `2379` | etcd |
+| `MILVUS_PORT` | `19530` | Milvus |
+| `MINIO_PORT` | `9010` | MinIO API |
+| `MINIO_CONSOLE_PORT` | `9011` | MinIO Console |
+| `REDIS_PORT` | `6379` | Redis |
+| `NVINGEST_PORT` | `7670` | NV-Ingest HTTP |
+| `NVINGEST_BROKER_PORT` | `7671` | NV-Ingest broker |
+| `INGESTOR_PORT` | `8082` | Ingestor Server |
+| `RAG_SERVER_PORT` | `8081` | RAG Server |
+| `FRONTEND_PORT` | `3000` | Web UI |
+| `EMBEDDING_PORT` | `9080` | Embedding NIM |
+| `RANKING_PORT` | `1976` | Ranking NIM |
+| `LLM_PORT` | `8999` | LLM NIM |
+| `VLM_PORT` | `1977` | VLM NIM |
+| `PAGE_ELEMENTS_PORT` | `8000` | Page Elements NIM |
+| `GRAPHIC_ELEMENTS_PORT` | `8003` | Graphic Elements NIM |
+| `TABLE_STRUCTURE_PORT` | `8016` | Table Structure NIM |
+| `PADDLE_OCR_PORT` | `8009` | PaddleOCR NIM |
+
+**Note:** The Singularity defaults deliberately differ from the Docker Compose
+port assignments for some services. For example, the Docker Compose deployment
+maps `table-structure` to host port `8006`, while the Singularity default is
+`8016` — chosen to avoid a known conflict on the target HPC cluster. These
+divergences are intentional and will not be unified.
+
+To check for conflicts on a specific port before starting.
 
 ```bash
 lsof -i :8081
