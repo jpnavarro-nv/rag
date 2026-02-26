@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start all NIM groups (retrieval + ingest + VLM).
-# Run after 01-start-infrastructure.sh and 03-start-redis.sh.
+# Run after 01-start-infrastructure.sh and 02-start-redis.sh.
 #
 # For partial deployment, run the individual group scripts directly:
 #   nim-retrieval.sh  — Embedding + Ranking + LLM   (profile: rag)
@@ -22,4 +22,4 @@ echo ""
 bash "$DIR/nim/nim-vlm.sh"
 echo ""
 echo "=== All NIM groups launched ==="
-echo "Next: bash 05-wait-nim-models.sh"
+echo "Next: bash 04-wait-nim-models.sh"

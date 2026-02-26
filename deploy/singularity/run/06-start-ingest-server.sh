@@ -94,9 +94,9 @@ if [ $MISSING_PREREQS -gt 0 ]; then
     echo "❌ Missing $MISSING_PREREQS prerequisite(s)"
     echo "   Run the previous scripts first:"
     echo "   - 01-start-infrastructure.sh (Milvus, MinIO)"
-    echo "   - 03-start-redis.sh"
-    echo "   - 04-start-nim-models.sh + 05-wait-nim-models.sh"
-    echo "   - 06-start-nv-ingest-ms.sh"
+    echo "   - 02-start-redis.sh"
+    echo "   - 03-start-nim-models.sh + 04-wait-nim-models.sh"
+    echo "   - 05-start-nv-ingest-ms.sh"
     exit 1
 fi
 
@@ -208,4 +208,4 @@ echo "   API Docs: http://${INGESTOR_HOST}:${INGESTOR_PORT}/docs"
 echo ""
 echo "Logs: tail -f $RAG_LOGS_DIR/ingestor-server.log"
 echo ""
-echo "Next: Run 08-start-rag-server.sh to start the RAG Server"
+echo "Next: Run 07-start-rag-server.sh to start the RAG Server"

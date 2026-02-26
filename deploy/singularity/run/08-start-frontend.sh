@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start RAG Frontend (Web UI)
-# Run after 07-start-ingest-server.sh and 08-start-rag-server.sh
+# Run after 06-start-ingest-server.sh and 07-start-rag-server.sh
 #
 # The frontend is a Node.js server that:
 #   - Serves the React UI (static files from /dist)
@@ -77,14 +77,14 @@ echo "Checking prerequisites..."
 
 if ! nc -z localhost $RAG_SERVER_PORT > /dev/null 2>&1; then
     echo "❌ RAG Server not reachable at localhost:$RAG_SERVER_PORT"
-    echo "   Run 08-start-rag-server.sh first"
+    echo "   Run 07-start-rag-server.sh first"
     exit 1
 fi
 echo "   ✅ RAG Server ready at localhost:$RAG_SERVER_PORT"
 
 if ! nc -z localhost $INGESTOR_PORT > /dev/null 2>&1; then
     echo "❌ Ingestor Server not reachable at localhost:$INGESTOR_PORT"
-    echo "   Run 07-start-ingest-server.sh first"
+    echo "   Run 06-start-ingest-server.sh first"
     exit 1
 fi
 echo "   ✅ Ingestor Server ready at localhost:$INGESTOR_PORT"
@@ -165,4 +165,4 @@ echo "Open this URL in your browser to use the RAG interface."
 echo ""
 echo "Logs: tail -f $RAG_LOGS_DIR/rag-frontend.log"
 echo ""
-echo "Next: Run 10-validate-all-services.sh to validate the complete stack"
+echo "Next: Run 09-validate-all-services.sh to validate the complete stack"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start NV-Ingest Microservice Runtime
-# Run after 03-start-redis.sh and 05-wait-nim-models.sh
+# Run after 02-start-redis.sh and 04-wait-nim-models.sh
 #
 # NV-Ingest uses Ray for parallel document processing. Startup blocks until the
 # Ray pipeline is ready (not just HTTP) — expect 2–5 min cold start.
@@ -258,8 +258,8 @@ if [ $MISSING_PREREQS -gt 0 ]; then
     echo ""
     echo "❌ Missing $MISSING_PREREQS prerequisite(s)"
     echo "   Run the previous scripts first:"
-    echo "   - 03-start-redis.sh"
-    echo "   - 04-start-nim-models.sh + 05-wait-nim-models.sh"
+    echo "   - 02-start-redis.sh"
+    echo "   - 03-start-nim-models.sh + 04-wait-nim-models.sh"
     exit 1
 fi
 
@@ -352,4 +352,4 @@ echo "✅ NV-Ingest: $NVINGEST_HOST:$NVINGEST_PORT (PID $NVINGEST_PID)"
 echo ""
 echo "Logs: tail -f $RAG_LOGS_DIR/nv-ingest.log"
 echo ""
-echo "Next: Run 07-start-ingest-server.sh to start Ingestor Server"
+echo "Next: Run 06-start-ingest-server.sh to start Ingestor Server"

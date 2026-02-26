@@ -4,7 +4,7 @@
 # Equivalent to Docker Compose profile "ingest".
 #
 # Run standalone:  bash nim-ingest.sh
-# Or via full stack: bash 04-start-nim-models.sh
+# Or via full stack: bash 03-start-nim-models.sh
 set -e
 
 source "$(dirname "$0")/../config.sh"
@@ -58,7 +58,7 @@ mkdir -p "$RAG_PADDLE_OCR_CACHE_DIR"       "$PADDLE_OCR_WORK_DIR/tmp"       "$PA
 #   sequential export pattern is safe even though processes run concurrently.
 #
 # nv-ingest connects to Triton gRPC at PORT+1 for every ingest NIM
-# (see 06-start-nv-ingest-ms.sh).  gRPC values must equal PORT+1:
+# (see 05-start-nv-ingest-ms.sh).  gRPC values must equal PORT+1:
 #   page-elements    gRPC=8001  (8000+1)
 #   graphic-elements gRPC=8004  (8003+1)
 #   table-structure  gRPC=8017  (8016+1)
@@ -128,4 +128,4 @@ echo "   Monitor: tail -f $RAG_LOGS_DIR/graphic-elements.log"
 echo "   Monitor: tail -f $RAG_LOGS_DIR/table-structure.log"
 echo "   Monitor: tail -f $RAG_LOGS_DIR/paddle-ocr.log"
 echo ""
-echo "⚠️  Models load in ~30-40 s. Run 05-wait-nim-models.sh to monitor."
+echo "⚠️  Models load in ~30-40 s. Run 04-wait-nim-models.sh to monitor."

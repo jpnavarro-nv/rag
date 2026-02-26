@@ -4,7 +4,7 @@
 # Equivalent to Docker Compose profile "rag".
 #
 # Run standalone:  bash nim-retrieval.sh
-# Or via full stack: bash 04-start-nim-models.sh
+# Or via full stack: bash 03-start-nim-models.sh
 set -e
 
 source "$(dirname "$0")/../config.sh"

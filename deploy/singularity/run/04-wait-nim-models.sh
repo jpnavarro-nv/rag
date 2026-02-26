@@ -1,6 +1,6 @@
 #!/bin/bash
 # Wait for NIM Models to become ready - Real-Time Parallel Monitor
-# Run after 04-start-nim-models.sh
+# Run after 03-start-nim-models.sh
 #
 # This script monitors all NIMs simultaneously with real-time status updates.
 # There is NO timeout: the LLM NIM (49B) can take up to 60 min on first load
@@ -336,7 +336,7 @@ if [ $FAILED_COUNT -eq 0 ]; then
     echo -e "${GREEN}║  ✅  All NIMs Ready - Proceeding to Next Step                     ║${NC}"
     echo -e "${GREEN}╚════════════════════════════════════════════════════════════════════╝${NC}"
     echo ""
-    echo "Next: Run 06-start-nv-ingest-ms.sh to start NV-Ingest microservice"
+    echo "Next: Run 05-start-nv-ingest-ms.sh to start NV-Ingest microservice"
     exit 0
 else
     echo -e "${RED}╔════════════════════════════════════════════════════════════════════╗${NC}"

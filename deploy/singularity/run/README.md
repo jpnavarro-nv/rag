@@ -16,13 +16,14 @@ cd deploy/singularity
 # 3. Start the stack
 cd run/
 ./01-start-infrastructure.sh   # etcd, MinIO, Milvus
-./03-start-redis.sh            # Redis message queue
-./04-start-nim-models.sh       # Launch 8 NIMs (non-blocking)
-./05-wait-nim-models.sh        # Wait for NIMs ready (5-10 min)
-./06-start-nv-ingest-ms.sh    # NV-Ingest processor
-./07-start-ingest-server.sh   # Ingestion API (port 8082)
-./08-start-rag-server.sh      # RAG query API (port 8081)
-./10-validate-all-services.sh # Validate everything
+./02-start-redis.sh            # Redis message queue
+./03-start-nim-models.sh       # Launch 8 NIMs (non-blocking)
+./04-wait-nim-models.sh        # Wait for NIMs ready (5-10 min)
+./05-start-nv-ingest-ms.sh    # NV-Ingest processor
+./06-start-ingest-server.sh   # Ingestion API (port 8082)
+./07-start-rag-server.sh      # RAG query API (port 8081)
+./08-start-frontend.sh        # Web UI (port 3000)
+./09-validate-all-services.sh # Validate everything
 ```
 
 ## Image Setup
@@ -50,16 +51,14 @@ cd deploy/singularity
 |--------|---------|--------------|-------|
 | `config.sh` | Shared configuration (sourced by other scripts) | — | — |
 | `01-start-infrastructure.sh` | etcd, MinIO, Milvus | — | 2379, 9010, 19530 |
-| `02-test-connectivity.sh` | Connectivity test (optional) | 01 | — |
-| `03-start-redis.sh` | Redis message queue | — | 6379 |
-| `04-start-nim-models.sh` | Launch 8 NIMs (non-blocking) | GPUs | — |
-| `05-wait-nim-models.sh` | Wait for all NIMs ready | 04 | 9080, 1976, 8999, 1977, 8000, 8003, 8009, 8016 |
-| `06-start-nv-ingest-ms.sh` | NV-Ingest processor | 03, 05 | 7670, 7671 |
-| `07-start-ingest-server.sh` | Ingestion API | 01, 03, 05, 06 | 8082 |
-| `08-start-rag-server.sh` | RAG query API | 01 | 8081 |
-| `09-start-frontend.sh` | Frontend UI | 08 | 3000 |
-| `10-validate-all-services.sh` | Full health validation | all | — |
-| `89-stop-app-layer.sh` | Stop app layer (keep infra) | — | — |
+| `02-start-redis.sh` | Redis message queue | — | 6379 |
+| `03-start-nim-models.sh` | Launch NIMs (non-blocking) | GPUs | — |
+| `04-wait-nim-models.sh` | Wait for all NIMs ready | 03 | 9080, 1976, 8999, 1977, 8000, 8003, 8009, 8016 |
+| `05-start-nv-ingest-ms.sh` | NV-Ingest processor | 02, 04 | 7670, 7671 |
+| `06-start-ingest-server.sh` | Ingestion API | 01, 02, 04, 05 | 8082 |
+| `07-start-rag-server.sh` | RAG query API | 01 | 8081 |
+| `08-start-frontend.sh` | Frontend UI | 07 | 3000 |
+| `09-validate-all-services.sh` | Full health validation | all | — |
 | `99-stop-all.sh` | Stop all services | — | — |
 
 ## Resource Requirements
