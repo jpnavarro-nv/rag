@@ -130,7 +130,7 @@ pull_image() {
 }
 
 # ==============================================================================
-# Blueprint services (pulled from NGC — no local .def)
+# Blueprint services (pulled from NGC)
 # ==============================================================================
 
 echo "=== Blueprint Services ==="
