@@ -124,6 +124,7 @@ echo ""
 pull_image "quay.io/coreos/etcd:v3.5.19"                        "etcd.sif"   "etcd - Key-value store"                  false
 pull_image "minio/minio:RELEASE.2025-02-28T09-55-16Z"           "minio.sif"  "MinIO - Object storage"                  false
 pull_image "milvusdb/milvus:v2.6.2-gpu"                         "milvus.sif" "Milvus v2.6.2-gpu - Vector database"     false
+pull_image "redis:7.4"                                           "redis.sif"  "Redis 7.4 - In-memory cache"             false
 
 # ==============================================================================
 # NIM Models — Language (NGC auth required)
