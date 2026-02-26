@@ -166,4 +166,4 @@ After pulling images:
 4. Set up networking between containers
 5. Create startup/shutdown scripts
 
-See `deploy/singularity/scripts/` for orchestration examples.
+See `deploy/singularity/run/` for orchestration examples.

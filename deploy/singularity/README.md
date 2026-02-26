@@ -6,7 +6,7 @@ This directory contains Singularity/Apptainer deployment configurations for the 
 
 - `definitions/` - Singularity definition files (.def)
 - `configs/` - Configuration files for Singularity deployment
-- `scripts/` - Orchestration and deployment scripts
+- `run/` - Orchestration and deployment scripts
 
 ## Documentation
 
