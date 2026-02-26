@@ -71,35 +71,54 @@ The deployment model differs from Docker Compose in a few key ways:
    python3 --version
    ```
 
-5. Ensure you meet the hardware requirements:
+5. Ensure you meet the hardware requirements.
 
-   | Tier | GPUs | VRAM | CPUs | RAM |
-   |------|------|------|------|-----|
-   | Minimum | 3–4 GPUs | 44 GB total | 48 | 192 GB |
-   | Recommended | 4× A100 40 GB | 160 GB total | 64 | 256 GB |
+   The GPU requirements are the same as for the Docker deployment — refer to
+   [Minimum System Requirements](support-matrix.md) for the full list of supported
+   configurations (H100, A100, B200, RTX PRO 6000).
 
-   **Storage:** ~200 GB free space recommended (60 GB images, 50 GB model cache,
-   10–50 GB runtime data).
+   The Singularity scripts in this guide are designed and tested for a
+   **4× A100 80 GB or 4× H100 80 GB** node. The LLM (Nemotron 49B) requires two
+   GPUs in tensor-parallel mode (TP=2), which is why a minimum of 4 GPUs is needed
+   to run the full stack simultaneously.
+
+   | Resource | Requirement |
+   |----------|-------------|
+   | GPUs | 4× A100 80 GB or 4× H100 80 GB |
+   | CPUs | 48 cores minimum, 64 recommended |
+   | RAM | 192 GB minimum, 256 GB recommended |
+   | Storage | ~200 GB free (60 GB images, 50 GB model cache, 10–50 GB runtime data) |
 
 
 ## Set Up the Working Directory (One-Time)
 
-1. Export the NGC API Key and the working directory. All images, model caches, and
-   databases will be stored under `RAG_BASE_DIR`.
+Export the NGC API Key and the working directory. All images, model caches, and
+databases will be stored under `RAG_BASE_DIR`.
 
-   ```bash
-   export NGC_API_KEY="nvapi-..."
-   export RAG_BASE_DIR="/path/to/rag-workdir"
-   ```
+```bash
+export NGC_API_KEY="nvapi-..."
+export RAG_BASE_DIR="/path/to/rag-workdir"
+```
 
-   `RAG_BASE_DIR` defaults to `$HOME/rag-test` if not set. On HPC clusters, set it
-   to a filesystem with sufficient space (scratch, project storage, etc.).
+`RAG_BASE_DIR` defaults to `$HOME/rag-test` if not set.
 
-2. Navigate to the Singularity deployment directory.
+:::{important}
+**Use a high-speed local filesystem for `RAG_BASE_DIR`.** This directory stores:
+- `.sif` container images (~60 GB) — read on every service start
+- Singularity image cache — read during pulls and exec
+- NIM model weights (~50 GB) — streamed into GPU memory at startup
 
-   ```bash
-   cd deploy/singularity
-   ```
+On HPC clusters, home directories are typically slow NFS mounts. Use a fast
+local or parallel filesystem (NVMe scratch, GPFS, BeeGFS) to avoid significantly
+longer startup times. Loading model weights from a slow filesystem can increase
+NIM startup time from minutes to tens of minutes.
+:::
+
+Navigate to the Singularity deployment directory.
+
+```bash
+cd deploy/singularity
+```
 
 
 ## Pull Images (One-Time Setup)
@@ -450,9 +469,14 @@ To stop all running services and free all ports.
 ./99-stop-all.sh
 ```
 
-Persistent data (Milvus vector database, MinIO objects, model weights) is preserved
-in `$RAG_BASE_DIR/db/` and `$RAG_BASE_DIR/models/` and will be available on the
-next startup.
+Everything stored under `RAG_BASE_DIR` is preserved across shutdowns:
+
+| Path | Contents |
+|------|----------|
+| `$RAG_BASE_DIR/db/` | Milvus vector database, MinIO objects, etcd state |
+| `$RAG_BASE_DIR/models/` | NIM model weights (no re-download on next start) |
+| `$RAG_BASE_DIR/containers/images/` | `.sif` images (no re-pull on next start) |
+| `$RAG_BASE_DIR/containers/cache/` | Singularity image cache |
 
 
 ## Advanced Deployment Considerations
@@ -468,21 +492,6 @@ tail -f $RAG_BASE_DIR/exec_*/logs/rag-server.log
 
 ```bash
 tail -f $RAG_BASE_DIR/exec_*/logs/nv-ingest-ms.log
-```
-
-### Using a custom working directory
-
-By default `RAG_BASE_DIR` is `$HOME/rag-test`. To use a different path, export it
-before running any script. All images, caches, databases, and logs will be stored
-there.
-
-```bash
-export RAG_BASE_DIR=/scratch/rag
-export NGC_API_KEY="nvapi-..."
-cd deploy/singularity
-./build-images.sh
-cd run/
-./01-start-infrastructure.sh
 ```
 
 ### Remote access via SSH tunnel
