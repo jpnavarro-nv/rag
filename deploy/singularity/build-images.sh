@@ -47,7 +47,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # lifecycle managed by config.sh / 01-start-infrastructure.sh.
 # It only needs the permanent container paths defined in dirs.sh.
 export RAG_BASE_DIR="${RAG_BASE_DIR:-$HOME/rag-test}"
-source "$SCRIPT_DIR/dirs.sh"
+source "$SCRIPT_DIR/run/dirs.sh"
 
 OUTPUT_DIR="$RAG_IMAGES_DIR"
 

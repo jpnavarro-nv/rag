@@ -10,7 +10,7 @@ export NGC_API_KEY="your-key-here"
 export RAG_BASE_DIR=/scratch/rag   # images → $RAG_BASE_DIR/containers/images
 
 # Build/pull all images
-cd deploy/singularity/scripts
+cd deploy/singularity
 ./build-images.sh
 ```
 
@@ -119,7 +119,7 @@ cd deploy/singularity/scripts
 ### Standard Deployment
 **Total: ~100 GB**
 ```bash
-cd deploy/singularity/scripts
+cd deploy/singularity
 ./build-images.sh
 ```
 

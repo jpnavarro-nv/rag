@@ -10,7 +10,7 @@ export NGC_API_KEY='your-ngc-api-key'
 export RAG_BASE_DIR='/path/to/rag-workdir'   # default: $HOME/rag-test
 
 # 2. Build all images (one-time setup, ~30-60 min)
-cd run/
+cd deploy/singularity
 ./build-images.sh
 
 # 3. Start the stack
