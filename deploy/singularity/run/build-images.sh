@@ -11,6 +11,36 @@
 
 set -e
 
+# ==============================================================================
+# Version pinning — update here to upgrade images
+# ==============================================================================
+
+# Blueprint services (rag-server, ingestor-server, rag-frontend share one tag)
+TAG="2.3.0"
+
+# Infrastructure
+ETCD_VERSION="v3.6.5"
+MINIO_VERSION="RELEASE.2025-09-07T16-13-09Z"
+MILVUS_VERSION="v2.6.2-gpu"
+REDIS_VERSION="7.2.0-v18"
+
+# NIM — Language models
+NIM_LLM_VERSION="1.14.0"
+NIM_EMBEDDING_VERSION="1.10.1"
+NIM_RANKING_VERSION="1.8.0"
+NIM_VLM_VERSION="1.3.1"
+
+# NIM — Document processing
+NIM_PAGE_ELEMENTS_VERSION="1.5.0"
+NIM_GRAPHIC_ELEMENTS_VERSION="1.5.0"
+NIM_TABLE_STRUCTURE_VERSION="1.5.0"
+NIM_PADDLEOCR_VERSION="1.5.0"
+
+# NV-Ingest pipeline
+NV_INGEST_VERSION="25.9.0"
+
+# ==============================================================================
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # build-images.sh is a one-time setup script independent of the exec-session
@@ -108,11 +138,11 @@ pull_image() {
 echo "=== Blueprint Services ==="
 echo ""
 
-pull_image "nvcr.io/nvidia/blueprint/rag-server:2.3.0" \
-    "rag-server.sif" "RAG Server v2.3.0"
+pull_image "nvcr.io/nvidia/blueprint/rag-server:$TAG" \
+    "rag-server.sif" "RAG Server v$TAG"
 
-pull_image "nvcr.io/nvidia/blueprint/ingestor-server:2.3.0" \
-    "ingestor-server.sif" "Ingestor Server v2.3.0"
+pull_image "nvcr.io/nvidia/blueprint/ingestor-server:$TAG" \
+    "ingestor-server.sif" "Ingestor Server v$TAG"
 
 # ==============================================================================
 # Infrastructure (pulled from public registries — no NGC auth required)
@@ -121,10 +151,10 @@ pull_image "nvcr.io/nvidia/blueprint/ingestor-server:2.3.0" \
 echo "=== Infrastructure Images ==="
 echo ""
 
-pull_image "quay.io/coreos/etcd:v3.6.5"                         "etcd.sif"   "etcd v3.6.5 - Key-value store"           false
-pull_image "minio/minio:RELEASE.2025-09-07T16-13-09Z"           "minio.sif"  "MinIO RELEASE.2025-09-07 - Object storage" false
-pull_image "milvusdb/milvus:v2.6.2-gpu"                         "milvus.sif" "Milvus v2.6.2-gpu - Vector database"     false
-pull_image "redis/redis-stack:7.2.0-v18"                         "redis.sif"  "Redis Stack 7.2.0-v18 (matches compose)" false
+pull_image "quay.io/coreos/etcd:$ETCD_VERSION"                   "etcd.sif"   "etcd $ETCD_VERSION - Key-value store"           false
+pull_image "minio/minio:$MINIO_VERSION"                          "minio.sif"  "MinIO $MINIO_VERSION - Object storage"          false
+pull_image "milvusdb/milvus:$MILVUS_VERSION"                     "milvus.sif" "Milvus $MILVUS_VERSION - Vector database"        false
+pull_image "redis/redis-stack:$REDIS_VERSION"                    "redis.sif"  "Redis Stack $REDIS_VERSION"                     false
 
 # ==============================================================================
 # NIM Models — Language (NGC auth required)
@@ -133,10 +163,10 @@ pull_image "redis/redis-stack:7.2.0-v18"                         "redis.sif"  "R
 echo "=== NIM Models — Language ==="
 echo ""
 
-pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-embedqa-1b-v2:1.10.1"        "nemoretriever-embedding.sif" "NIM Embedding v1.10.1"
-pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2:1.8.0"        "nemoretriever-ranking.sif"   "NIM Ranking v1.8.0"
-pull_image "nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:1.14.0" "nim-llm.sif"                 "NIM LLM v1.14.0 (49B model)"
-pull_image "nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:1.3.1"   "vlm.sif"                     "NIM VLM v1.3.1 (8B model)"
+pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-embedqa-1b-v2:$NIM_EMBEDDING_VERSION"        "nemoretriever-embedding.sif" "NIM Embedding v$NIM_EMBEDDING_VERSION"
+pull_image "nvcr.io/nim/nvidia/llama-3.2-nv-rerankqa-1b-v2:$NIM_RANKING_VERSION"        "nemoretriever-ranking.sif"   "NIM Ranking v$NIM_RANKING_VERSION"
+pull_image "nvcr.io/nim/nvidia/llama-3.3-nemotron-super-49b-v1.5:$NIM_LLM_VERSION"      "nim-llm.sif"                 "NIM LLM v$NIM_LLM_VERSION (49B model)"
+pull_image "nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:$NIM_VLM_VERSION"       "vlm.sif"                     "NIM VLM v$NIM_VLM_VERSION (8B model)"
 
 # ==============================================================================
 # NIM Models — Document Processing (NGC auth required)
@@ -145,10 +175,10 @@ pull_image "nvcr.io/nim/nvidia/llama-3.1-nemotron-nano-vl-8b-v1:1.3.1"   "vlm.si
 echo "=== NIM Models — Document Processing ==="
 echo ""
 
-pull_image "nvcr.io/nim/nvidia/nemoretriever-page-elements-v2:1.5.0"     "page-elements.sif"    "NIM Page Elements v1.5.0"
-pull_image "nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1:1.5.0"  "graphic-elements.sif" "NIM Graphic Elements v1.5.0"
-pull_image "nvcr.io/nim/nvidia/nemoretriever-table-structure-v1:1.5.0"   "table-structure.sif"  "NIM Table Structure v1.5.0"
-pull_image "nvcr.io/nim/baidu/paddleocr:1.5.0"                           "paddle.sif"           "NIM PaddleOCR v1.5.0"
+pull_image "nvcr.io/nim/nvidia/nemoretriever-page-elements-v2:$NIM_PAGE_ELEMENTS_VERSION"    "page-elements.sif"    "NIM Page Elements v$NIM_PAGE_ELEMENTS_VERSION"
+pull_image "nvcr.io/nim/nvidia/nemoretriever-graphic-elements-v1:$NIM_GRAPHIC_ELEMENTS_VERSION" "graphic-elements.sif" "NIM Graphic Elements v$NIM_GRAPHIC_ELEMENTS_VERSION"
+pull_image "nvcr.io/nim/nvidia/nemoretriever-table-structure-v1:$NIM_TABLE_STRUCTURE_VERSION"  "table-structure.sif"  "NIM Table Structure v$NIM_TABLE_STRUCTURE_VERSION"
+pull_image "nvcr.io/nim/baidu/paddleocr:$NIM_PADDLEOCR_VERSION"                               "paddle.sif"           "NIM PaddleOCR v$NIM_PADDLEOCR_VERSION"
 
 # ==============================================================================
 # NV-Ingest + Frontend (NGC auth required)
@@ -157,8 +187,8 @@ pull_image "nvcr.io/nim/baidu/paddleocr:1.5.0"                           "paddle
 echo "=== NV-Ingest + Frontend ==="
 echo ""
 
-pull_image "nvcr.io/nvidia/nemo-microservices/nv-ingest:25.9.0" "nv-ingest.sif"    "NV-Ingest v25.9.0"
-pull_image "nvcr.io/nvidia/blueprint/rag-frontend:2.3.0"        "rag-frontend.sif" "RAG Frontend UI v2.3.0"
+pull_image "nvcr.io/nvidia/nemo-microservices/nv-ingest:$NV_INGEST_VERSION" "nv-ingest.sif"    "NV-Ingest v$NV_INGEST_VERSION"
+pull_image "nvcr.io/nvidia/blueprint/rag-frontend:$TAG"                   "rag-frontend.sif" "RAG Frontend UI v$TAG"
 
 # ==============================================================================
 # Summary
