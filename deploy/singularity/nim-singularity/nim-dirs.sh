@@ -15,6 +15,7 @@
 # Base directory (required)
 # ==============================================================================
 export NIM_BASE_DIR="${NIM_BASE_DIR:?NIM_BASE_DIR must be set}"
+NIM_BASE_DIR="${NIM_BASE_DIR%/}"
 
 # ==============================================================================
 # Container infrastructure (shared, read-only at runtime)

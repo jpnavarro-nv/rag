@@ -77,7 +77,26 @@ if [ -z "$MODEL_KEY" ]; then
 fi
 
 # ==============================================================================
-# Source configuration (validates NGC_API_KEY and NIM_BASE_DIR)
+# Validate required environment variables
+# ==============================================================================
+if [ -z "$NIM_BASE_DIR" ]; then
+    echo "ERROR: NIM_BASE_DIR is not set."
+    echo ""
+    echo "Set it to the shared directory for NIM data:"
+    echo "  export NIM_BASE_DIR=\"/path/to/shared/dir\""
+    exit 1
+fi
+
+if [ -z "$NGC_API_KEY" ]; then
+    echo "ERROR: NGC_API_KEY is not set."
+    echo ""
+    echo "Set it to your NVIDIA NGC API key:"
+    echo "  export NGC_API_KEY=\"nvapi-...\""
+    exit 1
+fi
+
+# ==============================================================================
+# Source configuration
 # ==============================================================================
 source "$SCRIPT_DIR/nim-config.sh"
 
@@ -107,6 +126,10 @@ echo "  SIF:   $NIM_IMAGES_DIR/$SIF_NAME"
 echo "  Port:  $LLM_PORT"
 echo "  GPUs:  $LLM_GPU_ID"
 echo ""
+
+# Export the real script directory so the job script (which SLURM copies to
+# /var/spool/slurmd/) can find nim-config.sh and other files on shared storage.
+export NIM_SCRIPT_DIR="$SCRIPT_DIR"
 
 # The --output path uses %j which SLURM expands to the job ID.
 # We write to a flat path in the user dir (which exists) because the per-job

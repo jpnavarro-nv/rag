@@ -19,7 +19,10 @@ set -euo pipefail
 
 MODEL_KEY="${1:?ERROR: MODEL_KEY argument required}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# NIM_SCRIPT_DIR is exported by submit-nim-job.sh and passed via --export=ALL.
+# We cannot use BASH_SOURCE here because SLURM copies the job script to
+# /var/spool/slurmd/job<ID>/ on the compute node — away from the other files.
+SCRIPT_DIR="${NIM_SCRIPT_DIR:?ERROR: NIM_SCRIPT_DIR not set (submit via submit-nim-job.sh)}"
 
 # ==============================================================================
 # Source configuration (paths, resolve_model, defaults)
