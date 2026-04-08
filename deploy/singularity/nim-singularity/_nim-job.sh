@@ -36,11 +36,10 @@ resolve_model "$MODEL_KEY"
 JOB_DIR="$NIM_SESSIONS_DIR/$USER/job_$SLURM_JOB_ID"
 mkdir -p "$JOB_DIR/tmp"
 
-# Symlink SLURM output (written to flat path by sbatch) into the job directory
-SLURM_OUT="$NIM_SESSIONS_DIR/$USER/nim-${SLURM_JOB_ID}.out"
-if [ -f "$SLURM_OUT" ]; then
-    ln -sf "$SLURM_OUT" "$JOB_DIR/slurm.out"
-fi
+# Move SLURM output into the job directory. SLURM initially writes to a flat
+# file in the user dir (the directory must exist before the job starts). The mv
+# is safe because the shell's stdout fd follows the inode, not the path.
+mv "$NIM_SESSIONS_DIR/$USER/nim-${SLURM_JOB_ID}.out" "$JOB_DIR/nim.out" 2>/dev/null || true
 
 LOG_FILE="$JOB_DIR/nim.log"
 PID_FILE="$JOB_DIR/nim.pid"
