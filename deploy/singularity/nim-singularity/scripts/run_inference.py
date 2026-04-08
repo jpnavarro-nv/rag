@@ -1,73 +1,45 @@
 #!/usr/bin/env python3
-"""Stream inference from a local NIM LLM. Reasoning is enabled but hidden.
+"""Stream inference from a NIM LLM endpoint. Reasoning tokens are hidden.
 
 Usage:
-    python run_inference.py "Qual a capital do Brasil?"
-    python run_inference.py --list          # show supported models
-    python run_inference.py --help          # usage help
+    python scripts/run_inference.py --url http://node:8999 "Your question here"
+    python scripts/run_inference.py --list          # show supported models
+    python scripts/run_inference.py --help          # usage help
+
+The endpoint URL can be set via --url or the NIM_URL environment variable.
+Default: http://localhost:8999
 
 Requires: pip install requests
 """
 
+import os
 import sys
 import json
+import argparse
 import requests
 
-NIM_URL = "http://localhost:8999"
-COMPLETIONS_URL = f"{NIM_URL}/v1/chat/completions"
-MODELS_URL = f"{NIM_URL}/v1/models"
+DEFAULT_URL = "http://localhost:8999"
 
 THINK_OPEN = "<think>"
 THINK_CLOSE = "</think>"
 
-# Supported models (for --list display only; the script auto-detects the running model)
-SUPPORTED_MODELS = [
-    ("nemotron-49b", "nvidia/llama-3.3-nemotron-super-49b-v1.5", "Nemotron Super 49B"),
-    ("qwen3-122b", "qwen/qwen3.5-122b-a10b", "Qwen 3.5 122B-A10B MoE"),
-    ("gpt-oss-120b", "openai/gpt-oss-120b", "GPT-OSS 120B MoE"),
-    ("nemotron3-120b", "nvidia/nemotron-3-super-120b-a12b", "Nemotron-3 Super 120B MoE"),
-]
 
-
-def show_help():
-    print("Usage: python run_inference.py [OPTIONS] \"Your question here\"")
-    print("")
-    print("Options:")
-    print("  --list, -l    Show supported models")
-    print("  --help, -h    Show this help message")
-    print("")
-    print("Examples:")
-    print("  python run_inference.py \"Qual a capital do Brasil?\"")
-    print("  python run_inference.py \"Explain quantum entanglement in simple terms\"")
-    print("")
-    print("The script auto-detects which model is running on localhost:8999.")
-    print("Start a model first with: ./run-nim.sh [MODEL]")
-
-
-def show_models():
-    print("Supported models (start with ./run-nim.sh [KEY]):")
-    print("")
-    for key, api_name, desc in SUPPORTED_MODELS:
-        print(f"  {key:<18s} {desc:<28s} ({api_name})")
-    print("")
-    print("The script auto-detects the running model via /v1/models endpoint.")
-
-
-def detect_model():
+def detect_model(base_url):
     """Query the NIM to find which model is loaded."""
+    url = f"{base_url}/v1/models"
     try:
-        resp = requests.get(MODELS_URL, timeout=5)
+        resp = requests.get(url, timeout=5)
         resp.raise_for_status()
         data = resp.json()
         models = data.get("data", [])
         if models:
             return models[0]["id"]
     except requests.ConnectionError:
-        print(f"Error: cannot connect to NIM at {NIM_URL}", file=sys.stderr)
-        print("Is the NIM running? Start it with: ./run-nim.sh", file=sys.stderr)
+        print(f"Error: cannot connect to NIM at {base_url}", file=sys.stderr)
+        print("Is the NIM running? Check with: ./list-nims.sh", file=sys.stderr)
         sys.exit(1)
     except requests.Timeout:
-        print(f"Error: connection to {NIM_URL} timed out", file=sys.stderr)
+        print(f"Error: connection to {base_url} timed out", file=sys.stderr)
         sys.exit(1)
     except (requests.HTTPError, KeyError, IndexError) as e:
         print(f"Error querying NIM models endpoint: {e}", file=sys.stderr)
@@ -75,11 +47,40 @@ def detect_model():
     return None
 
 
-def stream_tokens(question, model):
+def list_models(base_url):
+    """List models available on the NIM endpoint."""
+    url = f"{base_url}/v1/models"
+    try:
+        resp = requests.get(url, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+        models = data.get("data", [])
+        if not models:
+            print(f"No models found on {base_url}")
+            return
+        print(f"Models available on {base_url}:")
+        print()
+        for m in models:
+            print(f"  {m['id']}")
+        print()
+    except requests.ConnectionError:
+        print(f"Error: cannot connect to NIM at {base_url}", file=sys.stderr)
+        print("Is the NIM running? Check with: ./list-nims.sh", file=sys.stderr)
+        sys.exit(1)
+    except requests.Timeout:
+        print(f"Error: connection to {base_url} timed out", file=sys.stderr)
+        sys.exit(1)
+    except (requests.HTTPError, KeyError) as e:
+        print(f"Error querying NIM models endpoint: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def stream_tokens(base_url, question, model):
     """Yield content tokens from the NIM streaming API."""
+    url = f"{base_url}/v1/chat/completions"
     try:
         resp = requests.post(
-            COMPLETIONS_URL,
+            url,
             json={
                 "model": model,
                 "messages": [{"role": "user", "content": question}],
@@ -93,11 +94,10 @@ def stream_tokens(question, model):
         )
         resp.raise_for_status()
     except requests.ConnectionError:
-        print(f"Error: cannot connect to NIM at {NIM_URL}", file=sys.stderr)
-        print("Is the NIM running? Start it with: ./run-nim.sh", file=sys.stderr)
+        print(f"Error: cannot connect to NIM at {base_url}", file=sys.stderr)
         sys.exit(1)
     except requests.Timeout:
-        print(f"Error: connection to {NIM_URL} timed out", file=sys.stderr)
+        print(f"Error: connection to {base_url} timed out", file=sys.stderr)
         sys.exit(1)
     except requests.HTTPError as e:
         print(f"Error: NIM returned {e.response.status_code}: {e.response.text}", file=sys.stderr)
@@ -119,18 +119,35 @@ def stream_tokens(question, model):
 
 
 def main():
-    if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h"):
-        show_help()
-        sys.exit(0 if len(sys.argv) >= 2 else 1)
+    nim_url = os.environ.get("NIM_URL", DEFAULT_URL)
 
-    if sys.argv[1] in ("--list", "-l"):
-        show_models()
+    parser = argparse.ArgumentParser(
+        description="Stream inference from a NIM LLM endpoint.",
+        epilog="The endpoint URL can also be set via the NIM_URL environment variable.",
+    )
+    parser.add_argument("question", nargs="?", help="Question to send to the model")
+    parser.add_argument(
+        "--url", default=nim_url,
+        help=f"NIM endpoint URL (default: NIM_URL env or {DEFAULT_URL})",
+    )
+    parser.add_argument(
+        "--list", "-l", action="store_true",
+        help="List models available on the NIM endpoint",
+    )
+
+    args = parser.parse_args()
+    base_url = args.url.rstrip("/")
+
+    if args.list:
+        list_models(base_url)
         sys.exit(0)
 
-    question = sys.argv[1]
+    if not args.question:
+        parser.print_help()
+        sys.exit(1)
 
     # Auto-detect running model
-    model = detect_model()
+    model = detect_model(base_url)
     if not model:
         print("Error: no model loaded on the NIM endpoint", file=sys.stderr)
         sys.exit(1)
@@ -141,7 +158,7 @@ def main():
     buf = ""
     phase = "detect"  # detect -> thinking -> answering
 
-    for token in stream_tokens(question, model):
+    for token in stream_tokens(base_url, args.question, model):
         if phase == "answering":
             print(token, end="", flush=True)
             continue
@@ -155,7 +172,7 @@ def main():
                     print(before, end="", flush=True)
                 phase = "thinking"
                 buf = buf[buf.index(THINK_OPEN) + len(THINK_OPEN) :]
-                sys.stderr.write("Pensando... ")
+                sys.stderr.write("Thinking... ")
                 sys.stderr.flush()
             elif len(buf) > len(THINK_OPEN):
                 # No think tag — model didn't reason, stream directly
@@ -167,7 +184,7 @@ def main():
             phase = "answering"
             after = buf[buf.index(THINK_CLOSE) + len(THINK_CLOSE) :]
             buf = ""
-            sys.stderr.write("pronto.\n")
+            sys.stderr.write("done.\n")
             sys.stderr.flush()
             if after:
                 print(after, end="", flush=True)

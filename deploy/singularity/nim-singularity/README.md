@@ -1,64 +1,128 @@
-# NIM LLM Standalone — GAIA Cluster
+# NIM LLM Standalone — Singularity + SLURM
 
-Scripts para rodar NVIDIA NIM LLMs no cluster GAIA (4x A100 80GB) via Singularity.
+Deploy NVIDIA NIM LLMs on HPC clusters via Singularity and SLURM.
+Each SLURM job allocates one exclusive node (4x A100 80GB) to serve one model.
+Multiple users and multiple models can run concurrently without conflict.
 
-## Dependencias
+## Requirements
 
-- Singularity
-- Python 3 com `requests` (`pip install requests`)
-- NGC API key com acesso a NIM containers
+- Singularity/Apptainer
+- SLURM
+- Python 3 with `requests` (`pip install requests`)
+- NGC API key with access to NIM containers
 
 ## Quick Start
 
 ```bash
+# Set required environment variables
 export NGC_API_KEY="nvapi-..."
-export NIM_BASE_DIR="/path/to/nim-workdir"
+export NIM_BASE_DIR="/path/to/shared/dir"
 
-./build-nim-images.sh                       # pull das imagens SIF (uma vez)
-./run-nim.sh                                # inicia o modelo (default: nemotron3-120b)
-python run_inference.py "Sua pergunta aqui" # inferencia streaming
+# 1. Pull model images (one-time setup)
+./build-nim-images.sh --list                        # see available models
+./build-nim-images.sh nemotron-49b                  # pull one model
+
+# 2. Submit a SLURM job
+./submit-nim-job.sh nemotron-49b                    # allocates 1 full node
+
+# 3. Monitor startup
+tail -f $NIM_BASE_DIR/sessions/$USER/nim-<ID>.out
+
+# 4. Run inference (once "NIM READY" appears in the log)
+python scripts/run_inference.py --url http://<node>:8999 "What is RAG?"
+
+# 5. Stop when done
+scancel <job_id>
 ```
 
-## Modelos
+## Model Catalog
 
-| Key | Modelo | Arquitetura | Params |
-|-----|--------|-------------|--------|
-| `nemotron-49b` | Nemotron Super 49B v1.5 | Dense | 49B |
-| `qwen3-122b` | Qwen 3.5 122B-A10B | MoE (10B ativos) | 122B |
-| `gpt-oss-120b` | GPT-OSS 120B | MoE | 120B |
-| `nemotron3-120b` | Nemotron-3 Super 120B-A12B | MoE (12B ativos) | 120B |
-
-Todos rodam nas 4 GPUs com perfil de menor latencia (auto-selecionado pelo NIM).
-
-## Uso
+Models are defined in `models.conf`. To add a new model, append one line — no code changes needed.
 
 ```bash
-./run-nim.sh --list               # lista modelos disponiveis
-./run-nim.sh gpt-oss-120b        # inicia modelo especifico
-./run-nim.sh                      # default: nemotron3-120b
-LLM_GPU_ID=0,1 ./run-nim.sh nemotron-49b   # override de GPUs
-
-python run_inference.py --list    # lista modelos suportados
-python run_inference.py "pergunta" > resposta.txt  # piping funciona
+./build-nim-images.sh --list    # show available models
+./submit-nim-job.sh --list      # same list
 ```
 
-Parar o modelo:
+## Multi-User Workflow
+
+All users share the same `NIM_BASE_DIR`. Container images and model weight caches
+are shared (downloaded once). Each job gets its own isolated session directory:
+
+```
+$NIM_BASE_DIR/
+├── containers/images/          # shared SIF files (read-only at runtime)
+├── models/<key>-cache/         # shared model weights (downloaded once)
+└── sessions/
+    ├── alice/job_12345/        # Alice's job
+    └── bob/job_12346/          # Bob's job (same or different model)
+```
+
+## Commands
+
+| Script | Description |
+|--------|-------------|
+| `build-nim-images.sh` | Pull SIF images from NGC (`--list`, `--all`, `--force`) |
+| `submit-nim-job.sh` | Submit a SLURM job to serve a model |
+| `list-nims.sh` | List active NIM endpoints across the cluster |
+| `scripts/run_inference.py` | Streaming inference client (`--url`, `--list`) |
+
+### SLURM Overrides
+
+Extra arguments to `submit-nim-job.sh` are forwarded to `sbatch`:
 
 ```bash
-kill $(cat $NIM_BASE_DIR/llm-session/pids/nim-llm.pid)
+./submit-nim-job.sh qwen3-122b --time=48:00:00      # longer time limit
+./submit-nim-job.sh nemotron-49b --partition=debug    # different partition
+```
+
+### Inference Client
+
+```bash
+# Explicit URL
+python scripts/run_inference.py --url http://gpu-node-01:8999 "Hello"
+
+# Or set via environment variable
+export NIM_URL="http://gpu-node-01:8999"
+python scripts/run_inference.py "Hello"
+
+# List models on the endpoint
+python scripts/run_inference.py --url http://gpu-node-01:8999 --list
+```
+
+## Monitoring
+
+```bash
+# List all active NIMs
+./list-nims.sh
+
+# List only your NIMs
+./list-nims.sh --mine
+
+# Watch job output
+tail -f $NIM_BASE_DIR/sessions/$USER/nim-<ID>.out
+
+# Job metadata (sourceable)
+source $NIM_BASE_DIR/sessions/$USER/job_<ID>/nim.env
+echo $ENDPOINT
 ```
 
 ## Troubleshooting
 
-**NIM morre durante startup** — verificar log:
+**NIM dies during startup** — Check the log:
 ```bash
-tail -50 $NIM_BASE_DIR/llm-session/logs/<model-key>.log
+tail -50 $NIM_BASE_DIR/sessions/$USER/nim-<ID>.out
 ```
-Causas comuns: GPU memory insuficiente, cache corrompido (`rm -rf $NIM_BASE_DIR/models/<key>-cache`).
+Common causes: insufficient GPU memory, corrupted model cache
+(`rm -rf $NIM_BASE_DIR/models/<key>-cache`).
 
-**Porta em uso** — usar porta alternativa:
+**"SIF not found"** — Build the image first:
 ```bash
-LLM_PORT=9000 ./run-nim.sh
+./build-nim-images.sh <model-key>
 ```
 
-**"cannot connect to NIM"** — o modelo ainda esta carregando. Aguardar `run-nim.sh` imprimir "is serving".
+**"cannot connect to NIM"** — The model is still loading. First load can take
+10-60+ minutes while model weights are downloaded. Monitor with `tail -f`.
+
+**Port conflicts** — Each job gets an exclusive node, so port 8999 is always
+available. Override if needed: `LLM_PORT=9000 ./submit-nim-job.sh <model>`.
