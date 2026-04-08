@@ -131,8 +131,10 @@ echo ""
 # /var/spool/slurmd/) can find nim-config.sh and other files on shared storage.
 export NIM_SCRIPT_DIR="$SCRIPT_DIR"
 
-# SLURM needs --output to point to an existing directory. We write to a flat
-# file in the user dir initially; the job script moves it into job_<ID>/.
+# The --output path uses %j which SLURM expands to the job ID.
+# We write to a flat path in the user dir (which exists) because the per-job
+# subdirectory is created inside the job script — after SLURM opens stdout.
+# The job script symlinks slurm.out into the per-job directory.
 JOB_ID=$(sbatch \
     --parsable \
     --job-name="nim-${MODEL_KEY}" \
@@ -149,7 +151,7 @@ JOB_ID=$(sbatch \
 echo "Submitted batch job $JOB_ID"
 echo ""
 echo "Monitor:"
-echo "  tail -F $NIM_SESSIONS_DIR/$USER/job_${JOB_ID}/nim.out"
+echo "  tail -f $NIM_SESSIONS_DIR/$USER/nim-${JOB_ID}.out"
 echo ""
 echo "Stop:"
 echo "  scancel $JOB_ID"
