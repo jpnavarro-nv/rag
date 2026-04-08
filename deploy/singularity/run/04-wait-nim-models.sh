@@ -27,7 +27,7 @@ NC='\033[0m' # No Color
 
 # Ports sourced from nim-lib.sh (single source of truth)
 
-CHECK_INTERVAL=2   # Check every 2 seconds
+CHECK_INTERVAL=${CHECK_INTERVAL:-2}   # Check interval in seconds (override via env)
 
 # Status directory for monitor files
 STATUS_DIR="$RAG_RUNTIME_DIR/nim-status"
