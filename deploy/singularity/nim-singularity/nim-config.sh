@@ -51,17 +51,19 @@ resolve_model() {
         echo "ERROR: resolve_model() requires a model key argument." >&2
         return 1
     fi
-    while IFS='|' read -r m_key m_uri m_sif m_desc; do
+    while IFS='|' read -r m_key m_uri m_sif m_desc m_extra; do
         # Trim leading/trailing whitespace
         m_key=$(echo "$m_key" | xargs)
         m_uri=$(echo "$m_uri" | xargs)
         m_sif=$(echo "$m_sif" | xargs)
         m_desc=$(echo "$m_desc" | xargs)
+        m_extra=$(echo "$m_extra" | xargs)
         if [ "$m_key" = "$key" ]; then
             MODEL_KEY="$m_key"
             DOCKER_URI="$m_uri"
             SIF_NAME="$m_sif"
             MODEL_DESC="$m_desc"
+            MODEL_EXTRA_ENV="$m_extra"
             # Extract model ID: strip tag and registry prefix
             # e.g. nvcr.io/nim/nvidia/model:1.0 → nvidia/model
             local no_tag="${DOCKER_URI%%:*}"
@@ -82,7 +84,7 @@ list_models() {
     echo ""
     printf "  %-18s %s\n" "KEY" "DESCRIPTION"
     printf "  %-18s %s\n" "---" "-----------"
-    while IFS='|' read -r m_key _ _ m_desc; do
+    while IFS='|' read -r m_key _ _ m_desc _; do
         m_key=$(echo "$m_key" | xargs)
         m_desc=$(echo "$m_desc" | xargs)
         printf "  %-18s %s\n" "$m_key" "$m_desc"
@@ -94,7 +96,7 @@ list_models() {
 # all_model_keys() — Return all model keys from models.conf (one per line)
 # ==============================================================================
 all_model_keys() {
-    while IFS='|' read -r m_key _ _ _; do
+    while IFS='|' read -r m_key _ _ _ _; do
         echo "$m_key" | xargs
     done < <(grep -v '^\s*#' "$_NIM_MODELS_CONF" | grep -v '^\s*$')
 }

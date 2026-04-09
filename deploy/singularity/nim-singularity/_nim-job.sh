@@ -85,18 +85,28 @@ mkdir -p "$MODEL_CACHE"
 # ==============================================================================
 echo "Starting NIM server..."
 
+# Build per-model --env flags from models.conf extra_env column
+NIM_EXTRA_ENV=()
+if [ -n "$MODEL_EXTRA_ENV" ]; then
+    NIM_EXTRA_ENV+=(--env "$MODEL_EXTRA_ENV")
+    echo "Extra:    $MODEL_EXTRA_ENV"
+fi
+
 singularity exec \
     --nv \
+    --writable-tmpfs \
     --env CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" \
     --env NGC_API_KEY="$NGC_API_KEY" \
     --env NVIDIA_API_KEY="$NGC_API_KEY" \
     --cleanenv \
     --bind "$MODEL_CACHE:/opt/nim/.cache" \
     --env NIM_CACHE_PATH=/opt/nim/.cache \
+    --env NIM_LOG_LEVEL=INFO \
     --env OMPI_MCA_pmix=^all \
     --env OMPI_MCA_pml=ob1 \
     --env PMIX_MCA_gds=^ds12,ds21 \
     --env PMIX_MCA_psec=^munge \
+    "${NIM_EXTRA_ENV[@]}" \
     "$NIM_IMAGES_DIR/$SIF_NAME" \
     /opt/nim/start_server.sh --port "$LLM_PORT" \
     >> "$LOG_FILE" 2>&1 &
