@@ -12,7 +12,7 @@
 #
 # Environment variables expected (passed via --export=ALL):
 #   NGC_API_KEY, NIM_BASE_DIR — mandatory
-#   LLM_PORT, LLM_GPU_ID, CHECK_INTERVAL — optional (have defaults)
+#   LLM_PORT, CHECK_INTERVAL — optional (have defaults)
 # -----------------------------------------------------------------------
 
 set -euo pipefail
@@ -69,7 +69,7 @@ echo "Node:     $(hostname)"
 echo "Model:    $MODEL_KEY ($MODEL_ID)"
 echo "SIF:      $NIM_IMAGES_DIR/$SIF_NAME"
 echo "Port:     $LLM_PORT"
-echo "GPUs:     $LLM_GPU_ID"
+echo "GPUs:     $CUDA_VISIBLE_DEVICES"
 echo "Log:      $LOG_FILE"
 echo "Metadata: $ENV_FILE"
 echo ""
@@ -87,17 +87,16 @@ echo "Starting NIM server..."
 
 singularity exec \
     --nv \
-    --cleanenv \
-    --env CUDA_VISIBLE_DEVICES="$LLM_GPU_ID" \
+    --env CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" \
     --env NGC_API_KEY="$NGC_API_KEY" \
     --env NVIDIA_API_KEY="$NGC_API_KEY" \
+    --cleanenv \
+    --bind "$MODEL_CACHE:/opt/nim/.cache" \
     --env NIM_CACHE_PATH=/opt/nim/.cache \
-    --env NIM_SCHEDULER_POLICY=guarantee_no_evict \
     --env OMPI_MCA_pmix=^all \
     --env OMPI_MCA_pml=ob1 \
     --env PMIX_MCA_gds=^ds12,ds21 \
     --env PMIX_MCA_psec=^munge \
-    --bind "$MODEL_CACHE:/opt/nim/.cache" \
     "$NIM_IMAGES_DIR/$SIF_NAME" \
     /opt/nim/start_server.sh --port "$LLM_PORT" \
     >> "$LOG_FILE" 2>&1 &

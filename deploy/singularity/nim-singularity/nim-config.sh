@@ -32,7 +32,6 @@ export NGC_API_KEY="${NGC_API_KEY:?NGC_API_KEY must be set}"
 # Defaults (overridable via environment)
 # ==============================================================================
 export LLM_PORT=${LLM_PORT:-8999}
-export LLM_GPU_ID=${LLM_GPU_ID:-0,1,2,3}
 export CHECK_INTERVAL=${CHECK_INTERVAL:-15}
 
 # ==============================================================================

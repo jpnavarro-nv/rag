@@ -124,7 +124,6 @@ mkdir -p "$NIM_MODELS_DIR/${MODEL_KEY}-cache"
 echo "Submitting NIM job: $MODEL_KEY ($MODEL_DESC)"
 echo "  SIF:   $NIM_IMAGES_DIR/$SIF_NAME"
 echo "  Port:  $LLM_PORT"
-echo "  GPUs:  $LLM_GPU_ID"
 echo ""
 
 # Export the real script directory so the job script (which SLURM copies to
