@@ -100,6 +100,10 @@ if [ -d "$HF_MODEL_DIR" ] && [ "$(ls -A "$HF_MODEL_DIR" 2>/dev/null)" ]; then
     NIM_LOCAL_MODEL+=(--bind "$HF_MODEL_DIR:/local-model")
     NIM_LOCAL_MODEL+=(--env "NIM_MODEL_NAME=/local-model")
     NIM_LOCAL_MODEL+=(--env "NIM_SERVED_MODEL_NAME=$MODEL_ID")
+    # Local models bypass NIM profile selection — set TP from GPU count
+    GPU_COUNT=$(echo "$CUDA_VISIBLE_DEVICES" | tr ',' '\n' | wc -l)
+    NIM_LOCAL_MODEL+=(--env "NIM_PASSTHROUGH_ARGS=--tensor-parallel-size $GPU_COUNT")
+    echo "TP:       $GPU_COUNT (from CUDA_VISIBLE_DEVICES)"
 fi
 
 singularity exec \
@@ -119,7 +123,7 @@ singularity exec \
     --env OMPI_MCA_pml=ob1 \
     --env PMIX_MCA_gds=^ds12,ds21 \
     --env PMIX_MCA_psec=^munge \
-    --env LD_LIBRARY_PATH=/usr/local/cuda/compat \
+    --env LD_PRELOAD="/usr/local/cuda/compat/lib.real/libcuda.so.1:/usr/local/cuda/compat/lib.real/libnvidia-ptxjitcompiler.so.1" \
     "${NIM_LOCAL_MODEL[@]}" \
     "${NIM_EXTRA_ENV[@]}" \
     "$NIM_IMAGES_DIR/$SIF_NAME" \
