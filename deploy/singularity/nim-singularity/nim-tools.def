@@ -2,11 +2,11 @@ Bootstrap: docker
 From: python:3.12-slim
 
 %files
-    requirements.txt /tmp/requirements.txt
+    requirements.txt /requirements.txt
 
 %post
-    pip install --no-cache-dir -r /tmp/requirements.txt
-    rm /tmp/requirements.txt
+    pip install --no-cache-dir -r /requirements.txt
+    rm /requirements.txt
 
 %labels
     Description NIM utility container (huggingface-cli, requests, openai)
