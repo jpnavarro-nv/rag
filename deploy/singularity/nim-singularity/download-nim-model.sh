@@ -158,7 +158,7 @@ echo ""
 # ==============================================================================
 # Download via nim-tools.sif
 # ==============================================================================
-apptainer exec \
+singularity exec \
     --bind "$NIM_BASE_DIR:$NIM_BASE_DIR" \
     "$TOOLS_SIF" \
     huggingface-cli download "$HF_REPO" \

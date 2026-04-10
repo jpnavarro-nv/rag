@@ -6,9 +6,9 @@ Multiple users and multiple models can run concurrently without conflict.
 
 ## Requirements
 
-- Singularity/Apptainer
+- Singularity
 - SLURM
-- Python 3 with `requests` (`pip install requests`)
+- `nim-tools.sif` utility container (provides Python, huggingface-cli, requests, openai)
 - NGC API key with access to NIM containers
 
 ## Quick Start

@@ -29,7 +29,7 @@ if [ ! -f "$TOOLS_SIF" ]; then
     exit 1
 fi
 
-apptainer exec \
+singularity exec \
     --bind "$SCRIPT_DIR:$SCRIPT_DIR" \
     "$TOOLS_SIF" \
     python3 "$SCRIPT_DIR/scripts/run_inference.py" "$@"

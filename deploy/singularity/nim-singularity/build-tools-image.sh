@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build the nim-tools.sif utility container.
 #
-# Requires apptainer/singularity with --fakeroot support.
+# Requires singularity with --fakeroot support.
 # The resulting SIF provides: huggingface-cli, python3 with requests/openai.
 #
 # Usage:
@@ -45,7 +45,7 @@ echo "  Definition: $DEF_PATH"
 echo "  Output:     $SIF_PATH"
 echo ""
 
-apptainer build --fakeroot "$SIF_PATH" "$DEF_PATH"
+singularity build --fakeroot "$SIF_PATH" "$DEF_PATH"
 
 echo ""
 echo "Done: $SIF_PATH ($(du -sh "$SIF_PATH" | cut -f1))"
