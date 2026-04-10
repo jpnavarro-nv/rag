@@ -2,12 +2,12 @@
 # Pre-download NIM model weights from HuggingFace.
 #
 # The NIM internal downloader (NGC) can fail on HPC networks with large models.
-# This script downloads weights externally using huggingface-cli, which has
-# robust retry/resume support. Once downloaded, submit-nim-job.sh will
+# This script downloads weights externally using huggingface-cli (via nim-tools.sif),
+# which has robust retry/resume support. Once downloaded, submit-nim-job.sh will
 # automatically detect and use the local weights.
 #
 # Prerequisites:
-#   pip install -U huggingface-hub
+#   ./build-tools-image.sh    (builds nim-tools.sif)
 #
 # Usage:
 #   export NIM_BASE_DIR="/path/to/shared/dir"
@@ -71,7 +71,7 @@ list_hf_models() {
 show_usage() {
     echo "Usage: ./download-nim-model.sh [OPTIONS] MODEL"
     echo ""
-    echo "Pre-download NIM model weights from HuggingFace."
+    echo "Pre-download NIM model weights from HuggingFace (via nim-tools.sif)."
     echo "Downloads are resumable — re-run to continue interrupted downloads."
     echo ""
     echo "Options:"
@@ -80,6 +80,8 @@ show_usage() {
     echo "  --help    Show this help"
     echo ""
     echo "Default precision is FP8 (smaller download, fits 4x A100 80GB)."
+    echo ""
+    echo "Prerequisite: ./build-tools-image.sh"
 }
 
 # ==============================================================================
@@ -117,14 +119,6 @@ if [ -z "$NIM_BASE_DIR" ]; then
     exit 1
 fi
 
-if ! command -v huggingface-cli &> /dev/null; then
-    echo "ERROR: huggingface-cli not found."
-    echo ""
-    echo "Install it with:"
-    echo "  pip install -U huggingface-hub"
-    exit 1
-fi
-
 if ! resolve_hf_model "$MODEL_KEY" "$PRECISION"; then
     echo "ERROR: No HuggingFace mapping for model '$MODEL_KEY'."
     echo ""
@@ -139,6 +133,15 @@ fi
 export NGC_API_KEY="${NGC_API_KEY:-placeholder}"
 source "$SCRIPT_DIR/nim-config.sh"
 
+TOOLS_SIF="$NIM_IMAGES_DIR/nim-tools.sif"
+if [ ! -f "$TOOLS_SIF" ]; then
+    echo "ERROR: nim-tools.sif not found: $TOOLS_SIF"
+    echo ""
+    echo "Build it first:"
+    echo "  ./build-tools-image.sh"
+    exit 1
+fi
+
 DOWNLOAD_DIR="$NIM_MODELS_DIR/${MODEL_KEY}-hf"
 mkdir -p "$DOWNLOAD_DIR"
 
@@ -147,15 +150,19 @@ echo ""
 echo "Model:     $MODEL_KEY ($PRECISION)"
 echo "HF Repo:   $HF_REPO"
 echo "Target:    $DOWNLOAD_DIR"
+echo "Container: $TOOLS_SIF"
 echo ""
 echo "Download is resumable. Re-run this script if interrupted."
 echo ""
 
 # ==============================================================================
-# Download
+# Download via nim-tools.sif
 # ==============================================================================
-huggingface-cli download "$HF_REPO" \
-    --local-dir "$DOWNLOAD_DIR"
+apptainer exec \
+    --bind "$NIM_BASE_DIR:$NIM_BASE_DIR" \
+    "$TOOLS_SIF" \
+    huggingface-cli download "$HF_REPO" \
+        --local-dir "$DOWNLOAD_DIR"
 
 echo ""
 echo "============================================================"
