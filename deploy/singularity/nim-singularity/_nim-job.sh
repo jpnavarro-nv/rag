@@ -98,7 +98,8 @@ NIM_LOCAL_MODEL=()
 if [ -d "$HF_MODEL_DIR" ] && [ "$(ls -A "$HF_MODEL_DIR" 2>/dev/null)" ]; then
     echo "Using pre-downloaded weights: $HF_MODEL_DIR"
     NIM_LOCAL_MODEL+=(--bind "$HF_MODEL_DIR:/local-model")
-    NIM_LOCAL_MODEL+=(--env "NIM_MODEL_PATH=/local-model")
+    NIM_LOCAL_MODEL+=(--env "NIM_MODEL_NAME=/local-model")
+    NIM_LOCAL_MODEL+=(--env "NIM_SERVED_MODEL_NAME=$MODEL_ID")
 fi
 
 singularity exec \
