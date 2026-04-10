@@ -101,6 +101,7 @@ singularity exec \
     --cleanenv \
     --bind "$MODEL_CACHE:/opt/nim/.cache" \
     --env NIM_CACHE_PATH=/opt/nim/.cache \
+    --env NIM_MAX_PARALLEL_DOWNLOADS=1 \
     --env NIM_LOG_LEVEL=INFO \
     --env OMPI_MCA_pmix=^all \
     --env OMPI_MCA_pml=ob1 \
