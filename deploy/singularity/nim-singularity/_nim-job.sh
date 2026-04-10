@@ -108,6 +108,8 @@ singularity exec \
     --env NGC_API_KEY="$NGC_API_KEY" \
     --env NVIDIA_API_KEY="$NGC_API_KEY" \
     --cleanenv \
+    --no-home \
+    --env HOME=/tmp \
     --bind "$MODEL_CACHE:/opt/nim/.cache" \
     --env NIM_CACHE_PATH=/opt/nim/.cache \
     --env NIM_MAX_PARALLEL_DOWNLOADS=1 \
