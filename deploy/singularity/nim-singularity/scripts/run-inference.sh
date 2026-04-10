@@ -29,7 +29,12 @@ if [ ! -f "$TOOLS_SIF" ]; then
     exit 1
 fi
 
-singularity exec \
+# Install requests at runtime via --writable-tmpfs, then run inference script.
+# printf %q safely escapes each argument for embedding in bash -c.
+ESCAPED_ARGS=$(printf '%q ' "$@")
+
+singularity exec --writable-tmpfs \
     --bind "$SCRIPT_DIR:$SCRIPT_DIR" \
+    --env NIM_SCRIPT_DIR="$SCRIPT_DIR" \
     "$TOOLS_SIF" \
-    python3 "$SCRIPT_DIR/scripts/run_inference.py" "$@"
+    bash -c "pip install --quiet --no-warn-script-location requests && python3 \"\$NIM_SCRIPT_DIR/scripts/run_inference.py\" $ESCAPED_ARGS"

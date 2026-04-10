@@ -1,13 +1,13 @@
 #!/bin/bash
-# Build the nim-tools.sif utility container.
+# Pull the nim-tools.sif utility container (python:3.12-slim from Docker Hub).
 #
-# Requires singularity with --fakeroot support.
-# The resulting SIF provides: huggingface-cli, python3 with requests/openai.
+# Python packages (huggingface-hub, requests, openai) are installed at runtime
+# via --writable-tmpfs — no --fakeroot or custom build required.
 #
 # Usage:
 #   export NIM_BASE_DIR="/path/to/shared/dir"
-#   ./build-tools-image.sh             # build (skip if exists)
-#   ./build-tools-image.sh --force     # rebuild even if exists
+#   ./build-tools-image.sh             # pull (skip if exists)
+#   ./build-tools-image.sh --force     # re-pull even if exists
 
 set -e
 
@@ -21,12 +21,11 @@ if [ -z "$NIM_BASE_DIR" ]; then
     exit 1
 fi
 
-# Source paths only (NGC_API_KEY not needed for tools build)
+# Source paths only (NGC_API_KEY not needed for tools pull)
 export NGC_API_KEY="${NGC_API_KEY:-placeholder}"
 source "$SCRIPT_DIR/nim-config.sh"
 
 SIF_PATH="$NIM_IMAGES_DIR/nim-tools.sif"
-DEF_PATH="$SCRIPT_DIR/nim-tools.def"
 
 # Parse --force flag
 FORCE=false
@@ -34,18 +33,17 @@ FORCE=false
 
 if [ -f "$SIF_PATH" ] && [ "$FORCE" = false ]; then
     echo "nim-tools.sif already exists: $SIF_PATH"
-    echo "Use --force to rebuild."
+    echo "Use --force to re-pull."
     exit 0
 fi
 
 mkdir -p "$NIM_IMAGES_DIR"
 
-echo "Building nim-tools.sif..."
-echo "  Definition: $DEF_PATH"
-echo "  Output:     $SIF_PATH"
+echo "Pulling nim-tools.sif (python:3.12-slim)..."
+echo "  Output: $SIF_PATH"
 echo ""
 
-singularity build --fakeroot "$SIF_PATH" "$DEF_PATH"
+singularity pull --force "$SIF_PATH" docker://python:3.12-slim
 
 echo ""
 echo "Done: $SIF_PATH ($(du -sh "$SIF_PATH" | cut -f1))"

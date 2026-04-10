@@ -156,13 +156,14 @@ echo "Download is resumable. Re-run this script if interrupted."
 echo ""
 
 # ==============================================================================
-# Download via nim-tools.sif
+# Download via nim-tools.sif (installs huggingface-hub at runtime)
 # ==============================================================================
-singularity exec \
+singularity exec --writable-tmpfs \
     --bind "$NIM_BASE_DIR:$NIM_BASE_DIR" \
+    --env HF_REPO="$HF_REPO" \
+    --env DOWNLOAD_DIR="$DOWNLOAD_DIR" \
     "$TOOLS_SIF" \
-    huggingface-cli download "$HF_REPO" \
-        --local-dir "$DOWNLOAD_DIR"
+    bash -c 'pip install --quiet --no-warn-script-location "huggingface-hub[cli]" && huggingface-cli download "$HF_REPO" --local-dir "$DOWNLOAD_DIR"'
 
 echo ""
 echo "============================================================"
