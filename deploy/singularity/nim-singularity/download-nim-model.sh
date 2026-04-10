@@ -86,7 +86,7 @@ echo ""
 singularity exec \
     --bind "$NIM_BASE_DIR:$NIM_BASE_DIR" \
     "$TOOLS_SIF" \
-    huggingface-cli download "$HF_REPO" --local-dir "$DOWNLOAD_DIR"
+    python3 -m huggingface_hub.commands.huggingface_cli download "$HF_REPO" --local-dir "$DOWNLOAD_DIR"
 
 echo ""
 echo "Done: $DOWNLOAD_DIR ($(du -sh "$DOWNLOAD_DIR" | cut -f1))"
