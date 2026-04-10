@@ -1,0 +1,3 @@
+huggingface-hub[cli]
+requests
+openai
