@@ -37,4 +37,4 @@ singularity exec --writable-tmpfs \
     --bind "$SCRIPT_DIR:$SCRIPT_DIR" \
     --env NIM_SCRIPT_DIR="$SCRIPT_DIR" \
     "$TOOLS_SIF" \
-    bash -c "pip install --quiet --no-warn-script-location requests && python3 \"\$NIM_SCRIPT_DIR/scripts/run_inference.py\" $ESCAPED_ARGS"
+    bash -c "pip install --quiet --no-cache-dir --no-warn-script-location requests && python3 \"\$NIM_SCRIPT_DIR/scripts/run_inference.py\" $ESCAPED_ARGS"

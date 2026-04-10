@@ -163,7 +163,7 @@ singularity exec --writable-tmpfs \
     --env HF_REPO="$HF_REPO" \
     --env DOWNLOAD_DIR="$DOWNLOAD_DIR" \
     "$TOOLS_SIF" \
-    bash -c 'pip install --quiet --no-warn-script-location "huggingface-hub[cli]" && huggingface-cli download "$HF_REPO" --local-dir "$DOWNLOAD_DIR"'
+    bash -c 'pip install --quiet --no-cache-dir --no-warn-script-location "huggingface-hub[cli]" && huggingface-cli download "$HF_REPO" --local-dir "$DOWNLOAD_DIR"'
 
 echo ""
 echo "============================================================"
