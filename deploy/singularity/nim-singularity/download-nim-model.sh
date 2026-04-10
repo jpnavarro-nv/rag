@@ -7,7 +7,7 @@
 # automatically detect and use the local weights.
 #
 # Prerequisites:
-#   ./build-tools-image.sh    (builds nim-tools.sif)
+#   ./build-tools-image.sh    (pulls nim-tools.sif from GHCR)
 #
 # Usage:
 #   export NIM_BASE_DIR="/path/to/shared/dir"
@@ -156,14 +156,13 @@ echo "Download is resumable. Re-run this script if interrupted."
 echo ""
 
 # ==============================================================================
-# Download via nim-tools.sif (installs huggingface-hub at runtime)
+# Download via nim-tools.sif
 # ==============================================================================
-singularity exec --writable-tmpfs \
+singularity exec \
     --bind "$NIM_BASE_DIR:$NIM_BASE_DIR" \
-    --env HF_REPO="$HF_REPO" \
-    --env DOWNLOAD_DIR="$DOWNLOAD_DIR" \
     "$TOOLS_SIF" \
-    bash -c 'pip install --quiet --no-cache-dir --no-warn-script-location "huggingface-hub[cli]" && huggingface-cli download "$HF_REPO" --local-dir "$DOWNLOAD_DIR"'
+    huggingface-cli download "$HF_REPO" \
+        --local-dir "$DOWNLOAD_DIR"
 
 echo ""
 echo "============================================================"

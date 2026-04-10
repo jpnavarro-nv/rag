@@ -1,8 +1,8 @@
 #!/bin/bash
-# Pull the nim-tools.sif utility container (python:3.12-slim from Docker Hub).
+# Pull the nim-tools.sif utility container from GHCR.
 #
-# Python packages (huggingface-hub, requests, openai) are installed at runtime
-# via --writable-tmpfs — no --fakeroot or custom build required.
+# Python packages (huggingface-hub, requests, openai) are pre-installed
+# in the image via GitHub Actions CI. No pip install at runtime.
 #
 # Usage:
 #   export NIM_BASE_DIR="/path/to/shared/dir"
@@ -39,11 +39,11 @@ fi
 
 mkdir -p "$NIM_IMAGES_DIR"
 
-echo "Pulling nim-tools.sif (python:3.12-slim)..."
+echo "Pulling nim-tools.sif from GHCR..."
 echo "  Output: $SIF_PATH"
 echo ""
 
-singularity pull --force "$SIF_PATH" docker://python:3.12-slim
+singularity pull --force "$SIF_PATH" docker://ghcr.io/jpnavarro-nv/nim-tools:latest
 
 echo ""
 echo "Done: $SIF_PATH ($(du -sh "$SIF_PATH" | cut -f1))"

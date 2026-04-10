@@ -1,0 +1,9 @@
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir \
+    "huggingface-hub[cli]" \
+    requests \
+    openai
+
+# Smoke test
+RUN huggingface-cli version
