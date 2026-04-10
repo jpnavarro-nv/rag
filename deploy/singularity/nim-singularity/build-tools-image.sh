@@ -1,10 +1,13 @@
 #!/bin/bash
-# Build nim-tools.sif from nim-tools.def.
+# Pull nim-tools.sif (HuggingFace transformers-torch-light from Docker Hub).
+#
+# Includes: python3, huggingface-cli, requests (pre-installed in base image).
+# No custom build needed — direct pull from Docker Hub.
 #
 # Usage:
 #   export NIM_BASE_DIR="/path/to/shared/dir"
-#   ./build-tools-image.sh             # build (skip if exists)
-#   ./build-tools-image.sh --force     # rebuild even if exists
+#   ./build-tools-image.sh             # pull (skip if exists)
+#   ./build-tools-image.sh --force     # re-pull even if exists
 
 set -e
 
@@ -26,17 +29,17 @@ FORCE=false
 
 if [ -f "$SIF_PATH" ] && [ "$FORCE" = false ]; then
     echo "nim-tools.sif already exists: $SIF_PATH"
-    echo "Use --force to rebuild."
+    echo "Use --force to re-pull."
     exit 0
 fi
 
 mkdir -p "$NIM_IMAGES_DIR"
 
-echo "Building nim-tools.sif..."
-echo "  Definition:    $SCRIPT_DIR/nim-tools.def"
-echo "  Requirements:  $SCRIPT_DIR/requirements.txt"
-echo "  Output:        $SIF_PATH"
+echo "Pulling nim-tools.sif (huggingface/transformers-torch-light)..."
+echo "  Output: $SIF_PATH"
 echo ""
 
-cd "$SCRIPT_DIR"
-singularity build --fakeroot "$SIF_PATH" nim-tools.def
+singularity pull --force "$SIF_PATH" docker://huggingface/transformers-torch-light:latest
+
+echo ""
+echo "Done: $SIF_PATH ($(du -sh "$SIF_PATH" | cut -f1))"
