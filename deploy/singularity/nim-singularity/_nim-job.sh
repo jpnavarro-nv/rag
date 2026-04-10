@@ -118,6 +118,7 @@ singularity exec \
     --env OMPI_MCA_pml=ob1 \
     --env PMIX_MCA_gds=^ds12,ds21 \
     --env PMIX_MCA_psec=^munge \
+    --env LD_LIBRARY_PATH=/usr/local/cuda/compat \
     "${NIM_LOCAL_MODEL[@]}" \
     "${NIM_EXTRA_ENV[@]}" \
     "$NIM_IMAGES_DIR/$SIF_NAME" \
