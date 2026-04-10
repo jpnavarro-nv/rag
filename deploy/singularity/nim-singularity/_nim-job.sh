@@ -92,6 +92,15 @@ if [ -n "$MODEL_EXTRA_ENV" ]; then
     echo "Extra:    $MODEL_EXTRA_ENV"
 fi
 
+# Check for pre-downloaded HuggingFace weights (from download-nim-model.sh)
+HF_MODEL_DIR="$NIM_MODELS_DIR/${MODEL_KEY}-hf"
+NIM_LOCAL_MODEL=()
+if [ -d "$HF_MODEL_DIR" ] && [ "$(ls -A "$HF_MODEL_DIR" 2>/dev/null)" ]; then
+    echo "Using pre-downloaded weights: $HF_MODEL_DIR"
+    NIM_LOCAL_MODEL+=(--bind "$HF_MODEL_DIR:/local-model")
+    NIM_LOCAL_MODEL+=(--env "NIM_MODEL_PATH=/local-model")
+fi
+
 singularity exec \
     --nv \
     --writable-tmpfs \
@@ -107,6 +116,7 @@ singularity exec \
     --env OMPI_MCA_pml=ob1 \
     --env PMIX_MCA_gds=^ds12,ds21 \
     --env PMIX_MCA_psec=^munge \
+    "${NIM_LOCAL_MODEL[@]}" \
     "${NIM_EXTRA_ENV[@]}" \
     "$NIM_IMAGES_DIR/$SIF_NAME" \
     /opt/nim/start_server.sh --port "$LLM_PORT" \
