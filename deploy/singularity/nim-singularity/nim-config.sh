@@ -42,7 +42,8 @@ _NIM_MODELS_CONF="$(dirname "${BASH_SOURCE[0]}")/models.conf"
 # ==============================================================================
 # resolve_model() — Lookup a model key in models.conf
 #
-# Sets global variables: MODEL_KEY, DOCKER_URI, SIF_NAME, MODEL_DESC, MODEL_EXTRA_ENV, MODEL_ID
+# Sets global variables: MODEL_KEY, DOCKER_URI, SIF_NAME, MODEL_DESC,
+#                        MODEL_EXTRA_ENV, MODEL_BACKEND, MODEL_ID
 # Returns 0 on success, 1 if the key is not found.
 # ==============================================================================
 resolve_model() {
@@ -51,23 +52,32 @@ resolve_model() {
         echo "ERROR: resolve_model() requires a model key argument." >&2
         return 1
     fi
-    while IFS='|' read -r m_key m_uri m_sif m_desc m_extra; do
+    while IFS='|' read -r m_key m_uri m_sif m_desc m_extra m_backend; do
         # Trim leading/trailing whitespace
         m_key=$(echo "$m_key" | xargs)
         m_uri=$(echo "$m_uri" | xargs)
         m_sif=$(echo "$m_sif" | xargs)
         m_desc=$(echo "$m_desc" | xargs)
         m_extra=$(echo "$m_extra" | xargs)
+        m_backend=$(echo "$m_backend" | xargs)
         if [ "$m_key" = "$key" ]; then
             MODEL_KEY="$m_key"
             DOCKER_URI="$m_uri"
             SIF_NAME="$m_sif"
             MODEL_DESC="$m_desc"
             MODEL_EXTRA_ENV="$m_extra"
-            # Extract model ID: strip tag and registry prefix
-            # e.g. nvcr.io/nim/nvidia/model:1.0 → nvidia/model
-            local no_tag="${DOCKER_URI%%:*}"
-            MODEL_ID="${no_tag#*/nim/}"
+            MODEL_BACKEND="${m_backend:-nim}"
+            # Extract model ID from the image URI or vLLM args
+            if [ "$MODEL_BACKEND" = "vllm" ]; then
+                # For vLLM: use --served-model-name from extra_args
+                MODEL_ID=$(echo "$MODEL_EXTRA_ENV" | sed -n 's/.*--served-model-name[[:space:]]*\([^[:space:]]*\).*/\1/p')
+                [ -z "$MODEL_ID" ] && MODEL_ID="$MODEL_KEY"
+            else
+                # For NIM: strip tag and registry prefix
+                # e.g. nvcr.io/nim/nvidia/model:1.0 → nvidia/model
+                local no_tag="${DOCKER_URI%%:*}"
+                MODEL_ID="${no_tag#*/nim/}"
+            fi
             return 0
         fi
     done < <(grep -v '^\s*#' "$_NIM_MODELS_CONF" | grep -v '^\s*$')

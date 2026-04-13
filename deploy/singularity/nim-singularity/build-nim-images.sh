@@ -96,12 +96,6 @@ fi
 mkdir -p "$NIM_IMAGES_DIR"
 mkdir -p "$NIM_CACHE_DIR"
 
-# ==============================================================================
-# NGC authentication for Singularity
-# ==============================================================================
-export SINGULARITY_DOCKER_USERNAME='$oauthtoken'
-export SINGULARITY_DOCKER_PASSWORD="$NGC_API_KEY"
-
 echo "=== NIM Image Pull ==="
 echo ""
 echo "NIM_BASE_DIR:  $NIM_BASE_DIR"
@@ -132,6 +126,13 @@ for model_key in "${MODELS[@]}"; do
         if [ -f "$NIM_IMAGES_DIR/$SIF_NAME" ] && [ "$FORCE" = true ]; then
             echo "  Removing existing SIF (--force)..."
             rm -f "$NIM_IMAGES_DIR/$SIF_NAME"
+        fi
+        # Set NGC auth only for nvcr.io images (Docker Hub needs no auth)
+        if [[ "$DOCKER_URI" == nvcr.io/* ]]; then
+            export SINGULARITY_DOCKER_USERNAME='$oauthtoken'
+            export SINGULARITY_DOCKER_PASSWORD="$NGC_API_KEY"
+        else
+            unset SINGULARITY_DOCKER_USERNAME SINGULARITY_DOCKER_PASSWORD
         fi
         echo "  Pulling from $DOCKER_URI..."
         if singularity pull "$NIM_IMAGES_DIR/$SIF_NAME" "docker://$DOCKER_URI"; then
