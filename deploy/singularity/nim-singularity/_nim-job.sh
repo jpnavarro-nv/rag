@@ -117,6 +117,8 @@ if [ -d "$HF_MODEL_DIR" ] && [ "$(ls -A "$HF_MODEL_DIR" 2>/dev/null)" ]; then
             cat /opt/nim/etc/default/model_manifest.yaml \
             | sed '/^\s*checksum:/d' > "$MANIFEST_NOCHECK"
         NIM_LOCAL_MODEL+=(--bind "$MANIFEST_NOCHECK:/opt/nim/etc/default/model_manifest.yaml")
+        # Allow modified manifest — workspace hash changes when checksums are stripped
+        NIM_LOCAL_MODEL+=(--env "NIM_MANIFEST_ALLOW_UNSAFE=1")
     else
         echo "WARNING: NGC cache snapshot not found — falling back to NIM_MODEL_NAME"
         echo "  Run NIM once without local weights to create cache structure, then retry."
