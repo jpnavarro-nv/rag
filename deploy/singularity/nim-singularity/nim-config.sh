@@ -42,7 +42,7 @@ _NIM_MODELS_CONF="$(dirname "${BASH_SOURCE[0]}")/models.conf"
 # ==============================================================================
 # resolve_model() — Lookup a model key in models.conf
 #
-# Sets global variables: MODEL_KEY, DOCKER_URI, SIF_NAME, MODEL_DESC, MODEL_ID
+# Sets global variables: MODEL_KEY, DOCKER_URI, SIF_NAME, MODEL_DESC, MODEL_EXTRA_ENV, MODEL_ID
 # Returns 0 on success, 1 if the key is not found.
 # ==============================================================================
 resolve_model() {
