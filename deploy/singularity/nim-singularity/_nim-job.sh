@@ -99,12 +99,24 @@ GPU_COUNT=$(echo "$CUDA_VISIBLE_DEVICES" | tr ',' '\n' | wc -l)
 HF_MODEL_DIR="$NIM_MODELS_DIR/${MODEL_KEY}-hf"
 NIM_LOCAL_MODEL=()
 if [ -d "$HF_MODEL_DIR" ] && [ "$(ls -A "$HF_MODEL_DIR" 2>/dev/null)" ]; then
-    echo "Using pre-downloaded weights: $HF_MODEL_DIR"
-    NIM_LOCAL_MODEL+=(--bind "$HF_MODEL_DIR:/local-model")
-    NIM_LOCAL_MODEL+=(--env "NIM_MODEL_NAME=/local-model")
-    NIM_LOCAL_MODEL+=(--env "NIM_SERVED_MODEL_NAME=$MODEL_ID")
-    NIM_LOCAL_MODEL+=(--env "NIM_MANIFEST_ALLOW_UNSAFE=1")
-    NIM_LOCAL_MODEL+=(--env "NIM_DISABLE_MODEL_DOWNLOAD=1")
+    # Overlay HF weights onto the NGC cache snapshot directory so NIM sees
+    # them as already-downloaded NGC files.  This avoids NIM_MODEL_NAME
+    # (which triggers auto-manifest generation with TP=1-only profiles)
+    # and lets NIM use the baked-in manifest that has TP>1 profiles.
+    NGC_BF16_SNAPS=("$MODEL_CACHE"/ngc/hub/models--*/snapshots/*-bf16)
+    NGC_BF16_SNAP="${NGC_BF16_SNAPS[0]}"
+    if [ ${#NGC_BF16_SNAPS[@]} -eq 1 ] && [ -d "$NGC_BF16_SNAP" ]; then
+        CONTAINER_SNAP="/opt/nim/.cache${NGC_BF16_SNAP#"$MODEL_CACHE"}"
+        echo "Using pre-downloaded weights: $HF_MODEL_DIR"
+        echo "Overlaying on NGC cache: $CONTAINER_SNAP"
+        NIM_LOCAL_MODEL+=(--bind "$HF_MODEL_DIR:$CONTAINER_SNAP")
+    else
+        echo "WARNING: NGC cache snapshot not found — falling back to NIM_MODEL_NAME"
+        echo "  Run NIM once without local weights to create cache structure, then retry."
+        NIM_LOCAL_MODEL+=(--bind "$HF_MODEL_DIR:/local-model")
+        NIM_LOCAL_MODEL+=(--env "NIM_MODEL_NAME=/local-model")
+        NIM_LOCAL_MODEL+=(--env "NIM_SERVED_MODEL_NAME=$MODEL_ID")
+    fi
 fi
 
 singularity exec \
