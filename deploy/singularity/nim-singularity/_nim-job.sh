@@ -105,12 +105,17 @@ if [ "$MODEL_BACKEND" = "vllm" ]; then
     [ -n "$MODEL_EXTRA_ENV" ] && echo "Args:     $MODEL_EXTRA_ENV"
 
     # shellcheck disable=SC2086
+    VLLM_CACHE="$JOB_DIR/vllm-cache"
+    mkdir -p "$VLLM_CACHE"
+
     singularity exec \
         --nv \
         --writable-tmpfs \
         --contain \
         --workdir "$JOB_DIR/tmp" \
         --env CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" \
+        --env VLLM_CACHE_DIR=/vllm-cache \
+        --bind "$VLLM_CACHE:/vllm-cache" \
         --bind "$HF_MODEL_DIR:/model" \
         "$NIM_IMAGES_DIR/$SIF_NAME" \
         python3 -m vllm.entrypoints.openai.api_server \
