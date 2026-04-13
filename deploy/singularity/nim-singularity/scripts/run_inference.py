@@ -9,14 +9,15 @@ Usage:
 The endpoint URL can be set via --url or the NIM_URL environment variable.
 Default: http://localhost:8000
 
-Requires: pip install requests
+No external dependencies — uses only Python standard library.
 """
 
 import os
 import sys
 import json
 import argparse
-import requests
+import urllib.request
+import urllib.error
 
 DEFAULT_URL = "http://localhost:8000"
 
@@ -24,24 +25,26 @@ THINK_OPEN = "<think>"
 THINK_CLOSE = "</think>"
 
 
+def _request(url, data=None, timeout=10):
+    """Make an HTTP request and return the response object."""
+    headers = {"Content-Type": "application/json"} if data else {}
+    body = json.dumps(data).encode() if data else None
+    req = urllib.request.Request(url, data=body, headers=headers)
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
 def detect_model(base_url):
     """Query the NIM to find which model is loaded."""
-    url = f"{base_url}/v1/models"
     try:
-        resp = requests.get(url, timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
+        resp = _request(f"{base_url}/v1/models")
+        data = json.loads(resp.read().decode())
         models = data.get("data", [])
         if models:
             return models[0]["id"]
-    except requests.ConnectionError:
-        print(f"Error: cannot connect to NIM at {base_url}", file=sys.stderr)
-        print("Is the NIM running? Check with: ./list-nims.sh", file=sys.stderr)
+    except urllib.error.URLError as e:
+        print(f"Error: cannot connect to NIM at {base_url}: {e.reason}", file=sys.stderr)
         sys.exit(1)
-    except requests.Timeout:
-        print(f"Error: connection to {base_url} timed out", file=sys.stderr)
-        sys.exit(1)
-    except (requests.HTTPError, KeyError, IndexError) as e:
+    except (json.JSONDecodeError, KeyError, IndexError) as e:
         print(f"Error querying NIM models endpoint: {e}", file=sys.stderr)
         sys.exit(1)
     return None
@@ -49,11 +52,9 @@ def detect_model(base_url):
 
 def list_models(base_url):
     """List models available on the NIM endpoint."""
-    url = f"{base_url}/v1/models"
     try:
-        resp = requests.get(url, timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
+        resp = _request(f"{base_url}/v1/models")
+        data = json.loads(resp.read().decode())
         models = data.get("data", [])
         if not models:
             print(f"No models found on {base_url}")
@@ -63,25 +64,20 @@ def list_models(base_url):
         for m in models:
             print(f"  {m['id']}")
         print()
-    except requests.ConnectionError:
-        print(f"Error: cannot connect to NIM at {base_url}", file=sys.stderr)
-        print("Is the NIM running? Check with: ./list-nims.sh", file=sys.stderr)
+    except urllib.error.URLError as e:
+        print(f"Error: cannot connect to NIM at {base_url}: {e.reason}", file=sys.stderr)
         sys.exit(1)
-    except requests.Timeout:
-        print(f"Error: connection to {base_url} timed out", file=sys.stderr)
-        sys.exit(1)
-    except (requests.HTTPError, KeyError) as e:
+    except (json.JSONDecodeError, KeyError) as e:
         print(f"Error querying NIM models endpoint: {e}", file=sys.stderr)
         sys.exit(1)
 
 
 def stream_tokens(base_url, question, model):
     """Yield content tokens from the NIM streaming API."""
-    url = f"{base_url}/v1/chat/completions"
     try:
-        resp = requests.post(
-            url,
-            json={
+        resp = _request(
+            f"{base_url}/v1/chat/completions",
+            data={
                 "model": model,
                 "messages": [{"role": "user", "content": question}],
                 "temperature": 0.6,
@@ -89,21 +85,18 @@ def stream_tokens(base_url, question, model):
                 "max_tokens": 4096,
                 "stream": True,
             },
-            stream=True,
-            timeout=(10, 300),
+            timeout=300,
         )
-        resp.raise_for_status()
-    except requests.ConnectionError:
-        print(f"Error: cannot connect to NIM at {base_url}", file=sys.stderr)
+    except urllib.error.HTTPError as e:
+        print(f"Error: NIM returned {e.code}: {e.read().decode()}", file=sys.stderr)
         sys.exit(1)
-    except requests.Timeout:
-        print(f"Error: connection to {base_url} timed out", file=sys.stderr)
-        sys.exit(1)
-    except requests.HTTPError as e:
-        print(f"Error: NIM returned {e.response.status_code}: {e.response.text}", file=sys.stderr)
+    except urllib.error.URLError as e:
+        print(f"Error: cannot connect to NIM at {base_url}: {e.reason}", file=sys.stderr)
         sys.exit(1)
 
-    for line in resp.iter_lines(decode_unicode=True):
+    # Read SSE stream line by line
+    for raw_line in resp:
+        line = raw_line.decode().rstrip("\n\r")
         if not line or not line.startswith("data: "):
             continue
         data = line[6:]
