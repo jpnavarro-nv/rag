@@ -112,6 +112,10 @@ def stream_tokens(base_url, question, model):
 
 
 def main():
+    # HPC nodes often lack UTF-8 locale — avoid UnicodeEncodeError on emojis
+    sys.stdout.reconfigure(errors="replace")
+    sys.stderr.reconfigure(errors="replace")
+
     nim_url = os.environ.get("NIM_URL", DEFAULT_URL)
 
     parser = argparse.ArgumentParser(
