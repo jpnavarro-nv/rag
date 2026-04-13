@@ -110,15 +110,13 @@ if [ -d "$HF_MODEL_DIR" ] && [ "$(ls -A "$HF_MODEL_DIR" 2>/dev/null)" ]; then
         echo "Using pre-downloaded weights: $HF_MODEL_DIR"
         echo "Overlaying on NGC cache: $CONTAINER_SNAP"
         NIM_LOCAL_MODEL+=(--bind "$HF_MODEL_DIR:$CONTAINER_SNAP")
-        # Strip checksum lines from baked-in manifest — HF and NGC metadata
-        # files are not byte-identical, causing blake3 validation failures.
+        # Strip per-file checksums (HF/NGC metadata not byte-identical) and
+        # workspace hash tags (recomputed from manifest content, breaks after edit).
         MANIFEST_NOCHECK="$JOB_DIR/model_manifest.yaml"
         singularity exec "$NIM_IMAGES_DIR/$SIF_NAME" \
             cat /opt/nim/etc/default/model_manifest.yaml \
-            | sed '/^\s*checksum:/d' > "$MANIFEST_NOCHECK"
+            | sed -e '/^\s*checksum:/d' -e '/nim_workspace_hash_v1/d' > "$MANIFEST_NOCHECK"
         NIM_LOCAL_MODEL+=(--bind "$MANIFEST_NOCHECK:/opt/nim/etc/default/model_manifest.yaml")
-        # Allow modified manifest — workspace hash changes when checksums are stripped
-        NIM_LOCAL_MODEL+=(--env "NIM_MANIFEST_ALLOW_UNSAFE=1")
     else
         echo "WARNING: NGC cache snapshot not found — falling back to NIM_MODEL_NAME"
         echo "  Run NIM once without local weights to create cache structure, then retry."
