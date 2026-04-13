@@ -104,10 +104,28 @@ if [ "$MODEL_BACKEND" = "vllm" ]; then
     echo "Weights:  $HF_MODEL_DIR"
     [ -n "$MODEL_EXTRA_ENV" ] && echo "Args:     $MODEL_EXTRA_ENV"
 
-    # shellcheck disable=SC2086
     VLLM_CACHE="$JOB_DIR/vllm-cache"
     mkdir -p "$VLLM_CACHE"
 
+    # CUDA forward compatibility: if the container's CUDA version is newer
+    # than the host driver's native CUDA, LD_PRELOAD the compat libs so they
+    # override the older host libcuda.so injected by --nv.
+    VLLM_PRELOAD=()
+    CUDA_COMPAT_LIB=$(singularity exec "$NIM_IMAGES_DIR/$SIF_NAME" \
+        bash -c 'ls /usr/local/cuda-*/compat/libcuda.so.1 2>/dev/null | head -1')
+    if [ -n "$CUDA_COMPAT_LIB" ]; then
+        COMPAT_DIR=$(dirname "$CUDA_COMPAT_LIB")
+        CONTAINER_CUDA=$(echo "$COMPAT_DIR" | sed 's|.*/cuda-\([0-9.]*\)/compat|\1|')
+        HOST_CUDA=$(nvidia-smi 2>/dev/null | grep "CUDA Version" | awk '{print $9}')
+        if [ -n "$HOST_CUDA" ] && [ "$(printf '%s\n' "$HOST_CUDA" "$CONTAINER_CUDA" | sort -V | tail -1)" != "$HOST_CUDA" ]; then
+            VLLM_PRELOAD=(--env LD_PRELOAD="$COMPAT_DIR/libcuda.so.1:$COMPAT_DIR/libnvidia-ptxjitcompiler.so.1")
+            echo "CUDA compat: container=$CONTAINER_CUDA > host=$HOST_CUDA (LD_PRELOAD enabled)"
+        else
+            echo "CUDA compat: not needed (container=$CONTAINER_CUDA, host=$HOST_CUDA)"
+        fi
+    fi
+
+    # shellcheck disable=SC2086
     singularity exec \
         --nv \
         --writable-tmpfs \
@@ -115,6 +133,7 @@ if [ "$MODEL_BACKEND" = "vllm" ]; then
         --workdir "$JOB_DIR/tmp" \
         --env CUDA_VISIBLE_DEVICES="$CUDA_VISIBLE_DEVICES" \
         --env VLLM_CACHE_DIR=/vllm-cache \
+        "${VLLM_PRELOAD[@]}" \
         --bind "$VLLM_CACHE:/vllm-cache" \
         --bind "$HF_MODEL_DIR:/model" \
         "$NIM_IMAGES_DIR/$SIF_NAME" \
