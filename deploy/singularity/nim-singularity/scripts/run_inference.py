@@ -113,8 +113,17 @@ def stream_tokens(base_url, question, model):
 
 def main():
     # HPC nodes often lack UTF-8 locale — avoid UnicodeEncodeError on emojis
-    sys.stdout.reconfigure(errors="replace")
-    sys.stderr.reconfigure(errors="replace")
+    import io
+    if (sys.stdout.encoding
+            and sys.stdout.encoding.lower() not in ("utf-8", "utf8")
+            and hasattr(sys.stdout, "buffer")):
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding=sys.stdout.encoding, errors="replace"
+        )
+        if hasattr(sys.stderr, "buffer"):
+            sys.stderr = io.TextIOWrapper(
+                sys.stderr.buffer, encoding=sys.stderr.encoding, errors="replace"
+            )
 
     nim_url = os.environ.get("NIM_URL", DEFAULT_URL)
 
