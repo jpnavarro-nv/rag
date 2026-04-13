@@ -103,6 +103,8 @@ if [ -d "$HF_MODEL_DIR" ] && [ "$(ls -A "$HF_MODEL_DIR" 2>/dev/null)" ]; then
     NIM_LOCAL_MODEL+=(--bind "$HF_MODEL_DIR:/local-model")
     NIM_LOCAL_MODEL+=(--env "NIM_MODEL_NAME=/local-model")
     NIM_LOCAL_MODEL+=(--env "NIM_SERVED_MODEL_NAME=$MODEL_ID")
+    NIM_LOCAL_MODEL+=(--env "NIM_MANIFEST_ALLOW_UNSAFE=1")
+    NIM_LOCAL_MODEL+=(--env "NIM_DISABLE_MODEL_DOWNLOAD=1")
 fi
 
 singularity exec \
