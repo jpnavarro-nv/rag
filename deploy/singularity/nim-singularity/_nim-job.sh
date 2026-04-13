@@ -144,8 +144,8 @@ singularity exec \
     --env PMIX_MCA_gds=^ds12,ds21 \
     --env PMIX_MCA_psec=^munge \
     --env LD_PRELOAD="/usr/local/cuda/compat/lib.real/libcuda.so.1:/usr/local/cuda/compat/lib.real/libnvidia-ptxjitcompiler.so.1" \
-    "${NIM_LOCAL_MODEL[@]}" \
     "${NIM_EXTRA_ENV[@]}" \
+    "${NIM_LOCAL_MODEL[@]}" \
     "$NIM_IMAGES_DIR/$SIF_NAME" \
     /opt/nim/start_server.sh --tensor-parallel-size "$GPU_COUNT" \
     >> "$LOG_FILE" 2>&1 &
