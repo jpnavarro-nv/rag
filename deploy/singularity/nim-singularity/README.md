@@ -29,7 +29,7 @@ export NIM_BASE_DIR="/path/to/shared/dir"
 tail -f $NIM_BASE_DIR/sessions/$USER/nim-<ID>.out
 
 # 4. Run inference (once "NIM READY" appears in the log)
-python scripts/run_inference.py --url http://<node>:8999 "What is RAG?"
+python scripts/run_inference.py --url http://<node>:8000 "What is RAG?"
 
 # 5. Stop when done
 scancel <job_id>
@@ -80,14 +80,14 @@ Extra arguments to `submit-nim-job.sh` are forwarded to `sbatch`:
 
 ```bash
 # Explicit URL
-python scripts/run_inference.py --url http://gpu-node-01:8999 "Hello"
+python scripts/run_inference.py --url http://gpu-node-01:8000 "Hello"
 
 # Or set via environment variable
-export NIM_URL="http://gpu-node-01:8999"
+export NIM_URL="http://gpu-node-01:8000"
 python scripts/run_inference.py "Hello"
 
 # List models on the endpoint
-python scripts/run_inference.py --url http://gpu-node-01:8999 --list
+python scripts/run_inference.py --url http://gpu-node-01:8000 --list
 ```
 
 ## Monitoring
@@ -124,5 +124,5 @@ Common causes: insufficient GPU memory, corrupted model cache
 **"cannot connect to NIM"** — The model is still loading. First load can take
 10-60+ minutes while model weights are downloaded. Monitor with `tail -f`.
 
-**Port conflicts** — Each job gets an exclusive node, so port 8999 is always
-available. Override if needed: `LLM_PORT=9000 ./submit-nim-job.sh <model>`.
+**Port conflicts** — Each job gets an exclusive node, so port 8000 (NIM default)
+is always available. No port configuration needed.

@@ -12,7 +12,7 @@
 #
 # Environment variables expected (passed via --export=ALL):
 #   NGC_API_KEY, NIM_BASE_DIR — mandatory
-#   LLM_PORT, CHECK_INTERVAL — optional (have defaults)
+#   CHECK_INTERVAL — optional (default: 15s)
 # -----------------------------------------------------------------------
 
 set -euo pipefail
@@ -147,7 +147,7 @@ singularity exec \
     "${NIM_LOCAL_MODEL[@]}" \
     "${NIM_EXTRA_ENV[@]}" \
     "$NIM_IMAGES_DIR/$SIF_NAME" \
-    /opt/nim/start_server.sh --port "$LLM_PORT" --tensor-parallel-size "$GPU_COUNT" \
+    /opt/nim/start_server.sh --tensor-parallel-size "$GPU_COUNT" \
     >> "$LOG_FILE" 2>&1 &
 
 NIM_PID=$!

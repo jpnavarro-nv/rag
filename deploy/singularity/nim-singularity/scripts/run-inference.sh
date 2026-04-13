@@ -3,7 +3,7 @@
 #
 # Usage:
 #   export NIM_BASE_DIR="/path/to/shared/dir"
-#   ./scripts/run-inference.sh --url http://node:8999 "Your question"
+#   ./scripts/run-inference.sh --url http://node:8000 "Your question"
 
 set -e
 

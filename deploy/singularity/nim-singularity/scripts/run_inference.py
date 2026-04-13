@@ -2,12 +2,12 @@
 """Stream inference from a NIM LLM endpoint. Reasoning tokens are hidden.
 
 Usage:
-    python scripts/run_inference.py --url http://node:8999 "Your question here"
+    python scripts/run_inference.py --url http://node:8000 "Your question here"
     python scripts/run_inference.py --list          # show supported models
     python scripts/run_inference.py --help          # usage help
 
 The endpoint URL can be set via --url or the NIM_URL environment variable.
-Default: http://localhost:8999
+Default: http://localhost:8000
 
 Requires: pip install requests
 """
@@ -18,7 +18,7 @@ import json
 import argparse
 import requests
 
-DEFAULT_URL = "http://localhost:8999"
+DEFAULT_URL = "http://localhost:8000"
 
 THINK_OPEN = "<think>"
 THINK_CLOSE = "</think>"
