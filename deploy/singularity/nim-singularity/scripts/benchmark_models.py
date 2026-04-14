@@ -147,7 +147,7 @@ def discover_endpoints(sessions_dir):
     try:
         out = subprocess.check_output(
             ["squeue", "--noheader", "--format=%i"],
-            text=True, timeout=10
+            universal_newlines=True, timeout=10
         )
         for line in out.strip().split("\n"):
             jid = line.strip()
@@ -455,7 +455,7 @@ def collect_env_info(endpoints):
         out = subprocess.check_output(
             ["nvidia-smi", "--query-gpu=name,memory.total,driver_version",
              "--format=csv,noheader"],
-            text=True, timeout=10,
+            universal_newlines=True, timeout=10,
         )
         lines = [l.strip() for l in out.strip().split("\n") if l.strip()]
         if lines:
@@ -471,7 +471,7 @@ def collect_env_info(endpoints):
 
     try:
         out = subprocess.check_output(
-            ["nvidia-smi"], text=True, timeout=10,
+            ["nvidia-smi"], universal_newlines=True, timeout=10,
         )
         for line in out.split("\n"):
             if "CUDA Version" in line:
