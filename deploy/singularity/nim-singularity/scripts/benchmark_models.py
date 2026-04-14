@@ -43,7 +43,6 @@ DEFAULT_TIMEOUT = 300
 DEFAULT_TEMPERATURE = 0
 WARMUP_COUNT = 3
 DEFAULT_CONCURRENCY = [1, 2, 5, 10, 50]
-DISPLAY_CONCURRENCY = [1, 5, 50]
 CHART_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c"]
 
 _RESULT_FIELDS = [
@@ -231,7 +230,7 @@ def parse_endpoint_args(endpoint_strs):
 # Prompt loading
 # =============================================================================
 def load_prompts(path):
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
     return [
         Prompt(
@@ -618,7 +617,7 @@ def _has_thinking(conc_results_list):
     return False
 
 
-def print_model_summary(model_key, backend, conc_results, display_levels):
+def print_model_summary(model_key, backend, conc_results):
     sys.stderr.flush()
     sys.stdout.flush()
     total_prompts = len(conc_results[0].results) if conc_results else 0
@@ -637,8 +636,6 @@ def print_model_summary(model_key, backend, conc_results, display_levels):
 
     rows = []
     for cr in conc_results:
-        if cr.concurrency not in display_levels:
-            continue
         ok = [r for r in cr.results if r.status == "ok"]
         if not ok:
             row = [str(cr.concurrency)] + ["-"] * (len(headers) - 1)
@@ -664,7 +661,7 @@ def print_model_summary(model_key, backend, conc_results, display_levels):
     print(f"  {fmt_table(headers, rows, col_widths)}")
 
 
-def print_summary_table(all_model_data, display_levels):
+def print_summary_table(all_model_data):
     print("\n" + "=" * 80)
     print("SUMMARY (across all prompts)")
     print("=" * 80)
@@ -680,8 +677,6 @@ def print_summary_table(all_model_data, display_levels):
     rows = []
     for endpoint, conc_results in all_model_data:
         for cr in conc_results:
-            if cr.concurrency not in display_levels:
-                continue
             ok = [r for r in cr.results if r.status == "ok"]
             errors = len(cr.results) - len(ok)
 
@@ -1059,14 +1054,6 @@ def main():
               file=sys.stderr)
         sys.exit(1)
 
-    # Determine display levels (1, 5, 50 for defaults; all for custom)
-    if args.concurrency == ",".join(
-            str(c) for c in DEFAULT_CONCURRENCY):
-        display_levels = [c for c in DISPLAY_CONCURRENCY
-                          if c in conc_levels]
-    else:
-        display_levels = conc_levels
-
     # Discover or parse endpoints
     if args.discover:
         nim_base = os.environ.get("NIM_BASE_DIR")
@@ -1144,12 +1131,11 @@ def main():
 
         all_model_data.append((ep, conc_results))
 
-        # Per-model summary (terminal: display levels only)
-        print_model_summary(ep.model_key, ep.backend, conc_results,
-                            display_levels)
+        # Per-model summary
+        print_model_summary(ep.model_key, ep.backend, conc_results)
 
     # Final summary
-    print_summary_table(all_model_data, display_levels)
+    print_summary_table(all_model_data)
 
     # Export
     output_base = _default_output_base()
