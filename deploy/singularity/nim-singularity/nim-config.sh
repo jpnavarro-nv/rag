@@ -24,9 +24,9 @@ source "$(dirname "${BASH_SOURCE[0]}")/nim-dirs.sh"
 export SINGULARITY_TMPDIR=/tmp
 
 # ==============================================================================
-# NGC authentication
+# NGC authentication (validated by calling scripts when needed for NIM backend)
 # ==============================================================================
-export NGC_API_KEY="${NGC_API_KEY:?NGC_API_KEY must be set}"
+export NGC_API_KEY="${NGC_API_KEY:-}"
 
 # ==============================================================================
 # Defaults (overridable via environment)
@@ -54,12 +54,13 @@ resolve_model() {
     fi
     while IFS='|' read -r m_key m_uri m_sif m_desc m_extra m_backend; do
         # Trim leading/trailing whitespace
-        m_key=$(echo "$m_key" | xargs)
-        m_uri=$(echo "$m_uri" | xargs)
-        m_sif=$(echo "$m_sif" | xargs)
-        m_desc=$(echo "$m_desc" | xargs)
-        m_extra=$(echo "$m_extra" | xargs)
-        m_backend=$(echo "$m_backend" | xargs)
+        # Trim whitespace with sed (not xargs — xargs strips shell quotes)
+        m_key=$(echo "$m_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        m_uri=$(echo "$m_uri" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        m_sif=$(echo "$m_sif" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        m_desc=$(echo "$m_desc" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        m_extra=$(echo "$m_extra" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        m_backend=$(echo "$m_backend" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         if [ "$m_key" = "$key" ]; then
             MODEL_KEY="$m_key"
             DOCKER_URI="$m_uri"
@@ -95,8 +96,8 @@ list_models() {
     printf "  %-18s %s\n" "KEY" "DESCRIPTION"
     printf "  %-18s %s\n" "---" "-----------"
     while IFS='|' read -r m_key _ _ m_desc _; do
-        m_key=$(echo "$m_key" | xargs)
-        m_desc=$(echo "$m_desc" | xargs)
+        m_key=$(echo "$m_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        m_desc=$(echo "$m_desc" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         printf "  %-18s %s\n" "$m_key" "$m_desc"
     done < <(grep -v '^\s*#' "$_NIM_MODELS_CONF" | grep -v '^\s*$')
     echo ""
@@ -107,6 +108,6 @@ list_models() {
 # ==============================================================================
 all_model_keys() {
     while IFS='|' read -r m_key _ _ _ _; do
-        echo "$m_key" | xargs
+        echo "$m_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
     done < <(grep -v '^\s*#' "$_NIM_MODELS_CONF" | grep -v '^\s*$')
 }

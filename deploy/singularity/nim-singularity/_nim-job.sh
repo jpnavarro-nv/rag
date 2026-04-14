@@ -55,17 +55,17 @@ ENV_FILE="$JOB_DIR/nim.env"
 BACKEND_LABEL=$([ "$MODEL_BACKEND" = "vllm" ] && echo "vLLM" || echo "NIM")
 
 cat > "$ENV_FILE" <<EOF
-MODEL_KEY=$MODEL_KEY
-MODEL_ID=$MODEL_ID
-SIF_NAME=$SIF_NAME
-MODEL_DESC=$MODEL_DESC
-BACKEND=$MODEL_BACKEND
-NODE=$(hostname)
-PORT=$LLM_PORT
-SLURM_JOB_ID=$SLURM_JOB_ID
-USER=$USER
-STARTED_AT=$(date -Iseconds)
-ENDPOINT=http://$(hostname):$LLM_PORT
+MODEL_KEY="$MODEL_KEY"
+MODEL_ID="$MODEL_ID"
+SIF_NAME="$SIF_NAME"
+MODEL_DESC="$MODEL_DESC"
+BACKEND="$MODEL_BACKEND"
+NODE="$(hostname)"
+PORT="$LLM_PORT"
+SLURM_JOB_ID="$SLURM_JOB_ID"
+USER="$USER"
+STARTED_AT="$(date -Iseconds)"
+ENDPOINT="http://$(hostname):$LLM_PORT"
 EOF
 
 echo "=== LLM Job — $MODEL_DESC ($BACKEND_LABEL) ==="
@@ -211,6 +211,7 @@ else
         --env LD_PRELOAD="/usr/local/cuda/compat/lib.real/libcuda.so.1:/usr/local/cuda/compat/lib.real/libnvidia-ptxjitcompiler.so.1" \
         "${NIM_EXTRA_ENV[@]}" \
         "${NIM_LOCAL_MODEL[@]}" \
+        --env NIM_HTTP_API_PORT="$LLM_PORT" \
         "$NIM_IMAGES_DIR/$SIF_NAME" \
         /opt/nim/start_server.sh --tensor-parallel-size "$GPU_COUNT" \
         >> "$LOG_FILE" 2>&1 &

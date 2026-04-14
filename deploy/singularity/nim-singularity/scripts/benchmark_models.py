@@ -698,7 +698,7 @@ def export_csv(results, path):
             for fld in fields:
                 v = d[fld]
                 if isinstance(v, str):
-                    v = f'"{v}"'
+                    v = '"{}"'.format(v.replace('"', '""'))
                 else:
                     v = str(v)
                 row.append(v)

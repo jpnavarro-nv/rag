@@ -57,10 +57,10 @@ done < <(squeue --noheader --format="%i" 2>/dev/null)
 # ==============================================================================
 FOUND=0
 
-printf "%-10s %-12s %-18s %-16s %-6s %s\n" \
-    "JOB_ID" "USER" "MODEL" "NODE" "PORT" "ENDPOINT"
-printf "%-10s %-12s %-18s %-16s %-6s %s\n" \
-    "------" "----" "-----" "----" "----" "--------"
+printf "%-10s %-12s %-18s %-8s %-16s %-6s %s\n" \
+    "JOB_ID" "USER" "MODEL" "BACKEND" "NODE" "PORT" "ENDPOINT"
+printf "%-10s %-12s %-18s %-8s %-16s %-6s %s\n" \
+    "------" "----" "-----" "-------" "----" "----" "--------"
 
 for env_file in "$NIM_SESSIONS_DIR"/*/job_*/nim.env; do
     [ -f "$env_file" ] || continue
@@ -79,18 +79,20 @@ for env_file in "$NIM_SESSIONS_DIR"/*/job_*/nim.env; do
     fi
 
     # Source nim.env for metadata
-    local_model="" local_node="" local_port="" local_endpoint=""
+    local_model="" local_node="" local_port="" local_endpoint="" local_backend=""
     while IFS='=' read -r key value; do
+        value="${value%\"}" ; value="${value#\"}"
         case "$key" in
             MODEL_KEY)  local_model="$value" ;;
+            BACKEND)    local_backend="$value" ;;
             NODE)       local_node="$value" ;;
             PORT)       local_port="$value" ;;
             ENDPOINT)   local_endpoint="$value" ;;
         esac
     done < "$env_file"
 
-    printf "%-10s %-12s %-18s %-16s %-6s %s\n" \
-        "$job_id" "$session_user" "$local_model" "$local_node" "$local_port" "$local_endpoint"
+    printf "%-10s %-12s %-18s %-8s %-16s %-6s %s\n" \
+        "$job_id" "$session_user" "$local_model" "$local_backend" "$local_node" "$local_port" "$local_endpoint"
 
     FOUND=$((FOUND + 1))
 done

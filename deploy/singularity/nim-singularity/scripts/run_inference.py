@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """Stream inference from a NIM LLM endpoint. Reasoning tokens are hidden.
 
 Usage:
