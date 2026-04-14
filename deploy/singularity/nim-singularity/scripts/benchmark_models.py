@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Sequential LLM benchmark for NIM and vLLM endpoints.
+"""Sequential and concurrent LLM benchmark for NIM and vLLM endpoints.
 
-Measures single-request latency and throughput for all active models
-on the cluster. Prompts are loaded from benchmark_prompts.json.
+Sweeps concurrency levels (default: 1, 2, 5, 10, 50) to produce a
+latency-throughput curve for each active model on the cluster.
 
 Usage:
+    python3 scripts/benchmark_models.py --discover
     python3 scripts/benchmark_models.py --endpoints node1:8000 node2:8000
-    python3 scripts/benchmark_models.py --discover          # auto-detect from nim.env
+    python3 scripts/benchmark_models.py --discover --concurrency 1,5,50
     python3 scripts/benchmark_models.py --help
 
 Requires Python 3.6+. No external dependencies — uses only Python standard library.
@@ -22,9 +23,11 @@ import socket
 import statistics
 import subprocess
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 # =============================================================================
@@ -39,14 +42,16 @@ DEFAULT_MAX_TOKENS = 8192
 DEFAULT_TIMEOUT = 300
 DEFAULT_TEMPERATURE = 0
 WARMUP_COUNT = 3
+DEFAULT_CONCURRENCY = [1, 2, 5, 10, 50]
+DISPLAY_CONCURRENCY = [1, 5, 50]
+CHART_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c"]
 
-# Fields for BenchmarkResult (ordered, used for CSV/JSON export)
 _RESULT_FIELDS = [
-    "model_key", "backend", "prompt_id", "prompt_name", "prompt_category",
-    "status", "error_message", "ttft_ms", "ttfa_ms", "e2e_s", "gen_s",
-    "output_tokens", "prompt_tokens", "total_tokens", "output_tok_s",
-    "prefill_tok_s", "tpot_ms", "thinking_s", "think_tokens_est",
-    "answer_tokens_est",
+    "concurrency", "model_key", "backend", "prompt_id", "prompt_name",
+    "prompt_category", "status", "error_message", "ttft_ms", "ttfa_ms",
+    "e2e_s", "gen_s", "output_tokens", "prompt_tokens", "total_tokens",
+    "output_tok_s", "prefill_tok_s", "tpot_ms", "thinking_s",
+    "think_tokens_est", "answer_tokens_est",
 ]
 
 
@@ -75,12 +80,14 @@ class Prompt(object):
 
 
 class BenchmarkResult(object):
-    def __init__(self, model_key="", backend="", prompt_id="", prompt_name="",
-                 prompt_category="", status="", error_message="",
+    def __init__(self, concurrency=1, model_key="", backend="",
+                 prompt_id="", prompt_name="", prompt_category="",
+                 status="", error_message="",
                  ttft_ms=-1, ttfa_ms=-1, e2e_s=-1, gen_s=-1,
                  output_tokens=0, prompt_tokens=0, total_tokens=0,
                  output_tok_s=0, prefill_tok_s=0, tpot_ms=0,
                  thinking_s=0, think_tokens_est=0, answer_tokens_est=0):
+        self.concurrency = concurrency
         self.model_key = model_key
         self.backend = backend
         self.prompt_id = prompt_id
@@ -104,6 +111,16 @@ class BenchmarkResult(object):
 
     def to_dict(self):
         return {f: getattr(self, f) for f in _RESULT_FIELDS}
+
+
+class ConcurrencyResult(object):
+    def __init__(self, concurrency, results, system_tok_s, requests_per_s,
+                 wall_time_s):
+        self.concurrency = concurrency
+        self.results = results
+        self.system_tok_s = system_tok_s
+        self.requests_per_s = requests_per_s
+        self.wall_time_s = wall_time_s
 
 
 # =============================================================================
@@ -231,7 +248,7 @@ def load_prompts(path):
 
 
 # =============================================================================
-# Core benchmark
+# Core benchmark (single request)
 # =============================================================================
 def run_single(endpoint, prompt, max_tokens, timeout, temperature):
     payload = {
@@ -307,7 +324,6 @@ def run_single(endpoint, prompt, max_tokens, timeout, temperature):
             if t_first_token is None:
                 t_first_token = now
 
-            # Think/answer state machine
             if phase == "detect":
                 buf += content
                 if THINK_OPEN in buf:
@@ -346,14 +362,13 @@ def run_single(endpoint, prompt, max_tokens, timeout, temperature):
 
     t_end = time.monotonic()
 
-    # Compute metrics
     e2e = t_end - t_start
     ttft = (t_first_token - t_start) if t_first_token else e2e
     ttfa = (t_first_answer - t_start) if t_first_answer else ttft
     gen_time = (t_end - t_first_token) if t_first_token else 0
-    thinking_time = ((t_think_end or t_end) - t_think_start) if t_think_start else 0
+    thinking_time = (
+        (t_think_end or t_end) - t_think_start) if t_think_start else 0
 
-    # Token counts from API usage (preferred) or fallback to chunk count
     output_tokens = 0
     prompt_tokens_count = 0
     if usage:
@@ -364,7 +379,6 @@ def run_single(endpoint, prompt, max_tokens, timeout, temperature):
 
     total_tokens = prompt_tokens_count + output_tokens
 
-    # Apportion thinking vs answer tokens
     total_chars = thinking_chars + answer_chars
     if total_chars > 0 and output_tokens > 0:
         think_tokens = int(output_tokens * thinking_chars / total_chars)
@@ -373,9 +387,9 @@ def run_single(endpoint, prompt, max_tokens, timeout, temperature):
         think_tokens = 0
         answer_tokens = output_tokens
 
-    # Throughput
     output_tok_s = output_tokens / gen_time if gen_time > 0 else 0
-    prefill_tok_s = prompt_tokens_count / ttft if ttft > 0 and prompt_tokens_count > 0 else 0
+    prefill_tok_s = (prompt_tokens_count / ttft
+                     if ttft > 0 and prompt_tokens_count > 0 else 0)
     tpot = (gen_time / output_tokens * 1000) if output_tokens > 0 else 0
 
     return BenchmarkResult(
@@ -411,6 +425,86 @@ def warm_up(endpoint, timeout, temperature):
                    temperature=temperature)
     sys.stderr.write("done\n")
     sys.stderr.flush()
+
+
+# =============================================================================
+# Concurrency runner
+# =============================================================================
+_progress_lock = threading.Lock()
+
+
+def run_concurrency_level(endpoint, prompts, concurrency, max_tokens,
+                          timeout, temperature):
+    """Run all prompts at a given concurrency level and return aggregated
+    results with system-level throughput metrics."""
+    results = []
+    completed = [0]
+    error_count = [0]
+    total = len(prompts)
+    t_start = time.monotonic()
+
+    def _report(result):
+        if result.status != "ok":
+            error_count[0] += 1
+        completed[0] += 1
+        with _progress_lock:
+            if concurrency == 1:
+                if result.status == "ok":
+                    sys.stderr.write(
+                        f"\r  [{completed[0]}/{total}] {result.prompt_id} "
+                        f"— {result.ttft_ms:.0f}ms TTFT, "
+                        f"{result.output_tok_s:.1f} tok/s, "
+                        f"{result.e2e_s:.1f}s E2E\n"
+                    )
+                else:
+                    sys.stderr.write(
+                        f"\r  [{completed[0]}/{total}] {result.prompt_id} "
+                        f"— ERROR: {result.error_message[:60]}\n"
+                    )
+            else:
+                err = ""
+                if error_count[0]:
+                    err = ", {} errors".format(error_count[0])
+                sys.stderr.write(
+                    f"\r  [conc={concurrency}] {completed[0]}/{total} done"
+                    f"{err}      "
+                )
+            sys.stderr.flush()
+
+    if concurrency == 1:
+        for prompt in prompts:
+            result = run_single(endpoint, prompt, max_tokens, timeout,
+                                temperature)
+            result.concurrency = concurrency
+            results.append(result)
+            _report(result)
+    else:
+        sys.stderr.write(
+            f"  [conc={concurrency}] Running {total} prompts...\n")
+        sys.stderr.flush()
+        with ThreadPoolExecutor(max_workers=concurrency) as executor:
+            futures = {}
+            for prompt in prompts:
+                fut = executor.submit(run_single, endpoint, prompt,
+                                      max_tokens, timeout, temperature)
+                futures[fut] = prompt
+
+            for fut in as_completed(futures):
+                result = fut.result()
+                result.concurrency = concurrency
+                results.append(result)
+                _report(result)
+        sys.stderr.write("\n")
+        sys.stderr.flush()
+
+    t_total = time.monotonic() - t_start
+    ok = [r for r in results if r.status == "ok"]
+    total_tokens = sum(r.output_tokens for r in ok)
+    system_tok_s = total_tokens / t_total if t_total > 0 else 0
+    req_per_s = len(ok) / t_total if t_total > 0 else 0
+
+    return ConcurrencyResult(concurrency, results, system_tok_s,
+                             req_per_s, t_total)
 
 
 # =============================================================================
@@ -508,123 +602,210 @@ def fmt_table(headers, rows, col_widths=None):
             col_widths.append(w + 2)
 
     sep = "  "
-    header_line = sep.join(str(h).ljust(w) for h, w in zip(headers, col_widths))
+    header_line = sep.join(
+        str(h).ljust(w) for h, w in zip(headers, col_widths))
     divider = sep.join("-" * w for w in col_widths)
     lines = [header_line, divider]
     for row in rows:
-        lines.append(sep.join(str(v).ljust(w) for v, w in zip(row, col_widths)))
+        lines.append(
+            sep.join(str(v).ljust(w) for v, w in zip(row, col_widths)))
     return "\n".join(lines)
 
 
-def print_model_summary(model_key, backend, results):
-    ok = [r for r in results if r.status == "ok"]
-    errors = len(results) - len(ok)
+def _has_thinking(conc_results_list):
+    """Check if any result across all concurrency levels has thinking."""
+    for cr in conc_results_list:
+        for r in cr.results:
+            if r.status == "ok" and r.thinking_s > 0.1:
+                return True
+    return False
 
+
+def print_model_summary(model_key, backend, conc_results, display_levels):
+    total_prompts = len(conc_results[0].results) if conc_results else 0
+    n_levels = len(conc_results)
     print()
-    print(f"  {model_key} ({backend}) — {len(ok)} samples, {errors} errors")
+    print(f"  {model_key} ({backend}) — "
+          f"{total_prompts} prompts x {n_levels} concurrency levels")
 
-    if not ok:
-        return
+    thinking = _has_thinking(conc_results)
 
-    ttft = [r.ttft_ms for r in ok]
-    toks = [r.output_tok_s for r in ok]
-    tpot = [r.tpot_ms for r in ok]
-    outtok = [float(r.output_tokens) for r in ok]
+    headers = ["Conc", "TTFT(ms)", "Tok/s", "TPOT(ms)", "E2E(s)",
+               "SysTok/s"]
+    if thinking:
+        headers.append("Think(s)")
 
-    print(f"    TTFT(ms): {statistics.median(ttft):.0f}   "
-          f"Tok/s: {statistics.median(toks):.1f}   "
-          f"TPOT(ms): {statistics.median(tpot):.1f}   "
-          f"OutTok: {statistics.median(outtok):.0f}")
+    rows = []
+    for cr in conc_results:
+        if cr.concurrency not in display_levels:
+            continue
+        ok = [r for r in cr.results if r.status == "ok"]
+        if not ok:
+            row = [str(cr.concurrency)] + ["-"] * (len(headers) - 1)
+            rows.append(row)
+            continue
+
+        row = [
+            str(cr.concurrency),
+            f"{statistics.median([r.ttft_ms for r in ok]):.0f}",
+            f"{statistics.median([r.output_tok_s for r in ok]):.1f}",
+            f"{statistics.median([r.tpot_ms for r in ok]):.1f}",
+            f"{statistics.median([r.e2e_s for r in ok]):.1f}",
+            f"{cr.system_tok_s:.1f}",
+        ]
+        if thinking:
+            row.append(
+                f"{statistics.median([r.thinking_s for r in ok]):.1f}")
+        rows.append(row)
+
+    col_widths = [6, 10, 8, 10, 8, 10]
+    if thinking:
+        col_widths.append(9)
+    print(f"  {fmt_table(headers, rows, col_widths)}")
 
 
-def print_summary_table(results, endpoints):
-    model_keys = list(dict.fromkeys(r.model_key for r in results))
-
+def print_summary_table(all_model_data, display_levels):
     print("\n" + "=" * 80)
     print("SUMMARY (across all prompts)")
     print("=" * 80)
 
-    headers = ["Model", "Backend", "TTFT(ms)", "Tok/s",
-               "TPOT(ms)", "Samples", "Errors"]
+    thinking = any(
+        _has_thinking(crs) for _, crs in all_model_data)
+
+    headers = ["Model", "Backend", "Conc", "TTFT(ms)", "Tok/s",
+               "TPOT(ms)", "E2E(s)", "SysTok/s", "Err"]
+    if thinking:
+        headers.insert(7, "Think(s)")
 
     rows = []
-    for mk in model_keys:
-        model_results = [r for r in results if r.model_key == mk]
-        ok_results = [r for r in model_results if r.status == "ok"]
-        errors = len(model_results) - len(ok_results)
-        backend = model_results[0].backend if model_results else "?"
+    for endpoint, conc_results in all_model_data:
+        for cr in conc_results:
+            if cr.concurrency not in display_levels:
+                continue
+            ok = [r for r in cr.results if r.status == "ok"]
+            errors = len(cr.results) - len(ok)
 
-        if not ok_results:
-            rows.append([mk, backend, "-", "-", "-", "0", str(errors)])
-            continue
+            if not ok:
+                row = [endpoint.model_key, endpoint.backend,
+                       str(cr.concurrency)]
+                row += ["-"] * 5 + [str(errors)]
+                if thinking:
+                    row.insert(7, "-")
+                rows.append(row)
+                continue
 
-        ttft_stats = compute_stats([r.ttft_ms for r in ok_results])
-        toks_stats = compute_stats([r.output_tok_s for r in ok_results])
-        tpot_stats = compute_stats([r.tpot_ms for r in ok_results])
+            row = [
+                endpoint.model_key,
+                endpoint.backend,
+                str(cr.concurrency),
+                f"{statistics.median([r.ttft_ms for r in ok]):.0f}",
+                f"{statistics.median([r.output_tok_s for r in ok]):.1f}",
+                f"{statistics.median([r.tpot_ms for r in ok]):.1f}",
+                f"{statistics.median([r.e2e_s for r in ok]):.1f}",
+                f"{cr.system_tok_s:.1f}",
+                str(errors),
+            ]
+            if thinking:
+                think_med = statistics.median(
+                    [r.thinking_s for r in ok])
+                row.insert(7, f"{think_med:.1f}")
+            rows.append(row)
 
-        rows.append([
-            mk,
-            backend,
-            f"{ttft_stats['median']:.0f}",
-            f"{toks_stats['median']:.1f}",
-            f"{tpot_stats['median']:.1f}",
-            str(len(ok_results)),
-            str(errors),
-        ])
-
-    col_widths = [18, 8, 10, 8, 10, 9, 8]
+    col_widths = [18, 8, 6, 10, 8, 10, 8, 10, 5]
+    if thinking:
+        col_widths.insert(7, 9)
     print(fmt_table(headers, rows, col_widths))
 
 
 # =============================================================================
 # Export
 # =============================================================================
-def _default_output_path():
+def _default_output_base():
     user = os.environ.get("USER", "unknown")
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = os.path.join(SCRIPT_DIR, "..", "output", "benchmarks")
     os.makedirs(output_dir, exist_ok=True)
-    return os.path.join(output_dir, "benchmark_{}_{}.json".format(user, ts))
+    base = os.path.join(output_dir, "benchmark_{}_{}".format(user, ts))
+    return base
 
 
-def export_json(results, env_info, path):
-    model_keys = list(dict.fromkeys(r.model_key for r in results))
-    model_stats = {}
-    for mk in model_keys:
-        ok = [r for r in results if r.model_key == mk and r.status == "ok"]
-        errors = sum(1 for r in results if r.model_key == mk and r.status != "ok")
-        if ok:
-            model_stats[mk] = {
+def export_json(all_model_data, env_info, concurrency_levels, path):
+    models = {}
+    for endpoint, conc_results in all_model_data:
+        mk = endpoint.model_key
+        conc_data = {}
+        for cr in conc_results:
+            ok = [r for r in cr.results if r.status == "ok"]
+            errors = len(cr.results) - len(ok)
+            level = {
+                "system_tok_s": cr.system_tok_s,
+                "requests_per_s": cr.requests_per_s,
+                "wall_time_s": cr.wall_time_s,
                 "samples": len(ok),
                 "errors": errors,
-                "ttft_ms": compute_stats([r.ttft_ms for r in ok]),
-                "output_tok_s": compute_stats([r.output_tok_s for r in ok]),
-                "e2e_s": compute_stats([r.e2e_s for r in ok]),
-                "tpot_ms": compute_stats([r.tpot_ms for r in ok]),
-                "output_tokens": compute_stats([float(r.output_tokens) for r in ok]),
-                "gen_s": compute_stats([r.gen_s for r in ok]),
-                "prefill_tok_s": compute_stats([r.prefill_tok_s for r in ok]),
-                "thinking_s": compute_stats([r.thinking_s for r in ok]),
+                "results": [r.to_dict() for r in cr.results],
             }
+            if ok:
+                level["per_request_stats"] = {
+                    "ttft_ms": compute_stats([r.ttft_ms for r in ok]),
+                    "output_tok_s": compute_stats(
+                        [r.output_tok_s for r in ok]),
+                    "tpot_ms": compute_stats([r.tpot_ms for r in ok]),
+                    "e2e_s": compute_stats([r.e2e_s for r in ok]),
+                    "output_tokens": compute_stats(
+                        [float(r.output_tokens) for r in ok]),
+                    "gen_s": compute_stats([r.gen_s for r in ok]),
+                    "thinking_s": compute_stats(
+                        [r.thinking_s for r in ok]),
+                    "prefill_tok_s": compute_stats(
+                        [r.prefill_tok_s for r in ok]),
+                }
+            conc_data[str(cr.concurrency)] = level
+
+        models[mk] = {
+            "endpoint": {
+                "model_key": endpoint.model_key,
+                "model_id": endpoint.model_id,
+                "backend": endpoint.backend,
+                "node": endpoint.node,
+                "port": endpoint.port,
+                "sif_name": endpoint.sif_name,
+                "endpoint": endpoint.endpoint,
+            },
+            "concurrency": conc_data,
+        }
 
     data = {
         "environment": env_info,
-        "model_stats": model_stats,
-        "results": [r.to_dict() for r in results],
+        "benchmark_config": {
+            "concurrency_levels": concurrency_levels,
+            "prompts_per_level": (
+                len(all_model_data[0][1][0].results)
+                if all_model_data and all_model_data[0][1] else 0),
+            "max_tokens": DEFAULT_MAX_TOKENS,
+            "temperature": DEFAULT_TEMPERATURE,
+            "warmup_count": WARMUP_COUNT,
+        },
+        "models": models,
     }
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
-    print(f"  Results saved: {path}")
+    print(f"  JSON:  {path}")
 
 
-def export_csv(results, path):
-    if not results:
-        return
+def export_csv(all_model_data, path):
     fields = list(_RESULT_FIELDS)
+    all_results = []
+    for _, conc_results in all_model_data:
+        for cr in conc_results:
+            all_results.extend(cr.results)
+    if not all_results:
+        return
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w") as f:
         f.write(",".join(fields) + "\n")
-        for r in results:
+        for r in all_results:
             d = r.to_dict()
             row = []
             for fld in fields:
@@ -635,7 +816,167 @@ def export_csv(results, path):
                     v = str(v)
                 row.append(v)
             f.write(",".join(row) + "\n")
-    print(f"  CSV exported:  {path}")
+    print(f"  CSV:   {path}")
+
+
+# =============================================================================
+# SVG chart generation (pure Python, no external dependencies)
+# =============================================================================
+def generate_chart(all_model_data, path):
+    """Generate a latency-throughput SVG chart (NVIDIA-style).
+
+    X-axis: TTFT median (ms) — latency increases rightward.
+    Y-axis: System Tok/s — throughput increases upward.
+    Each point is a concurrency level, connected per model.
+    """
+    # Collect series data
+    series = []
+    for endpoint, conc_results in all_model_data:
+        points = []
+        for cr in conc_results:
+            ok = [r for r in cr.results if r.status == "ok"]
+            if ok:
+                ttft_med = statistics.median([r.ttft_ms for r in ok])
+                points.append((cr.concurrency, ttft_med, cr.system_tok_s))
+        if points:
+            series.append((endpoint.model_key, points))
+
+    if not series:
+        return
+
+    # Chart dimensions
+    W, H = 800, 500
+    mg = {"top": 60, "right": 30, "bottom": 70, "left": 90}
+    pw = W - mg["left"] - mg["right"]
+    ph = H - mg["top"] - mg["bottom"]
+
+    # Data ranges
+    all_x = [p[1] for _, pts in series for p in pts]
+    all_y = [p[2] for _, pts in series for p in pts]
+
+    x_lo = min(all_x) * 0.85
+    x_hi = max(all_x) * 1.15
+    if x_lo == x_hi:
+        x_lo *= 0.5
+        x_hi *= 1.5
+    y_lo = 0
+    y_hi = max(all_y) * 1.15
+    if y_hi == 0:
+        y_hi = 1
+
+    def sx(v):
+        return mg["left"] + (v - x_lo) / (x_hi - x_lo) * pw
+
+    def sy(v):
+        return mg["top"] + ph - (v - y_lo) / (y_hi - y_lo) * ph
+
+    svg = []
+    svg.append('<svg xmlns="http://www.w3.org/2000/svg" '
+               'width="{}" height="{}">'.format(W, H))
+    svg.append('<rect width="{}" height="{}" fill="white"/>'.format(W, H))
+
+    # Title
+    svg.append('<text x="{}" y="35" text-anchor="middle" '
+               'font-size="16" font-family="sans-serif" '
+               'font-weight="bold">Latency vs Throughput</text>'.format(
+                   W / 2))
+    svg.append('<text x="{}" y="52" text-anchor="middle" '
+               'font-size="11" font-family="sans-serif" '
+               'fill="#666">Points labeled with concurrency level'
+               '</text>'.format(W / 2))
+
+    # Grid lines + ticks
+    n_ticks = 5
+    for i in range(n_ticks + 1):
+        # Y axis
+        y_val = y_lo + (y_hi - y_lo) * i / n_ticks
+        yp = sy(y_val)
+        svg.append('<line x1="{}" y1="{}" x2="{}" y2="{}" '
+                   'stroke="#e5e5e5" stroke-width="0.5"/>'.format(
+                       mg["left"], yp, mg["left"] + pw, yp))
+        svg.append('<text x="{}" y="{}" text-anchor="end" '
+                   'font-size="10" font-family="sans-serif" '
+                   'fill="#333">{:.0f}</text>'.format(
+                       mg["left"] - 8, yp + 4, y_val))
+        # X axis
+        x_val = x_lo + (x_hi - x_lo) * i / n_ticks
+        xp = sx(x_val)
+        svg.append('<line x1="{}" y1="{}" x2="{}" y2="{}" '
+                   'stroke="#e5e5e5" stroke-width="0.5"/>'.format(
+                       xp, mg["top"], xp, mg["top"] + ph))
+        svg.append('<text x="{}" y="{}" text-anchor="middle" '
+                   'font-size="10" font-family="sans-serif" '
+                   'fill="#333">{:.0f}</text>'.format(
+                       xp, mg["top"] + ph + 18, x_val))
+
+    # Axes
+    svg.append('<line x1="{}" y1="{}" x2="{}" y2="{}" '
+               'stroke="#333" stroke-width="1"/>'.format(
+                   mg["left"], mg["top"] + ph,
+                   mg["left"] + pw, mg["top"] + ph))
+    svg.append('<line x1="{}" y1="{}" x2="{}" y2="{}" '
+               'stroke="#333" stroke-width="1"/>'.format(
+                   mg["left"], mg["top"],
+                   mg["left"], mg["top"] + ph))
+
+    # Axis labels
+    svg.append('<text x="{}" y="{}" text-anchor="middle" '
+               'font-size="12" font-family="sans-serif" '
+               'fill="#333">TTFT Median (ms)</text>'.format(
+                   mg["left"] + pw / 2, H - 15))
+    svg.append('<text x="18" y="{}" text-anchor="middle" '
+               'font-size="12" font-family="sans-serif" fill="#333" '
+               'transform="rotate(-90, 18, {})">System Throughput '
+               '(tok/s)</text>'.format(mg["top"] + ph / 2,
+                                       mg["top"] + ph / 2))
+
+    # Data series
+    for idx, (model_key, points) in enumerate(series):
+        color = CHART_COLORS[idx % len(CHART_COLORS)]
+        sorted_pts = sorted(points, key=lambda p: p[0])
+
+        # Line connecting points
+        path_parts = []
+        for i, (conc, ttft, tps) in enumerate(sorted_pts):
+            x, y = sx(ttft), sy(tps)
+            if i == 0:
+                path_parts.append("M {:.1f} {:.1f}".format(x, y))
+            else:
+                path_parts.append(" L {:.1f} {:.1f}".format(x, y))
+        svg.append('<path d="{}" fill="none" stroke="{}" '
+                   'stroke-width="2" opacity="0.8"/>'.format(
+                       "".join(path_parts), color))
+
+        # Points + labels
+        for conc, ttft, tps in sorted_pts:
+            x, y = sx(ttft), sy(tps)
+            svg.append('<circle cx="{:.1f}" cy="{:.1f}" r="5" '
+                       'fill="{}" stroke="white" '
+                       'stroke-width="1.5"/>'.format(x, y, color))
+            svg.append('<text x="{:.1f}" y="{:.1f}" font-size="9" '
+                       'font-family="sans-serif" '
+                       'fill="{}">C={}</text>'.format(
+                           x + 8, y - 8, color, conc))
+
+    # Legend
+    ly = mg["top"] + 15
+    for idx, (model_key, _) in enumerate(series):
+        color = CHART_COLORS[idx % len(CHART_COLORS)]
+        lx = mg["left"] + pw - 160
+        cur_y = ly + idx * 20
+        svg.append('<rect x="{}" y="{}" width="14" height="14" '
+                   'fill="{}" rx="2"/>'.format(lx, cur_y - 10, color))
+        svg.append('<text x="{}" y="{}" font-size="11" '
+                   'font-family="sans-serif" '
+                   'fill="#333">{}</text>'.format(
+                       lx + 18, cur_y + 1, model_key))
+
+    svg.append('</svg>')
+
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    with open(path, "w") as f:
+        f.write("\n".join(svg))
+    print(f"  Chart: {path}")
 
 
 # =============================================================================
@@ -647,13 +988,15 @@ def main():
             and sys.stdout.encoding.lower() not in ("utf-8", "utf8")
             and hasattr(sys.stdout, "buffer")):
         sys.stdout = io.TextIOWrapper(
-            sys.stdout.buffer, encoding=sys.stdout.encoding, errors="replace")
+            sys.stdout.buffer, encoding=sys.stdout.encoding,
+            errors="replace")
         if hasattr(sys.stderr, "buffer"):
             sys.stderr = io.TextIOWrapper(
-                sys.stderr.buffer, encoding=sys.stderr.encoding, errors="replace")
+                sys.stderr.buffer, encoding=sys.stderr.encoding,
+                errors="replace")
 
     parser = argparse.ArgumentParser(
-        description="Sequential LLM benchmark for NIM/vLLM endpoints.",
+        description="LLM benchmark with concurrency sweep for NIM/vLLM.",
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
@@ -667,6 +1010,13 @@ def main():
     parser.add_argument(
         "--prompts", default=DEFAULT_PROMPTS,
         help="Prompts JSON file (default: benchmark_prompts.json)",
+    )
+    parser.add_argument(
+        "--concurrency",
+        default=",".join(str(c) for c in DEFAULT_CONCURRENCY),
+        help="Comma-separated concurrency levels "
+             "(default: {})".format(
+                 ",".join(str(c) for c in DEFAULT_CONCURRENCY)),
     )
     parser.add_argument(
         "--max-tokens", type=int, default=DEFAULT_MAX_TOKENS,
@@ -693,24 +1043,43 @@ def main():
         help="Also export results as CSV",
     )
 
-    # Show help if no arguments provided
     if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(0)
 
     args = parser.parse_args()
 
+    # Parse concurrency levels
+    try:
+        conc_levels = sorted(set(
+            int(c.strip()) for c in args.concurrency.split(",")
+        ))
+    except ValueError:
+        print("ERROR: --concurrency must be comma-separated integers",
+              file=sys.stderr)
+        sys.exit(1)
+
+    # Determine display levels (1, 5, 50 for defaults; all for custom)
+    if args.concurrency == ",".join(
+            str(c) for c in DEFAULT_CONCURRENCY):
+        display_levels = [c for c in DISPLAY_CONCURRENCY
+                          if c in conc_levels]
+    else:
+        display_levels = conc_levels
+
     # Discover or parse endpoints
     if args.discover:
         nim_base = os.environ.get("NIM_BASE_DIR")
         if not nim_base:
-            print("ERROR: NIM_BASE_DIR must be set for --discover", file=sys.stderr)
+            print("ERROR: NIM_BASE_DIR must be set for --discover",
+                  file=sys.stderr)
             sys.exit(1)
         sessions_dir = f"{nim_base}/sessions"
         endpoints = discover_endpoints(sessions_dir)
         if not endpoints:
             print("ERROR: No active endpoints found.", file=sys.stderr)
-            print("Check NIM_BASE_DIR and ensure models are running.", file=sys.stderr)
+            print("Check NIM_BASE_DIR and ensure models are running.",
+                  file=sys.stderr)
             sys.exit(1)
     else:
         endpoints = parse_endpoint_args(args.endpoints)
@@ -723,23 +1092,24 @@ def main():
               file=sys.stderr)
         sys.exit(1)
 
-    # Collect environment info
     env_info = collect_env_info(endpoints)
 
     # Header
     print("=" * 80)
     print(f"LLM BENCHMARK — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
-    print(f"  Prompts:     {len(prompts)}")
-    print(f"  Models:      {len(endpoints)}")
-    print(f"  Max tokens:  {args.max_tokens}")
-    print(f"  Temperature: {args.temperature}")
+    print(f"  Prompts:      {len(prompts)}")
+    print(f"  Models:       {len(endpoints)}")
+    print(f"  Concurrency:  {', '.join(str(c) for c in conc_levels)}")
+    print(f"  Max tokens:   {args.max_tokens}")
+    print(f"  Temperature:  {args.temperature}")
     print()
 
     # Health check
     healthy = []
     for ep in endpoints:
-        sys.stderr.write(f"  Checking {ep.model_key} at {ep.endpoint}... ")
+        sys.stderr.write(
+            f"  Checking {ep.model_key} at {ep.endpoint}... ")
         sys.stderr.flush()
         if _check_health(ep.endpoint):
             if not ep.model_id or ep.model_id == "unknown":
@@ -757,63 +1127,52 @@ def main():
         sys.exit(1)
 
     # =========================================================================
-    # Per-model: warmup → benchmark → model summary
+    # Per-model: warmup → concurrency sweep → model summary
     # =========================================================================
-    all_results = []
+    all_model_data = []
 
     for ep in healthy:
-        # Warmup immediately before this model's benchmark
         if not args.no_warmup:
             warm_up(ep, args.timeout, args.temperature)
 
-        # Benchmark
-        model_results = []
-        for i, prompt in enumerate(prompts, 1):
-            sys.stderr.write(
-                f"\r  [{i}/{len(prompts)}] {prompt.id}...                    "
-            )
-            sys.stderr.flush()
+        conc_results = []
+        for conc in conc_levels:
+            cr = run_concurrency_level(
+                ep, prompts, conc, args.max_tokens, args.timeout,
+                args.temperature)
+            conc_results.append(cr)
 
-            result = run_single(
-                ep, prompt, args.max_tokens, args.timeout, args.temperature
-            )
-            model_results.append(result)
+        all_model_data.append((ep, conc_results))
 
-            if result.status == "ok":
-                sys.stderr.write(
-                    f"\r  [{i}/{len(prompts)}] {prompt.id} "
-                    f"— {result.ttft_ms:.0f}ms TTFT, "
-                    f"{result.output_tok_s:.1f} tok/s, "
-                    f"{result.e2e_s:.1f}s E2E\n"
-                )
-            else:
-                sys.stderr.write(
-                    f"\r  [{i}/{len(prompts)}] {prompt.id} "
-                    f"— ERROR: {result.error_message[:60]}\n"
-                )
-            sys.stderr.flush()
+        # Per-model summary (terminal: display levels only)
+        print_model_summary(ep.model_key, ep.backend, conc_results,
+                            display_levels)
 
-        all_results.extend(model_results)
+    # Final summary
+    print_summary_table(all_model_data, display_levels)
 
-        # Per-model summary (printed right after model finishes)
-        print_model_summary(ep.model_key, ep.backend, model_results)
+    # Export
+    output_base = _default_output_base()
+    json_path = args.output_json or (output_base + ".json")
+    svg_path = output_base + ".svg"
 
-    # Final summary across all models
-    print_summary_table(all_results, healthy)
-
-    # Auto-save JSON (always)
-    output_path = args.output_json or _default_output_path()
     print()
-    export_json(all_results, env_info, output_path)
-
-    # Optional CSV
+    export_json(all_model_data, env_info, conc_levels, json_path)
     if args.output_csv:
-        export_csv(all_results, args.output_csv)
+        export_csv(all_model_data, args.output_csv)
+    generate_chart(all_model_data, svg_path)
 
     # Final counts
-    ok_count = sum(1 for r in all_results if r.status == "ok")
-    err_count = sum(1 for r in all_results if r.status != "ok")
-    print(f"\n  Total: {ok_count} OK, {err_count} errors out of {len(all_results)} requests")
+    total_req = sum(
+        len(cr.results)
+        for _, crs in all_model_data for cr in crs)
+    total_ok = sum(
+        sum(1 for r in cr.results if r.status == "ok")
+        for _, crs in all_model_data for cr in crs)
+    total_err = total_req - total_ok
+    print(f"\n  Total: {total_ok} OK, {total_err} errors "
+          f"out of {total_req} requests "
+          f"({len(conc_levels)} concurrency levels)")
     print()
 
 
