@@ -1,15 +1,14 @@
 #!/bin/bash
-# Submit a SLURM job that starts a NIM LLM server on an exclusive compute node.
+# Submit a SLURM job that starts a vLLM LLM server on an exclusive compute node.
 #
 # Each submission allocates 1 full node (4x A100 80GB) for 1 model.
 # Multiple users can submit multiple jobs concurrently — even the same model.
 # Stop with: scancel <job_id>
 #
 # Usage:
-#   export NGC_API_KEY="nvapi-..."
 #   export NIM_BASE_DIR="/path/to/shared/dir"
 #
-#   ./submit-nim-job.sh nemotron-49b                  # submit with defaults
+#   ./submit-nim-job.sh nemotron3-120b                # submit with defaults
 #   ./submit-nim-job.sh qwen3-122b --time=48:00:00    # override SLURM time
 #   ./submit-nim-job.sh --list                         # list available models
 #   ./submit-nim-job.sh --help                         # usage help
@@ -24,7 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 show_usage() {
     echo "Usage: ./submit-nim-job.sh [OPTIONS] MODEL [SBATCH_OPTIONS...]"
     echo ""
-    echo "Submit a SLURM job that starts a NIM LLM server on an exclusive node."
+    echo "Submit a SLURM job that starts a vLLM LLM server on an exclusive node."
     echo "Each job allocates 1 node with 4x A100 80GB GPUs."
     echo ""
     echo "Options:"
@@ -49,7 +48,6 @@ for arg in "$@"; do
             exit 0
             ;;
         --list|-l)
-            export NGC_API_KEY="${NGC_API_KEY:-placeholder}"
             export NIM_BASE_DIR="${NIM_BASE_DIR:-/tmp}"
             source "$SCRIPT_DIR/nim-config.sh"
             list_models
@@ -87,14 +85,6 @@ if [ -z "$NIM_BASE_DIR" ]; then
     exit 1
 fi
 
-if [ -z "$NGC_API_KEY" ]; then
-    echo "ERROR: NGC_API_KEY is not set."
-    echo ""
-    echo "Set it to your NVIDIA NGC API key:"
-    echo "  export NGC_API_KEY=\"nvapi-...\""
-    exit 1
-fi
-
 # ==============================================================================
 # Source configuration
 # ==============================================================================
@@ -116,12 +106,11 @@ fi
 # Ensure shared directories exist
 # ==============================================================================
 mkdir -p "$NIM_SESSIONS_DIR/$USER"
-mkdir -p "$NIM_MODELS_DIR/${MODEL_KEY}-cache"
 
 # ==============================================================================
 # Submit SLURM job
 # ==============================================================================
-echo "Submitting NIM job: $MODEL_KEY ($MODEL_DESC)"
+echo "Submitting vLLM job: $MODEL_KEY ($MODEL_DESC)"
 echo "  SIF:   $NIM_IMAGES_DIR/$SIF_NAME"
 echo "  Port:  $LLM_PORT"
 echo ""

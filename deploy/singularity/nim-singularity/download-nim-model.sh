@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pre-download NIM model weights from HuggingFace via nim-tools.sif.
+# Pre-download model weights from HuggingFace via nim-tools.sif.
 #
 # Usage:
 #   export NIM_BASE_DIR="/path/to/shared/dir"
@@ -22,8 +22,8 @@ qwen3-122b     | Qwen/Qwen3.5-122B-A10B
 resolve_hf_model() {
     local key="$1"
     while IFS='|' read -r m_key m_repo; do
-        m_key=$(echo "$m_key" | xargs)
-        m_repo=$(echo "$m_repo" | xargs)
+        m_key=$(echo "$m_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        m_repo=$(echo "$m_repo" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         [ -z "$m_key" ] && continue
         if [ "$m_key" = "$key" ]; then
             HF_REPO="$m_repo"
@@ -39,7 +39,8 @@ list_hf_models() {
     printf "  %-18s %s\n" "KEY" "HUGGINGFACE REPO"
     printf "  %-18s %s\n" "---" "---"
     while IFS='|' read -r m_key m_repo; do
-        m_key=$(echo "$m_key" | xargs); m_repo=$(echo "$m_repo" | xargs)
+        m_key=$(echo "$m_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        m_repo=$(echo "$m_repo" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         [ -z "$m_key" ] && continue
         printf "  %-18s %s\n" "$m_key" "$m_repo"
     done <<< "$HF_MODELS"
@@ -65,7 +66,6 @@ done
 
 resolve_hf_model "$MODEL_KEY" || { echo "ERROR: Unknown model '$MODEL_KEY'."; list_hf_models; exit 1; }
 
-export NGC_API_KEY="${NGC_API_KEY:-placeholder}"
 source "$SCRIPT_DIR/nim-config.sh"
 
 TOOLS_SIF="$NIM_IMAGES_DIR/nim-tools.sif"

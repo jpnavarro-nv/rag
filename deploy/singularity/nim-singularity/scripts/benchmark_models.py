@@ -134,14 +134,11 @@ def _request(url, data=None, timeout=10):
 
 
 def _check_health(endpoint_url, timeout=5):
-    for path in ["/health", "/v1/health/ready"]:
-        try:
-            resp = _request(f"{endpoint_url}{path}", timeout=timeout)
-            if resp.status == 200:
-                return True
-        except Exception:
-            continue
-    return False
+    try:
+        resp = _request(f"{endpoint_url}/health", timeout=timeout)
+        return resp.status == 200
+    except Exception:
+        return False
 
 
 def _detect_model(endpoint_url, timeout=10):
@@ -622,9 +619,12 @@ def _has_thinking(conc_results_list):
 
 
 def print_model_summary(model_key, backend, conc_results, display_levels):
+    sys.stderr.flush()
+    sys.stdout.flush()
     total_prompts = len(conc_results[0].results) if conc_results else 0
     n_levels = len(conc_results)
     print()
+    print("-" * 70)
     print(f"  {model_key} ({backend}) — "
           f"{total_prompts} prompts x {n_levels} concurrency levels")
 

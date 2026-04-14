@@ -1,5 +1,5 @@
 {
-  "description": "LLM benchmark prompts for oil & gas domain. 30 prompts across 6 categories.",
+  "description": "LLM benchmark prompts for oil & gas domain. 50 prompts across 6 categories.",
   "prompts": [
     {
       "id": "fact_01",
@@ -32,6 +32,30 @@
       "content": "List and briefly describe the three main categories of enhanced oil recovery (EOR) methods."
     },
     {
+      "id": "fact_06",
+      "category": "factual_recall",
+      "name": "FPSO components",
+      "content": "What are the main topside modules of an FPSO and what function does each one perform?"
+    },
+    {
+      "id": "fact_07",
+      "category": "factual_recall",
+      "name": "Drill string components",
+      "content": "Describe the main components of a drill string from the surface to the bit, including the purpose of each component."
+    },
+    {
+      "id": "fact_08",
+      "category": "factual_recall",
+      "name": "Reservoir drive mechanisms",
+      "content": "What are the primary natural reservoir drive mechanisms and how do they differ in terms of recovery factor and pressure behavior?"
+    },
+    {
+      "id": "fact_09",
+      "category": "factual_recall",
+      "name": "Well completions types",
+      "content": "Explain the differences between open hole, cased and perforated, and gravel pack completions, including when each is typically used."
+    },
+    {
       "id": "reason_01",
       "category": "technical_reasoning",
       "name": "Reservoir pressure analysis",
@@ -60,6 +84,24 @@
       "category": "technical_reasoning",
       "name": "Hydrate mitigation",
       "content": "A gas pipeline operating at 1,200 psi and 60F is experiencing hydrate formation. Explain the thermodynamic conditions that lead to hydrate formation at these conditions and recommend three distinct mitigation strategies with their advantages and disadvantages."
+    },
+    {
+      "id": "reason_06",
+      "category": "technical_reasoning",
+      "name": "Casing design pressure analysis",
+      "content": "You are designing the 9-5/8\" production casing for a well with a pore pressure of 12.5 ppg EMW at TD of 5,000m, a fracture gradient of 15.8 ppg at the casing shoe at 4,200m, and a surface pressure rating requirement for gas kick tolerance of 5,000 psi. Walk through the burst, collapse, and tensile load calculations. What safety factors would you apply and why?"
+    },
+    {
+      "id": "reason_07",
+      "category": "technical_reasoning",
+      "name": "ESP failure analysis",
+      "content": "An ESP-lifted well that was producing 2,500 bbl/d suddenly shows motor current dropping from 45A to 28A, intake pressure rising from 1,800 psi to 2,400 psi, and discharge pressure dropping from 3,200 psi to 2,600 psi. The wellhead temperature also dropped 15F. Diagnose the most likely failure mode, explain the physics behind each parameter change, and recommend an action plan."
+    },
+    {
+      "id": "reason_08",
+      "category": "technical_reasoning",
+      "name": "Formation damage mechanisms",
+      "content": "During a horizontal well completion in a laminated sand-shale sequence, the well productivity was 40% below the expected value from the reservoir model. Analyze the potential formation damage mechanisms that could explain this underperformance. Consider drilling fluid invasion, fines migration, scale deposition, and completion skin. How would you design a diagnostic program to isolate the dominant mechanism?"
     },
     {
       "id": "long_01",
@@ -92,6 +134,24 @@
       "content": "Explain the principles of 4D seismic monitoring for reservoir surveillance. How do changes in fluid saturation and pressure affect seismic velocities? What are the repeatability requirements and what processing steps are critical?"
     },
     {
+      "id": "long_06",
+      "category": "long_explanation",
+      "name": "Flow assurance deepwater",
+      "content": "Write a comprehensive overview of flow assurance challenges in deepwater production systems. Cover hydrate formation, wax deposition, asphaltene precipitation, slugging, and erosion-corrosion. For each challenge, describe the underlying physics, prediction methods, prevention strategies, and remediation techniques when prevention fails."
+    },
+    {
+      "id": "long_07",
+      "category": "long_explanation",
+      "name": "Well testing interpretation methods",
+      "content": "Provide a detailed explanation of pressure transient analysis methods used in well testing. Cover the mathematical basis of radial flow solutions, the use of derivative plots for flow regime identification, and how to identify wellbore storage, skin, radial flow, linear flow, and boundary effects. Include the differences between drawdown and buildup analysis."
+    },
+    {
+      "id": "long_08",
+      "category": "long_explanation",
+      "name": "Drilling fluids chemistry",
+      "content": "Describe the complete chemistry and engineering behind oil-based drilling fluids (OBM) used in deepwater pre-salt wells. Cover the base oil selection, emulsifier systems, weighting agents, fluid loss control additives, rheology modifiers, and the environmental regulations governing OBM use and disposal in Brazilian waters. How do you maintain OBM properties when drilling through salt sections with varying halite and anhydrite compositions?"
+    },
+    {
       "id": "extract_01",
       "category": "extraction",
       "name": "Drilling report extraction",
@@ -120,6 +180,30 @@
       "category": "extraction",
       "name": "Production allocation",
       "content": "Analyze this production allocation report:\n\nDaily Production Report - FPSO Cidade de Santos, Date: 2026-04-09\nWell PRE-1: Oil 4,200 bbl/d, Gas 5.1 MMscf/d, Water 380 bbl/d, Status: Flowing, Choke: 42/64\", Target: 4,500 bbl/d\nWell PRE-2: Oil 3,850 bbl/d, Gas 4.6 MMscf/d, Water 520 bbl/d, Status: Flowing, Choke: 38/64\", Target: 4,000 bbl/d\nWell PRE-3: Oil 1,200 bbl/d, Gas 1.4 MMscf/d, Water 2,100 bbl/d, Status: Flowing, Choke: 28/64\", Target: 3,500 bbl/d\nWell PRE-4: Oil 5,100 bbl/d, Gas 6.2 MMscf/d, Water 150 bbl/d, Status: Flowing, Choke: 48/64\", Target: 5,000 bbl/d\nWell PRE-5: Oil 0 bbl/d, Gas 0 MMscf/d, Water 0 bbl/d, Status: Shut-in (ESP failure), Choke: Closed, Target: 3,800 bbl/d\nWell INJ-1: Water injection 12,000 bbl/d, Status: Injecting, Target: 15,000 bbl/d\nWell INJ-2: Water injection 14,500 bbl/d, Status: Injecting, Target: 15,000 bbl/d\n\nCalculate: field total oil/gas/water production, total water cut, identify wells below 80% of target, identify the well with highest water cut, and assess injection-production balance."
+    },
+    {
+      "id": "extract_06",
+      "category": "extraction",
+      "name": "Mud log gas analysis",
+      "content": "Interpret this mud log gas analysis and identify potential hydrocarbon zones:\n\nMud Log Summary - Well EXP-7, Interval 3,200-3,500m MD\n3,200-3,280m: Background gas C1=50 units, C2=2, C3=0, iC4=0, nC4=0. Lithology: shale. ROP 8 m/hr.\n3,280-3,310m: Background gas C1=280 units, C2=35, C3=18, iC4=5, nC4=3. Connection gas C1=450. Lithology: fine sandstone, moderate fluorescence. ROP 15 m/hr. Trip gas C1=620 at 3,295m.\n3,310-3,340m: Background gas C1=120 units, C2=8, C3=2, iC4=0, nC4=0. Lithology: siltstone/shale interbedded. ROP 10 m/hr.\n3,340-3,400m: Background gas C1=850 units, C2=95, C3=52, iC4=18, nC4=12. Connection gas C1=1,400. Lithology: medium sandstone, strong fluorescence, fast streaming cut. ROP 22 m/hr. Cavings observed: angular, splintery shale.\n3,400-3,500m: Background gas C1=45 units, C2=1, C3=0, iC4=0, nC4=0. Lithology: tight limestone. ROP 5 m/hr.\n\nCalculate wetness ratio (C2+/C1) and balance ratio for each interval. Identify the most prospective zone and explain your reasoning."
+    },
+    {
+      "id": "extract_07",
+      "category": "extraction",
+      "name": "PVT report extraction",
+      "content": "Extract and organize the key data from this PVT laboratory report:\n\nPVT Report - Reservoir Fluid Study, Well SAL-12, Santos Basin\nSample: Bottomhole sample at 5,180m MD, 168F, 5,850 psi\nFluid Type: Volatile oil (borderline near-critical)\n\nComposition (mol%): C1=52.3, C2=8.7, C3=5.1, iC4=1.2, nC4=2.8, iC5=1.1, nC5=1.4, C6=2.3, C7+=25.1, CO2=0.8, N2=0.2\nC7+ MW=215, C7+ SG=0.845\n\nSaturation Pressure: Pb=4,650 psi at 168F (CCE)\nAPI Gravity at stock tank: 32.5 API\nGOR at separator: 1,850 scf/stb (2-stage flash: 800+50 psi)\n\nDifferential Liberation at 168F:\nP(psi) | Rs(scf/stb) | Bo(rb/stb) | Bg(rb/Mscf) | Viscosity_o(cp) | Viscosity_g(cp)\n5850   | 1850        | 1.685      | -           | 0.38            | -\n4650   | 1850        | 1.685      | 3.12        | 0.38            | 0.021\n4000   | 1520        | 1.542      | 3.85        | 0.45            | 0.019\n3000   | 1080        | 1.378      | 5.42        | 0.62            | 0.016\n2000   | 680         | 1.245      | 8.95        | 0.88            | 0.014\n1000   | 320         | 1.132      | 19.8        | 1.35            | 0.012\n14.7   | 0           | 1.052      | -           | 2.85            | -\n\nExtract: fluid type classification, bubble point, key composition metrics (C1, C7+, CO2), stock tank properties, and organize the differential liberation data as a structured table. Flag any data quality concerns."
+    },
+    {
+      "id": "extract_09",
+      "category": "extraction",
+      "name": "Directional survey processing",
+      "content": "Process the following directional survey data and calculate TVD, vertical section (VS azimuth 225 deg), and dog-leg severity (DLS) between stations using the minimum curvature method:\n\nSurvey Stations:\nMD(m) | Inc(deg) | Azi(deg)\n0     | 0.0      | 0.0\n500   | 0.5      | 45.0\n1000  | 8.2      | 128.0\n1500  | 22.5     | 195.0\n2000  | 38.0     | 212.0\n2500  | 45.2     | 218.0\n3000  | 52.8     | 222.0\n3500  | 58.1     | 224.5\n4000  | 60.0     | 225.0\n4500  | 60.5     | 225.2\n\nPresent the results in a table with columns: MD, Inc, Azi, TVD, NS, EW, VS, DLS(deg/30m). Identify where the build section starts and ends, and flag any stations with DLS exceeding 3 deg/30m."
+    },
+    {
+      "id": "extract_08",
+      "category": "extraction",
+      "name": "Cement job report parsing",
+      "content": "Parse this cement job report and identify any quality issues:\n\nCement Job Report - Well PRE-SALT-12, 9-5/8\" Production Casing\nDate: 2026-03-28, Cementing Contractor: Halliburton\n\nCasing: 9-5/8\" 53.5 lb/ft P110, shoe at 4,850m MD (4,320m TVD)\nPrevious casing: 13-3/8\" at 3,200m MD\n\nSlurry Design:\n- Lead slurry: 13.2 ppg, 580 sacks, yield 1.15 ft3/sk, thickening time 6:30 hr at BHCT 280F\n- Tail slurry: 16.4 ppg, 210 sacks, yield 1.05 ft3/sk, thickening time 4:15 hr at BHCT 280F\n- Spacer: 250 bbl CW-100 at 11.5 ppg\n\nJob Execution:\n- Displaced with 9.0 ppg base oil at 8 bpm\n- Circulation before cement: 2.5 bottoms-up, returns clean\n- Plug dropped at 14:22, bump at 18:45 (4h23m pump time)\n- Bump pressure: 2,800 psi (expected 2,500 psi)\n- Float held at 1,500 psi for 10 min — OK\n- Excess cement: 28% (planned 20%)\n- Estimated TOC: 2,950m MD (by volume)\n\nCBL/VDL Log (run at 48 hr WOC):\n- 4,850-4,500m: Excellent bond, amplitude <5 mV, pipe-to-formation VDL\n- 4,500-4,100m: Good bond, amplitude 5-15 mV, intermittent formation arrivals\n- 4,100-3,800m: Fair bond, amplitude 15-30 mV, strong casing arrivals\n- 3,800-3,400m: Poor bond, amplitude >30 mV, no formation signal\n- 3,400-2,950m: Partial bond, amplitude 10-25 mV, channeling suspected\n\nExtract: casing specs, slurry volumes and weights, job parameters, TOC, and create a bond quality summary table by interval. Identify the zones of concern and recommend remedial actions."
     },
     {
       "id": "code_01",
@@ -152,6 +236,24 @@
       "content": "Write a Python script that reads a LAS 2.0 well log file (parsing the header and data sections without external libraries), extracts GR, RHOB, NPHI, and ILD curves, and creates a standard triple-combo log plot with: track 1 (GR with shale/sand fill), track 2 (resistivity on log scale), track 3 (neutron-density crossover with lithology shading). Use only matplotlib."
     },
     {
+      "id": "code_06",
+      "category": "code_generation",
+      "name": "Nodal analysis solver",
+      "content": "Implement a nodal analysis solver in Python that finds the operating point of a well by intersecting the IPR curve (using Vogel's equation for two-phase flow below bubble point) with the TPR curve (using a simplified Hagedorn-Brown correlation). The function should take reservoir pressure, bubble point, productivity index, tubing ID, depth, and fluid properties as inputs. Plot both curves and mark the operating point. Include a sensitivity analysis that shows how changing choke size affects production rate."
+    },
+    {
+      "id": "code_07",
+      "category": "code_generation",
+      "name": "Monte Carlo volumetrics",
+      "content": "Write a Python script for Monte Carlo volumetric estimation of OOIP. Inputs should be probability distributions (triangular or lognormal) for: area (acres), net pay (ft), porosity (fraction), water saturation (fraction), and Bo (rb/stb). Run 10,000 iterations, calculate P10/P50/P90 OOIP, and generate a histogram with CDF overlay. Also compute the sensitivity tornado chart showing which parameter contributes most to uncertainty. Use only numpy and matplotlib."
+    },
+    {
+      "id": "code_08",
+      "category": "code_generation",
+      "name": "Real-time drilling dashboard",
+      "content": "Write a Python class that processes a stream of drilling parameters (timestamp, bit depth, WOB, RPM, torque, ROP, standpipe pressure, flow rate) and computes real-time Mechanical Specific Energy (MSE) using the Teale equation. Include methods for: detecting drilling dysfunction (stick-slip if torque coefficient of variation > 0.3, bit bounce if WOB CV > 0.25), computing a 30-point moving average for each parameter, and exporting a summary report as JSON. Add unit tests for the MSE calculation and dysfunction detection."
+    },
+    {
       "id": "complex_01",
       "category": "complex_reasoning",
       "name": "Mature field rejuvenation decision",
@@ -180,6 +282,24 @@
       "category": "complex_reasoning",
       "name": "Autonomous platform design",
       "content": "Design an autonomous unmanned wellhead platform for a marginal offshore field in the Campos Basin producing 3,000 bbl/d of oil. The nearest manned FPSO is 50 km away. The platform must operate with minimal human intervention for 6 months between maintenance campaigns. Design the production system (separation, metering, pumping), control and communication architecture (SCADA, redundancy, satellite backup), safety systems (ESD levels, fire and gas detection, remote blowdown), and predictive maintenance strategy using IoT sensors. What are the key regulatory barriers from ANP and how would you address them in the concept selection phase?"
+    },
+    {
+      "id": "complex_06",
+      "category": "complex_reasoning",
+      "name": "Integrated asset model calibration",
+      "content": "You have a producing field with 12 wells connected to an FPSO with limited gas handling capacity (8 MMscf/d) and water treatment capacity (25,000 bbl/d). Three wells are approaching gas cap and two are showing rising water cut. Build an integrated asset model optimization strategy: how would you couple the reservoir simulation with the network model and surface facilities constraints? Define the objective function for production optimization, the decision variables (choke settings, gas lift rates, well priorities), and the constraints. What optimization algorithm would you use and why? How often should the model be recalibrated?"
+    },
+    {
+      "id": "complex_07",
+      "category": "complex_reasoning",
+      "name": "Subsea processing feasibility",
+      "content": "A deepwater field at 2,200m water depth in the Santos Basin is 120 km from the nearest FPSO. The reservoir produces heavy oil (18 API) with high viscosity (50 cp at reservoir conditions) and 15% CO2 content. Conventional tieback is not feasible due to flow assurance constraints. Evaluate the feasibility of subsea processing: compare subsea boosting (multiphase pump), subsea separation (gravity + hydrocyclone), and subsea gas-liquid separation with CO2 removal. For each option, analyze: technology readiness level, CAPEX estimate, power delivery challenges (umbilical vs subsea power generation), and reliability/intervention requirements. Which option would you recommend for a 500 MMbbl field with 20-year life?"
+    },
+    {
+      "id": "complex_08",
+      "category": "complex_reasoning",
+      "name": "Digital twin for production optimization",
+      "content": "Design a digital twin architecture for a pre-salt FPSO processing 150,000 bbl/d from 15 wells. The digital twin must integrate: real-time production data (SCADA, 1-second intervals), permanent downhole gauges (pressure and temperature), multiphase flow meters, topsides process data, and weekly well test results. Define the data architecture (edge computing vs cloud, data lake design), the physics-based models needed (reservoir, wellbore, flowline, process), the machine learning components (virtual flow metering, predictive maintenance, production forecasting), and the decision support layer. How would you handle data quality issues, model drift, and the transition from deterministic to probabilistic forecasting? What KPIs would you track to measure the digital twin's value?"
     }
   ]
 }

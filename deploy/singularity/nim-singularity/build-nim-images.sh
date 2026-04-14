@@ -1,18 +1,16 @@
 #!/bin/bash
-# Pull NIM LLM container images from NGC registry as Singularity SIF files.
+# Pull vLLM container images from Docker Hub as Singularity SIF files.
 #
 # Images are stored in $NIM_BASE_DIR/containers/images/ and shared across all
 # users and jobs. Already-existing SIFs are skipped unless --force is used.
 #
 # Usage:
-#   export NGC_API_KEY="nvapi-..."
 #   export NIM_BASE_DIR="/path/to/shared/dir"
 #
 #   ./build-nim-images.sh --list                   # show available models
-#   ./build-nim-images.sh nemotron-49b             # pull one model
-#   ./build-nim-images.sh nemotron-49b qwen3-122b  # pull multiple
+#   ./build-nim-images.sh nemotron3-120b           # pull one model
 #   ./build-nim-images.sh --all                    # pull all models
-#   ./build-nim-images.sh --force nemotron-49b     # re-pull even if exists
+#   ./build-nim-images.sh --force gpt-oss-120b     # re-pull even if exists
 
 set -e
 
@@ -46,9 +44,8 @@ for arg in "$@"; do
             exit 0
             ;;
         --list|-l)
-            # Source nim-config for list_models (needs NGC_API_KEY + NIM_BASE_DIR)
+            # Source nim-config for list_models (needs NIM_BASE_DIR)
             # For --list we only need the catalog, so provide safe defaults
-            export NGC_API_KEY="${NGC_API_KEY:-placeholder}"
             export NIM_BASE_DIR="${NIM_BASE_DIR:-/tmp}"
             source "$SCRIPT_DIR/nim-config.sh"
             list_models
@@ -81,7 +78,7 @@ if [ ${#MODELS[@]} -eq 0 ]; then
 fi
 
 # ==============================================================================
-# Source configuration (validates NGC_API_KEY and NIM_BASE_DIR)
+# Source configuration (validates NIM_BASE_DIR)
 # ==============================================================================
 source "$SCRIPT_DIR/nim-config.sh"
 
@@ -127,8 +124,8 @@ for model_key in "${MODELS[@]}"; do
             echo "  Removing existing SIF (--force)..."
             rm -f "$NIM_IMAGES_DIR/$SIF_NAME"
         fi
-        # Set NGC auth only for nvcr.io images (Docker Hub needs no auth)
-        if [[ "$DOCKER_URI" == nvcr.io/* ]]; then
+        # Set NGC auth for nvcr.io images if NGC_API_KEY is available
+        if [[ "$DOCKER_URI" == nvcr.io/* ]] && [ -n "${NGC_API_KEY:-}" ]; then
             export SINGULARITY_DOCKER_USERNAME='$oauthtoken'
             export SINGULARITY_DOCKER_PASSWORD="$NGC_API_KEY"
         else
