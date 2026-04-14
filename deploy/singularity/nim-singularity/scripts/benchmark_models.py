@@ -10,15 +10,8 @@ Usage:
     python3 scripts/benchmark_models.py --discover          # auto-detect from nim.env
     python3 scripts/benchmark_models.py --help
 
-Requires Python 3.7+. No external dependencies — uses only Python standard library.
+Requires Python 3.6+. No external dependencies — uses only Python standard library.
 """
-
-import sys
-
-if sys.version_info < (3, 7):
-    print(f"ERROR: Python 3.7+ required (found {sys.version.split()[0]}).")
-    print("Try: python3.8, python3.9, python3.10, or 'module load python'")
-    sys.exit(1)
 
 import argparse
 import glob
@@ -32,15 +25,13 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, field, asdict
 from datetime import datetime
-from pathlib import Path
 
 # =============================================================================
 # Constants
 # =============================================================================
-SCRIPT_DIR = Path(__file__).resolve().parent
-DEFAULT_PROMPTS = SCRIPT_DIR / "benchmark_prompts.json"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_PROMPTS = os.path.join(SCRIPT_DIR, "benchmark_prompts.json")
 THINK_OPEN = "<think>"
 THINK_CLOSE = "</think>"
 WARMUP_PROMPT = "Hello, respond with a single short sentence."
@@ -49,52 +40,70 @@ DEFAULT_TIMEOUT = 300
 DEFAULT_TEMPERATURE = 0
 WARMUP_COUNT = 3
 
+# Fields for BenchmarkResult (ordered, used for CSV/JSON export)
+_RESULT_FIELDS = [
+    "model_key", "backend", "prompt_id", "prompt_name", "prompt_category",
+    "status", "error_message", "ttft_ms", "ttfa_ms", "e2e_s", "gen_s",
+    "output_tokens", "prompt_tokens", "total_tokens", "output_tok_s",
+    "prefill_tok_s", "tpot_ms", "thinking_s", "think_tokens_est",
+    "answer_tokens_est",
+]
+
 
 # =============================================================================
-# Data structures
+# Data structures (plain classes for Python 3.6 compatibility)
 # =============================================================================
-@dataclass
-class EndpointInfo:
-    model_key: str
-    model_id: str
-    endpoint: str
-    backend: str
-    node: str
-    port: str
-    sif_name: str = ""
-    slurm_job_id: str = ""
+class EndpointInfo(object):
+    def __init__(self, model_key="", model_id="", endpoint="", backend="",
+                 node="", port="", sif_name="", slurm_job_id=""):
+        self.model_key = model_key
+        self.model_id = model_id
+        self.endpoint = endpoint
+        self.backend = backend
+        self.node = node
+        self.port = port
+        self.sif_name = sif_name
+        self.slurm_job_id = slurm_job_id
 
 
-@dataclass
-class Prompt:
-    id: str
-    name: str
-    category: str
-    content: str
+class Prompt(object):
+    def __init__(self, id="", name="", category="", content=""):
+        self.id = id
+        self.name = name
+        self.category = category
+        self.content = content
 
 
-@dataclass
-class BenchmarkResult:
-    model_key: str
-    backend: str
-    prompt_id: str
-    prompt_name: str
-    prompt_category: str
-    status: str  # ok | error | timeout
-    error_message: str = ""
-    ttft_ms: float = -1
-    ttfa_ms: float = -1  # time to first answer (after </think>)
-    e2e_s: float = -1
-    gen_s: float = -1  # generation time (first token to last)
-    output_tokens: int = 0
-    prompt_tokens: int = 0
-    total_tokens: int = 0
-    output_tok_s: float = 0
-    prefill_tok_s: float = 0
-    tpot_ms: float = 0  # mean time per output token
-    thinking_s: float = 0
-    think_tokens_est: int = 0
-    answer_tokens_est: int = 0
+class BenchmarkResult(object):
+    def __init__(self, model_key="", backend="", prompt_id="", prompt_name="",
+                 prompt_category="", status="", error_message="",
+                 ttft_ms=-1, ttfa_ms=-1, e2e_s=-1, gen_s=-1,
+                 output_tokens=0, prompt_tokens=0, total_tokens=0,
+                 output_tok_s=0, prefill_tok_s=0, tpot_ms=0,
+                 thinking_s=0, think_tokens_est=0, answer_tokens_est=0):
+        self.model_key = model_key
+        self.backend = backend
+        self.prompt_id = prompt_id
+        self.prompt_name = prompt_name
+        self.prompt_category = prompt_category
+        self.status = status
+        self.error_message = error_message
+        self.ttft_ms = ttft_ms
+        self.ttfa_ms = ttfa_ms
+        self.e2e_s = e2e_s
+        self.gen_s = gen_s
+        self.output_tokens = output_tokens
+        self.prompt_tokens = prompt_tokens
+        self.total_tokens = total_tokens
+        self.output_tok_s = output_tok_s
+        self.prefill_tok_s = prefill_tok_s
+        self.tpot_ms = tpot_ms
+        self.thinking_s = thinking_s
+        self.think_tokens_est = think_tokens_est
+        self.answer_tokens_est = answer_tokens_est
+
+    def to_dict(self):
+        return {f: getattr(self, f) for f in _RESULT_FIELDS}
 
 
 # =============================================================================
@@ -670,7 +679,7 @@ def print_environment(env_info):
 def export_json(results, env_info, path):
     data = {
         "environment": env_info,
-        "results": [asdict(r) for r in results],
+        "results": [r.to_dict() for r in results],
     }
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
@@ -680,11 +689,11 @@ def export_json(results, env_info, path):
 def export_csv(results, path):
     if not results:
         return
-    fields = list(asdict(results[0]).keys())
+    fields = list(_RESULT_FIELDS)
     with open(path, "w") as f:
         f.write(",".join(fields) + "\n")
         for r in results:
-            d = asdict(r)
+            d = r.to_dict()
             row = []
             for fld in fields:
                 v = d[fld]
@@ -714,11 +723,6 @@ def main():
     parser = argparse.ArgumentParser(
         description="Sequential LLM benchmark for NIM/vLLM endpoints.",
     )
-    # Show help if no arguments provided
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(0)
-
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         "--endpoints", nargs="+", metavar="HOST:PORT",
@@ -729,8 +733,8 @@ def main():
         help="Auto-discover endpoints from $NIM_BASE_DIR/sessions/",
     )
     parser.add_argument(
-        "--prompts", default=str(DEFAULT_PROMPTS),
-        help=f"Prompts JSON file (default: {DEFAULT_PROMPTS.name})",
+        "--prompts", default=DEFAULT_PROMPTS,
+        help="Prompts JSON file (default: benchmark_prompts.json)",
     )
     parser.add_argument(
         "--max-tokens", type=int, default=DEFAULT_MAX_TOKENS,
@@ -760,6 +764,11 @@ def main():
         "--quiet", action="store_true",
         help="Summary only (skip per-prompt tables)",
     )
+
+    # Show help if no arguments provided
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
 
     args = parser.parse_args()
 
