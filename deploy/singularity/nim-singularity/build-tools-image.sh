@@ -19,7 +19,6 @@ if [ -z "$NIM_BASE_DIR" ]; then
     exit 1
 fi
 
-export NGC_API_KEY="${NGC_API_KEY:-placeholder}"
 source "$SCRIPT_DIR/nim-config.sh"
 
 SIF_PATH="$NIM_IMAGES_DIR/nim-tools.sif"

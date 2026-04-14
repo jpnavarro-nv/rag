@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Stream inference from a NIM LLM endpoint. Reasoning tokens are hidden.
+"""Stream inference from a vLLM endpoint. Reasoning tokens are hidden.
 
 Usage:
     python scripts/run_inference.py --url http://node:8000 "Your question here"
@@ -35,7 +35,7 @@ def _request(url, data=None, timeout=10):
 
 
 def detect_model(base_url):
-    """Query the NIM to find which model is loaded."""
+    """Query the endpoint to find which model is loaded."""
     try:
         resp = _request(f"{base_url}/v1/models")
         data = json.loads(resp.read().decode())
@@ -43,16 +43,16 @@ def detect_model(base_url):
         if models:
             return models[0]["id"]
     except urllib.error.URLError as e:
-        print(f"Error: cannot connect to NIM at {base_url}: {e.reason}", file=sys.stderr)
+        print(f"Error: cannot connect to {base_url}: {e.reason}", file=sys.stderr)
         sys.exit(1)
     except (json.JSONDecodeError, KeyError, IndexError) as e:
-        print(f"Error querying NIM models endpoint: {e}", file=sys.stderr)
+        print(f"Error querying models endpoint: {e}", file=sys.stderr)
         sys.exit(1)
     return None
 
 
 def list_models(base_url):
-    """List models available on the NIM endpoint."""
+    """List models available on the endpoint."""
     try:
         resp = _request(f"{base_url}/v1/models")
         data = json.loads(resp.read().decode())
@@ -66,15 +66,15 @@ def list_models(base_url):
             print(f"  {m['id']}")
         print()
     except urllib.error.URLError as e:
-        print(f"Error: cannot connect to NIM at {base_url}: {e.reason}", file=sys.stderr)
+        print(f"Error: cannot connect to {base_url}: {e.reason}", file=sys.stderr)
         sys.exit(1)
     except (json.JSONDecodeError, KeyError) as e:
-        print(f"Error querying NIM models endpoint: {e}", file=sys.stderr)
+        print(f"Error querying models endpoint: {e}", file=sys.stderr)
         sys.exit(1)
 
 
 def stream_tokens(base_url, question, model):
-    """Yield content tokens from the NIM streaming API."""
+    """Yield content tokens from the streaming API."""
     try:
         resp = _request(
             f"{base_url}/v1/chat/completions",
@@ -89,10 +89,10 @@ def stream_tokens(base_url, question, model):
             timeout=300,
         )
     except urllib.error.HTTPError as e:
-        print(f"Error: NIM returned {e.code}: {e.read().decode()}", file=sys.stderr)
+        print(f"Error: server returned {e.code}: {e.read().decode()}", file=sys.stderr)
         sys.exit(1)
     except urllib.error.URLError as e:
-        print(f"Error: cannot connect to NIM at {base_url}: {e.reason}", file=sys.stderr)
+        print(f"Error: cannot connect to {base_url}: {e.reason}", file=sys.stderr)
         sys.exit(1)
 
     # Read SSE stream line by line
@@ -129,17 +129,17 @@ def main():
     nim_url = os.environ.get("NIM_URL", DEFAULT_URL)
 
     parser = argparse.ArgumentParser(
-        description="Stream inference from a NIM LLM endpoint.",
+        description="Stream inference from a vLLM endpoint.",
         epilog="The endpoint URL can also be set via the NIM_URL environment variable.",
     )
     parser.add_argument("question", nargs="?", help="Question to send to the model")
     parser.add_argument(
         "--url", default=nim_url,
-        help=f"NIM endpoint URL (default: NIM_URL env or {DEFAULT_URL})",
+        help=f"Endpoint URL (default: NIM_URL env or {DEFAULT_URL})",
     )
     parser.add_argument(
         "--list", "-l", action="store_true",
-        help="List models available on the NIM endpoint",
+        help="List models available on the endpoint",
     )
 
     args = parser.parse_args()
@@ -156,7 +156,7 @@ def main():
     # Auto-detect running model
     model = detect_model(base_url)
     if not model:
-        print("Error: no model loaded on the NIM endpoint", file=sys.stderr)
+        print("Error: no model loaded on the endpoint", file=sys.stderr)
         sys.exit(1)
 
     sys.stderr.write(f"Model: {model}\n")

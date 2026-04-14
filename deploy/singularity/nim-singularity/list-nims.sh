@@ -1,5 +1,5 @@
 #!/bin/bash
-# List active NIM LLM jobs across the cluster.
+# List active LLM jobs across the cluster.
 #
 # Scans session directories for nim.env metadata files and cross-references
 # with SLURM to show only running jobs. Works for all users by default.

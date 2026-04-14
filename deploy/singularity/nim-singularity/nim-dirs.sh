@@ -1,5 +1,5 @@
 #!/bin/bash
-# Canonical directory layout for the NIM Singularity deployment.
+# Canonical directory layout for the LLM Singularity deployment.
 #
 # Source this file AFTER NIM_BASE_DIR is set. This file is intentionally
 # silent: no echo, no mkdir, no side effects — only variable declarations.

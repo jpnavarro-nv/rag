@@ -93,7 +93,7 @@ fi
 mkdir -p "$NIM_IMAGES_DIR"
 mkdir -p "$NIM_CACHE_DIR"
 
-echo "=== NIM Image Pull ==="
+echo "=== vLLM Image Pull ==="
 echo ""
 echo "NIM_BASE_DIR:  $NIM_BASE_DIR"
 echo "Images dir:    $NIM_IMAGES_DIR"

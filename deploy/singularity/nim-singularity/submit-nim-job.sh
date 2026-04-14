@@ -80,7 +80,7 @@ fi
 if [ -z "$NIM_BASE_DIR" ]; then
     echo "ERROR: NIM_BASE_DIR is not set."
     echo ""
-    echo "Set it to the shared directory for NIM data:"
+    echo "Set it to the shared directory for LLM data:"
     echo "  export NIM_BASE_DIR=\"/path/to/shared/dir\""
     exit 1
 fi

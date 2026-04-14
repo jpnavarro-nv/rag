@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Sequential and concurrent LLM benchmark for NIM and vLLM endpoints.
+"""Sequential and concurrent LLM benchmark for vLLM endpoints.
 
 Sweeps concurrency levels (default: 1, 2, 5, 10, 50) to produce a
 latency-throughput curve for each active model on the cluster.
@@ -991,7 +991,7 @@ def main():
                 errors="replace")
 
     parser = argparse.ArgumentParser(
-        description="LLM benchmark with concurrency sweep for NIM/vLLM.",
+        description="LLM benchmark with concurrency sweep for vLLM endpoints.",
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(

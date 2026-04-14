@@ -74,7 +74,7 @@ TOOLS_SIF="$NIM_IMAGES_DIR/nim-tools.sif"
 DOWNLOAD_DIR="$NIM_MODELS_DIR/${MODEL_KEY}-hf"
 mkdir -p "$DOWNLOAD_DIR"
 
-echo "=== NIM Model Download (HuggingFace) ==="
+echo "=== Model Download (HuggingFace) ==="
 echo "  Model:  $MODEL_KEY"
 echo "  Repo:   $HF_REPO"
 echo "  Target: $DOWNLOAD_DIR"
