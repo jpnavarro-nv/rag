@@ -1,0 +1,185 @@
+{
+  "description": "LLM benchmark prompts for oil & gas domain. 30 prompts across 6 categories.",
+  "prompts": [
+    {
+      "id": "fact_01",
+      "category": "factual_recall",
+      "name": "API gravity definition",
+      "content": "What is API gravity and how does it classify crude oil types?"
+    },
+    {
+      "id": "fact_02",
+      "category": "factual_recall",
+      "name": "Porosity vs permeability",
+      "content": "Explain the difference between porosity and permeability in reservoir rocks."
+    },
+    {
+      "id": "fact_03",
+      "category": "factual_recall",
+      "name": "BOP purpose",
+      "content": "What is the purpose of a blowout preventer (BOP) in drilling operations?"
+    },
+    {
+      "id": "fact_04",
+      "category": "factual_recall",
+      "name": "Gas processing components",
+      "content": "What are the main components and steps of natural gas processing at a gas plant?"
+    },
+    {
+      "id": "fact_05",
+      "category": "factual_recall",
+      "name": "EOR methods overview",
+      "content": "List and briefly describe the three main categories of enhanced oil recovery (EOR) methods."
+    },
+    {
+      "id": "reason_01",
+      "category": "technical_reasoning",
+      "name": "Reservoir pressure analysis",
+      "content": "A well is producing 500 bbl/d of oil with a water cut of 40% and a GOR of 800 scf/stb. The reservoir pressure is 3,500 psi and the bubble point pressure is 2,800 psi. Is the reservoir above or below bubble point? What flow regimes would you expect in the tubing? Explain your reasoning step by step."
+    },
+    {
+      "id": "reason_02",
+      "category": "technical_reasoning",
+      "name": "Mud weight window design",
+      "content": "You are drilling a 12,000 ft well through a salt section. The pore pressure gradient is 0.465 psi/ft in the salt and 0.52 psi/ft in the formation below. The fracture gradient below the salt is 0.75 psi/ft. Design the mud weight window and explain the risk of lost circulation versus kick at each depth interval."
+    },
+    {
+      "id": "reason_03",
+      "category": "technical_reasoning",
+      "name": "Seismic bright spot interpretation",
+      "content": "A seismic survey shows a bright spot at 3,000m depth with a flat spot below it. The AVO response shows a Class III anomaly. What geological scenario is most consistent with these observations? What additional data would you acquire to de-risk the prospect?"
+    },
+    {
+      "id": "reason_04",
+      "category": "technical_reasoning",
+      "name": "Waterflood vs carbonate EOR",
+      "content": "Explain why waterflooding is more effective in sandstone reservoirs than in naturally fractured carbonate reservoirs. What EOR methods would you consider for a fractured carbonate reservoir with 30 API gravity oil?"
+    },
+    {
+      "id": "reason_05",
+      "category": "technical_reasoning",
+      "name": "Hydrate mitigation",
+      "content": "A gas pipeline operating at 1,200 psi and 60F is experiencing hydrate formation. Explain the thermodynamic conditions that lead to hydrate formation at these conditions and recommend three distinct mitigation strategies with their advantages and disadvantages."
+    },
+    {
+      "id": "long_01",
+      "category": "long_explanation",
+      "name": "MPD techniques overview",
+      "content": "Provide a comprehensive overview of managed pressure drilling (MPD) techniques, including constant bottomhole pressure (CBHP), mud cap drilling, and dual gradient drilling. Compare their applicability in deepwater versus onshore operations."
+    },
+    {
+      "id": "long_02",
+      "category": "long_explanation",
+      "name": "Subsea production lifecycle",
+      "content": "Explain the full lifecycle of a subsea production system, from wellhead installation through tree installation, flowline tie-in, umbilical connection, and first oil. Include the role of ROVs and the key integrity management considerations."
+    },
+    {
+      "id": "long_03",
+      "category": "long_explanation",
+      "name": "Static reservoir modeling workflow",
+      "content": "Describe the complete workflow for building a static reservoir model, from seismic interpretation through structural modeling, facies modeling, petrophysical property modeling, and upscaling. What are the key uncertainties at each step?"
+    },
+    {
+      "id": "long_04",
+      "category": "long_explanation",
+      "name": "CO2 EOR technical brief",
+      "content": "Write a technical brief on the environmental and operational challenges of CO2 injection for enhanced oil recovery, covering miscibility conditions, corrosion risks, CO2 recycling, and monitoring requirements."
+    },
+    {
+      "id": "long_05",
+      "category": "long_explanation",
+      "name": "4D seismic monitoring",
+      "content": "Explain the principles of 4D seismic monitoring for reservoir surveillance. How do changes in fluid saturation and pressure affect seismic velocities? What are the repeatability requirements and what processing steps are critical?"
+    },
+    {
+      "id": "extract_01",
+      "category": "extraction",
+      "name": "Drilling report extraction",
+      "content": "Extract structured data from the following drilling daily report:\n\nOperations Summary - Well PRE-SALT-7, Date: 2026-04-10\nDrilled 12-1/4\" hole from 4,250m to 4,312m MD (62m progress). Formation: Barra Velha carbonates (microbialites). Average ROP 3.1 m/hr. Mud weight maintained at 12.8 ppg (EMW 13.2 ppg with ECD). Max torque 28 kft-lbs. Surveys taken every 30m, inclination 42 deg, azimuth 215 deg. Gas readings: background 120 units, connection gas 350 units at 4,280m. Lost 15 bbl mud at 4,295m, pumped 25 bbl LCM pill (graphite + calcium carbonate blend), losses cured. Bit on bottom: Smith MDSi616 with 85 hours, graded 2-2-WT-A-X-I-NO-TD. BHA: RSS (PowerDrive Orbit), MWD/LWD (gamma, resistivity, density-neutron), NMDC, drill collars. NPT: 2.5 hours waiting on weather (seas 3.5m).\n\nExtract: current depth, bit size, mud weight, ROP, formation, NPT events, and losses. Format as JSON."
+    },
+    {
+      "id": "extract_02",
+      "category": "extraction",
+      "name": "Well test data parsing",
+      "content": "Parse this well test summary and extract key parameters:\n\nWell Test Report - Discovery Well EXP-2A, Santos Basin Pre-Salt\nTest Interval: 5,100-5,250m MD (Itapema Formation, coquinas)\nTest Duration: 72 hours (3 flow periods + 2 build-ups)\n\nFlow Period 1 (12h): Choke 32/64\", FWHP 3,850 psi, Oil 2,100 bbl/d, Gas 4.2 MMscf/d, Water 0 bbl/d, BSW 0%, FBHP 4,920 psi\nBuild-up 1 (12h): Final shut-in pressure 5,380 psi, Horner extrapolated P* = 5,420 psi\nFlow Period 2 (12h): Choke 48/64\", FWHP 3,200 psi, Oil 3,800 bbl/d, Gas 7.6 MMscf/d, Water 0 bbl/d, BSW 0%, FBHP 4,510 psi\nBuild-up 2 (24h): Final shut-in pressure 5,410 psi\nFlow Period 3 (12h): Choke 64/64\", FWHP 2,450 psi, Oil 5,200 bbl/d, Gas 10.4 MMscf/d, Water 85 bbl/d, BSW 1.6%, FBHP 3,980 psi\n\nPVT: Oil gravity 28 API, GOR 2,000 scf/stb, Pb = 4,100 psi at 180F. Skin = +3.2 (mechanical skin from completion). kh = 12,500 md-ft.\n\nExtract flow rates, pressures, PVT properties, and skin factor as a structured markdown table."
+    },
+    {
+      "id": "extract_03",
+      "category": "extraction",
+      "name": "Core description parsing",
+      "content": "From this core description, identify each lithological unit:\n\nCore #7, Well SAL-4, Interval 3,850-3,870m MD\n3,850.0-3,853.2m: Grainstone, light gray, well-sorted, medium to coarse grained, ooid-dominated with peloids. Abundant moldic porosity (est. 18-22%). Oil staining moderate to heavy. Cross-bedding at 15-20 degrees. Sharp basal contact.\n3,853.2-3,857.8m: Packstone, medium gray, poorly sorted, fine to medium grained, skeletal fragments (bivalves, gastropods, foraminifera). Scattered vugs 2-5mm. Faint oil fluorescence under UV. Bioturbation moderate (BI 3-4). Stylolites at 3,855.1m and 3,856.3m.\n3,857.8-3,860.0m: Mudstone, dark gray to black, laminated, no visible porosity. Organic-rich (possible source interval). Pyrite nodules at 3,858.5m. Fracture at 3,859.2m, calcite-filled, 45 degrees to core axis.\n3,860.0-3,865.5m: Wackestone to packstone, mottled gray, bioclastic, moderate sorting. Dolomite rhombs visible in hand lens. Porosity estimated 12-15%, intercrystalline and moldic. Oil shows moderate. Gradational contacts top and base.\n3,865.5-3,870.0m: Rudstone, light gray, poorly sorted, large skeletal fragments (up to 3cm, coral and bivalve), matrix-supported transitioning to grain-supported upward. Excellent vuggy porosity (est. 20-25%). Heavy oil staining. Karstified top surface.\n\nReturn a structured list with: depth interval, lithology, grain size, porosity type and estimate, oil shows, and notable features."
+    },
+    {
+      "id": "extract_04",
+      "category": "extraction",
+      "name": "Incident report classification",
+      "content": "Classify this safety incident report:\n\nIncident Report #2026-0412, Date: 2026-04-08, Location: Platform P-77 (Buzios Field)\nAt 14:35, during a routine crane operation to transfer a 4-ton chemical tote from the supply vessel to the platform deck, the tagline operator lost control of the load in 25-knot gusting winds. The suspended load swung approximately 3 meters, striking the handrail on the starboard walkway at the production deck level. The handrail was deformed over a 2-meter section. No personnel were in the immediate area. The crane operator immediately set the load down on deck. Operations were suspended for 4 hours while the area was inspected and the handrail was temporarily reinforced. Root cause investigation revealed: (1) the lift plan did not account for forecast wind gusts above 20 knots, (2) the tagline was undersized for the load weight, (3) the crane operator had not received the updated weather advisory issued 30 minutes before the lift. No injuries. Equipment damage estimated at $15,000.\n\nClassify: severity level (1-5), root cause categories, barrier failures, and recommended corrective actions."
+    },
+    {
+      "id": "extract_05",
+      "category": "extraction",
+      "name": "Production allocation",
+      "content": "Analyze this production allocation report:\n\nDaily Production Report - FPSO Cidade de Santos, Date: 2026-04-09\nWell PRE-1: Oil 4,200 bbl/d, Gas 5.1 MMscf/d, Water 380 bbl/d, Status: Flowing, Choke: 42/64\", Target: 4,500 bbl/d\nWell PRE-2: Oil 3,850 bbl/d, Gas 4.6 MMscf/d, Water 520 bbl/d, Status: Flowing, Choke: 38/64\", Target: 4,000 bbl/d\nWell PRE-3: Oil 1,200 bbl/d, Gas 1.4 MMscf/d, Water 2,100 bbl/d, Status: Flowing, Choke: 28/64\", Target: 3,500 bbl/d\nWell PRE-4: Oil 5,100 bbl/d, Gas 6.2 MMscf/d, Water 150 bbl/d, Status: Flowing, Choke: 48/64\", Target: 5,000 bbl/d\nWell PRE-5: Oil 0 bbl/d, Gas 0 MMscf/d, Water 0 bbl/d, Status: Shut-in (ESP failure), Choke: Closed, Target: 3,800 bbl/d\nWell INJ-1: Water injection 12,000 bbl/d, Status: Injecting, Target: 15,000 bbl/d\nWell INJ-2: Water injection 14,500 bbl/d, Status: Injecting, Target: 15,000 bbl/d\n\nCalculate: field total oil/gas/water production, total water cut, identify wells below 80% of target, identify the well with highest water cut, and assess injection-production balance."
+    },
+    {
+      "id": "code_01",
+      "category": "code_generation",
+      "name": "Standing correlation Bo",
+      "content": "Write a Python function that calculates oil formation volume factor (Bo) using the Standing correlation. Inputs: solution GOR (Rs in scf/stb), gas specific gravity, oil API gravity, and temperature (F). Include docstring with the formula and two unit tests."
+    },
+    {
+      "id": "code_02",
+      "category": "code_generation",
+      "name": "Decline curve analysis class",
+      "content": "Create a Python class for Decline Curve Analysis that supports exponential, hyperbolic, and harmonic decline models. Include methods for: fitting to production history data (time and rate arrays), forecasting future production for N months, and calculating cumulative production (EUR). Use only numpy and scipy."
+    },
+    {
+      "id": "code_03",
+      "category": "code_generation",
+      "name": "Material balance Havlena-Odeh",
+      "content": "Implement the Havlena-Odeh straight-line method for material balance in Python. The function should take arrays of cumulative oil production (Np), pressure (p), and PVT data (Bo, Bg, Rs as functions of pressure), and return the estimated OOIP and drive mechanism indicators. Plot the F vs Et diagnostic plot."
+    },
+    {
+      "id": "code_04",
+      "category": "code_generation",
+      "name": "Pipeline pressure drop",
+      "content": "Write a Python function to calculate pressure drop in a horizontal multiphase pipeline using the Beggs and Brill correlation. The function should determine the flow pattern (segregated, intermittent, distributed) and compute the pressure gradient. Inputs: oil rate, gas rate, water rate, pipe diameter, fluid properties."
+    },
+    {
+      "id": "code_05",
+      "category": "code_generation",
+      "name": "Well log LAS parser and plotter",
+      "content": "Write a Python script that reads a LAS 2.0 well log file (parsing the header and data sections without external libraries), extracts GR, RHOB, NPHI, and ILD curves, and creates a standard triple-combo log plot with: track 1 (GR with shale/sand fill), track 2 (resistivity on log scale), track 3 (neutron-density crossover with lithology shading). Use only matplotlib."
+    },
+    {
+      "id": "complex_01",
+      "category": "complex_reasoning",
+      "name": "Mature field rejuvenation decision",
+      "content": "You are the chief reservoir engineer for a mature offshore field that has been on waterflood for 15 years. Production has declined to 60% of peak. The operator is considering three options: (a) infill drilling with 4 new horizontal wells, (b) converting to WAG (water-alternating-gas) using associated gas, (c) polymer flooding with HPAM. The reservoir is a 50 ft thick sandstone at 8,000 ft with 200 md permeability, 25 API oil, and current water cut of 75%. Develop a decision framework considering technical risk, capital cost, incremental recovery factor, implementation timeline, and operational complexity. Recommend one option and justify your choice with quantitative reasoning."
+    },
+    {
+      "id": "complex_02",
+      "category": "complex_reasoning",
+      "name": "Drilling optimization system design",
+      "content": "Design a real-time drilling optimization system that integrates surface drilling parameters (WOB, RPM, torque, ROP, MSE), downhole MWD data (vibrations, ECD, temperature), and mud logging data (gas chromatography, cuttings description). What machine learning approaches would you use for ROP prediction and drilling dysfunction detection? How would you handle the 30-60 second latency between surface and downhole measurements? What are the key failure modes and how would you validate the system?"
+    },
+    {
+      "id": "complex_03",
+      "category": "complex_reasoning",
+      "name": "Pre-salt appraisal plan",
+      "content": "A deepwater exploration well in the Santos Basin pre-salt encountered a 100m carbonate reservoir with excellent porosity (20% average) but highly heterogeneous permeability (ranging from 10 md to 5,000 md). The DST showed 5,000 bbl/d oil with 28 API gravity but rapid pressure decline suggesting limited drainage volume. Design a comprehensive appraisal plan including: additional data acquisition (logging, coring, testing), dynamic modeling approach to capture heterogeneity, development concept screening (FPSO vs TLP vs subsea tieback to existing platform 30 km away), and risked economics for a 500 MMbbl OOIP scenario."
+    },
+    {
+      "id": "complex_04",
+      "category": "complex_reasoning",
+      "name": "Energy transition strategy for NOC",
+      "content": "Compare and contrast the energy transition strategies available to a national oil company operating primarily in deepwater offshore Brazil: (a) carbon capture and storage in depleted pre-salt reservoirs, (b) green hydrogen production using offshore wind in the Northeast coast, (c) geothermal energy from existing abandoned wells. For each option, analyze: technical feasibility with current technology, estimated CAPEX for a pilot project, regulatory framework in Brazil, timeline to first revenue, and synergies with existing upstream operations. Which option would you prioritize and why?"
+    },
+    {
+      "id": "complex_05",
+      "category": "complex_reasoning",
+      "name": "Autonomous platform design",
+      "content": "Design an autonomous unmanned wellhead platform for a marginal offshore field in the Campos Basin producing 3,000 bbl/d of oil. The nearest manned FPSO is 50 km away. The platform must operate with minimal human intervention for 6 months between maintenance campaigns. Design the production system (separation, metering, pumping), control and communication architecture (SCADA, redundancy, satellite backup), safety systems (ESD levels, fire and gas detection, remote blowdown), and predictive maintenance strategy using IoT sensors. What are the key regulatory barriers from ANP and how would you address them in the concept selection phase?"
+    }
+  ]
+}
