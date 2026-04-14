@@ -171,6 +171,7 @@ def discover_endpoints(sessions_dir):
                     line = line.strip()
                     if "=" in line and not line.startswith("#"):
                         k, v = line.split("=", 1)
+                        v = v.strip('"')
                         meta[k] = v
         except OSError:
             continue
@@ -400,8 +401,8 @@ def run_single(endpoint, prompt, max_tokens, timeout, temperature):
     )
 
 
-def warm_up(endpoint, max_tokens, timeout, temperature):
-    sys.stderr.write(f"  Warming up {endpoint.model_key}... ")
+def warm_up(endpoint, timeout, temperature):
+    sys.stderr.write(f"  [{endpoint.model_key}] Warming up... ")
     sys.stderr.flush()
     dummy = Prompt(id="warmup", name="warmup", category="warmup",
                    content=WARMUP_PROMPT)
@@ -450,7 +451,6 @@ def collect_env_info(endpoints):
         "gpu": {},
         "models": [],
     }
-    # Try nvidia-smi on local machine (may be login node, not GPU node)
     try:
         out = subprocess.check_output(
             ["nvidia-smi", "--query-gpu=name,memory.total,driver_version",
@@ -516,47 +516,25 @@ def fmt_table(headers, rows, col_widths=None):
     return "\n".join(lines)
 
 
-def print_per_sample_table(results, endpoints):
-    ep_map = {ep.model_key: ep for ep in endpoints}
-    model_keys = list(dict.fromkeys(r.model_key for r in results))
+def print_model_summary(model_key, backend, results):
+    ok = [r for r in results if r.status == "ok"]
+    errors = len(results) - len(ok)
 
-    # Group by prompt
-    prompts_seen = []
-    prompt_ids = set()
-    for r in results:
-        if r.prompt_id not in prompt_ids and r.status == "ok":
-            prompts_seen.append((r.prompt_id, r.prompt_name, r.prompt_category))
-            prompt_ids.add(r.prompt_id)
+    print()
+    print(f"  {model_key} ({backend}) — {len(ok)} samples, {errors} errors")
 
-    headers = ["Model", "TTFT(ms)", "Gen(s)", "E2E(s)", "OutTok",
-               "Tok/s", "TPOT(ms)", "Think(s)"]
+    if not ok:
+        return
 
-    for pid, pname, pcat in prompts_seen:
-        print(f"\n  [{pcat}] {pname}")
-        print(f"  {'-' * 70}")
-        rows = []
-        for mk in model_keys:
-            match = [r for r in results
-                     if r.model_key == mk and r.prompt_id == pid]
-            if not match:
-                continue
-            r = match[0]
-            if r.status != "ok":
-                rows.append([mk, "ERR", "-", "-", "-", "-", "-", "-"])
-                continue
-            think_str = f"{r.thinking_s:.1f}" if r.thinking_s > 0.1 else "-"
-            rows.append([
-                mk,
-                f"{r.ttft_ms:.0f}",
-                f"{r.gen_s:.1f}",
-                f"{r.e2e_s:.1f}",
-                str(r.output_tokens),
-                f"{r.output_tok_s:.1f}",
-                f"{r.tpot_ms:.1f}",
-                think_str,
-            ])
-        col_widths = [18, 10, 8, 8, 8, 8, 10, 10]
-        print(f"  {fmt_table(headers, rows, col_widths)}")
+    ttft = [r.ttft_ms for r in ok]
+    toks = [r.output_tok_s for r in ok]
+    tpot = [r.tpot_ms for r in ok]
+    outtok = [float(r.output_tokens) for r in ok]
+
+    print(f"    TTFT(ms): {statistics.median(ttft):.0f}   "
+          f"Tok/s: {statistics.median(toks):.1f}   "
+          f"TPOT(ms): {statistics.median(tpot):.1f}   "
+          f"OutTok: {statistics.median(outtok):.0f}")
 
 
 def print_summary_table(results, endpoints):
@@ -566,7 +544,7 @@ def print_summary_table(results, endpoints):
     print("SUMMARY (across all prompts)")
     print("=" * 80)
 
-    headers = ["Model", "Backend", "TTFT(ms)", "Tok/s", "E2E(s)",
+    headers = ["Model", "Backend", "TTFT(ms)", "Tok/s",
                "TPOT(ms)", "Samples", "Errors"]
 
     rows = []
@@ -577,12 +555,11 @@ def print_summary_table(results, endpoints):
         backend = model_results[0].backend if model_results else "?"
 
         if not ok_results:
-            rows.append([mk, backend, "-", "-", "-", "-", "0", str(errors)])
+            rows.append([mk, backend, "-", "-", "-", "0", str(errors)])
             continue
 
         ttft_stats = compute_stats([r.ttft_ms for r in ok_results])
         toks_stats = compute_stats([r.output_tok_s for r in ok_results])
-        e2e_stats = compute_stats([r.e2e_s for r in ok_results])
         tpot_stats = compute_stats([r.tpot_ms for r in ok_results])
 
         rows.append([
@@ -590,100 +567,55 @@ def print_summary_table(results, endpoints):
             backend,
             f"{ttft_stats['median']:.0f}",
             f"{toks_stats['median']:.1f}",
-            f"{e2e_stats['median']:.1f}",
             f"{tpot_stats['median']:.1f}",
             str(len(ok_results)),
             str(errors),
         ])
 
-    col_widths = [18, 8, 10, 8, 8, 10, 9, 8]
+    col_widths = [18, 8, 10, 8, 10, 9, 8]
     print(fmt_table(headers, rows, col_widths))
 
 
-def print_detailed_stats(results):
-    model_keys = list(dict.fromkeys(r.model_key for r in results))
-
-    print("\n" + "=" * 80)
-    print("DETAILED STATISTICS")
-    print("=" * 80)
-
-    for mk in model_keys:
-        ok = [r for r in results if r.model_key == mk and r.status == "ok"]
-        if not ok:
-            continue
-
-        print(f"\n  {mk}")
-        print(f"  {'-' * 70}")
-
-        metrics = [
-            ("TTFT (ms)", [r.ttft_ms for r in ok]),
-            ("E2E Latency (s)", [r.e2e_s for r in ok]),
-            ("Output Tok/s", [r.output_tok_s for r in ok]),
-            ("TPOT (ms/tok)", [r.tpot_ms for r in ok]),
-            ("Output Tokens", [float(r.output_tokens) for r in ok]),
-        ]
-
-        # Add prefill if data available
-        prefill = [r.prefill_tok_s for r in ok if r.prefill_tok_s > 0]
-        if prefill:
-            metrics.append(("Prefill Tok/s", prefill))
-
-        # Add thinking if any model thinks
-        think = [r.thinking_s for r in ok if r.thinking_s > 0.1]
-        if think:
-            metrics.append(("Think Time (s)", think))
-
-        headers = ["Metric", "Mean", "Median", "P90", "P99", "Std", "Min", "Max"]
-        rows = []
-        for name, vals in metrics:
-            s = compute_stats(vals)
-            rows.append([
-                name,
-                f"{s['mean']:.1f}",
-                f"{s['median']:.1f}",
-                f"{s['p90']:.1f}",
-                f"{s['p99']:.1f}",
-                f"{s['std']:.1f}",
-                f"{s['min']:.1f}",
-                f"{s['max']:.1f}",
-            ])
-
-        col_widths = [18, 10, 10, 10, 10, 10, 10, 10]
-        print(f"  {fmt_table(headers, rows, col_widths)}")
-
-
-def print_environment(env_info):
-    print("\n" + "=" * 80)
-    print("ENVIRONMENT")
-    print("=" * 80)
-    gpu = env_info.get("gpu", {})
-    print(f"  Benchmark host:  {env_info.get('hostname', 'unknown')}")
-    print(f"  Timestamp:       {env_info.get('timestamp', 'unknown')}")
-    if isinstance(gpu, dict) and gpu.get("name"):
-        print(f"  GPU:             {gpu.get('name', 'N/A')}")
-        if gpu.get("memory"):
-            print(f"  GPU Memory:      {gpu.get('memory', 'N/A')}")
-        if gpu.get("count_per_node"):
-            print(f"  GPUs/Node:       {gpu.get('count_per_node', 'N/A')}")
-        if gpu.get("driver"):
-            print(f"  Driver:          {gpu.get('driver', 'N/A')}")
-        if gpu.get("cuda_version"):
-            print(f"  CUDA:            {gpu.get('cuda_version', 'N/A')}")
-
-    print("\n  Models:")
-    for m in env_info.get("models", []):
-        print(f"    {m['model_key']:18s}  backend={m['backend']:5s}  "
-              f"node={m['node']}:{m['port']}  sif={m.get('sif_name', 'N/A')}")
+# =============================================================================
+# Export
+# =============================================================================
+def _default_output_path():
+    user = os.environ.get("USER", "unknown")
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = os.path.join(SCRIPT_DIR, "..", "output", "benchmarks")
+    os.makedirs(output_dir, exist_ok=True)
+    return os.path.join(output_dir, "benchmark_{}_{}.json".format(user, ts))
 
 
 def export_json(results, env_info, path):
+    model_keys = list(dict.fromkeys(r.model_key for r in results))
+    model_stats = {}
+    for mk in model_keys:
+        ok = [r for r in results if r.model_key == mk and r.status == "ok"]
+        errors = sum(1 for r in results if r.model_key == mk and r.status != "ok")
+        if ok:
+            model_stats[mk] = {
+                "samples": len(ok),
+                "errors": errors,
+                "ttft_ms": compute_stats([r.ttft_ms for r in ok]),
+                "output_tok_s": compute_stats([r.output_tok_s for r in ok]),
+                "e2e_s": compute_stats([r.e2e_s for r in ok]),
+                "tpot_ms": compute_stats([r.tpot_ms for r in ok]),
+                "output_tokens": compute_stats([float(r.output_tokens) for r in ok]),
+                "gen_s": compute_stats([r.gen_s for r in ok]),
+                "prefill_tok_s": compute_stats([r.prefill_tok_s for r in ok]),
+                "thinking_s": compute_stats([r.thinking_s for r in ok]),
+            }
+
     data = {
         "environment": env_info,
+        "model_stats": model_stats,
         "results": [r.to_dict() for r in results],
     }
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
-    print(f"\n  JSON exported: {path}")
+    print(f"  Results saved: {path}")
 
 
 def export_csv(results, path):
@@ -754,15 +686,11 @@ def main():
     )
     parser.add_argument(
         "--output-json", metavar="FILE",
-        help="Export raw results as JSON",
+        help="Override default JSON output path",
     )
     parser.add_argument(
         "--output-csv", metavar="FILE",
-        help="Export raw results as CSV",
-    )
-    parser.add_argument(
-        "--quiet", action="store_true",
-        help="Summary only (skip per-prompt tables)",
+        help="Also export results as CSV",
     )
 
     # Show help if no arguments provided
@@ -802,11 +730,10 @@ def main():
     print("=" * 80)
     print(f"LLM BENCHMARK — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
-    print(f"  Prompts:     {len(prompts)} from {args.prompts}")
+    print(f"  Prompts:     {len(prompts)}")
     print(f"  Models:      {len(endpoints)}")
     print(f"  Max tokens:  {args.max_tokens}")
     print(f"  Temperature: {args.temperature}")
-    print(f"  Timeout:     {args.timeout}s")
     print()
 
     # Health check
@@ -815,7 +742,6 @@ def main():
         sys.stderr.write(f"  Checking {ep.model_key} at {ep.endpoint}... ")
         sys.stderr.flush()
         if _check_health(ep.endpoint):
-            # Auto-detect model_id if not set
             if not ep.model_id or ep.model_id == "unknown":
                 detected = _detect_model(ep.endpoint)
                 if detected:
@@ -830,62 +756,57 @@ def main():
         print("\nERROR: No healthy endpoints found.", file=sys.stderr)
         sys.exit(1)
 
-    # Warm-up
-    if not args.no_warmup:
-        print()
-        for ep in healthy:
-            warm_up(ep, args.max_tokens, args.timeout, args.temperature)
-        print()
-
-    # Run benchmark
+    # =========================================================================
+    # Per-model: warmup → benchmark → model summary
+    # =========================================================================
     all_results = []
-    total = len(healthy) * len(prompts)
-    current = 0
 
     for ep in healthy:
-        print(f"  Benchmarking {ep.model_key} ({ep.backend})...")
-        for prompt in prompts:
-            current += 1
+        # Warmup immediately before this model's benchmark
+        if not args.no_warmup:
+            warm_up(ep, args.timeout, args.temperature)
+
+        # Benchmark
+        model_results = []
+        for i, prompt in enumerate(prompts, 1):
             sys.stderr.write(
-                f"\r  [{current}/{total}] {ep.model_key}: {prompt.id}...        "
+                f"\r  [{i}/{len(prompts)}] {prompt.id}...                    "
             )
             sys.stderr.flush()
 
             result = run_single(
                 ep, prompt, args.max_tokens, args.timeout, args.temperature
             )
-            all_results.append(result)
+            model_results.append(result)
 
             if result.status == "ok":
                 sys.stderr.write(
-                    f"\r  [{current}/{total}] {ep.model_key}: {prompt.id} "
+                    f"\r  [{i}/{len(prompts)}] {prompt.id} "
                     f"— {result.ttft_ms:.0f}ms TTFT, "
                     f"{result.output_tok_s:.1f} tok/s, "
                     f"{result.e2e_s:.1f}s E2E\n"
                 )
             else:
                 sys.stderr.write(
-                    f"\r  [{current}/{total}] {ep.model_key}: {prompt.id} "
-                    f"— {result.status}: {result.error_message[:60]}\n"
+                    f"\r  [{i}/{len(prompts)}] {prompt.id} "
+                    f"— ERROR: {result.error_message[:60]}\n"
                 )
             sys.stderr.flush()
-        print()
 
-    # Output
-    print("\n" + "=" * 80)
-    print("RESULTS")
-    print("=" * 80)
+        all_results.extend(model_results)
 
-    if not args.quiet:
-        print_per_sample_table(all_results, healthy)
+        # Per-model summary (printed right after model finishes)
+        print_model_summary(ep.model_key, ep.backend, model_results)
 
+    # Final summary across all models
     print_summary_table(all_results, healthy)
-    print_detailed_stats(all_results)
-    print_environment(env_info)
 
-    # Export
-    if args.output_json:
-        export_json(all_results, env_info, args.output_json)
+    # Auto-save JSON (always)
+    output_path = args.output_json or _default_output_path()
+    print()
+    export_json(all_results, env_info, output_path)
+
+    # Optional CSV
     if args.output_csv:
         export_csv(all_results, args.output_csv)
 
