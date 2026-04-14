@@ -6,12 +6,19 @@ Measures single-request latency and throughput for all active models
 on the cluster. Prompts are loaded from benchmark_prompts.json.
 
 Usage:
-    python scripts/benchmark_models.py --endpoints node1:8000 node2:8000
-    python scripts/benchmark_models.py --discover          # auto-detect from nim.env
-    python scripts/benchmark_models.py --help
+    python3 scripts/benchmark_models.py --endpoints node1:8000 node2:8000
+    python3 scripts/benchmark_models.py --discover          # auto-detect from nim.env
+    python3 scripts/benchmark_models.py --help
 
-No external dependencies — uses only Python standard library.
+Requires Python 3.7+. No external dependencies — uses only Python standard library.
 """
+
+import sys
+
+if sys.version_info < (3, 7):
+    print(f"ERROR: Python 3.7+ required (found {sys.version.split()[0]}).")
+    print("Try: python3.8, python3.9, python3.10, or 'module load python'")
+    sys.exit(1)
 
 import argparse
 import glob
@@ -707,6 +714,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="Sequential LLM benchmark for NIM/vLLM endpoints.",
     )
+    # Show help if no arguments provided
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
+
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
         "--endpoints", nargs="+", metavar="HOST:PORT",
