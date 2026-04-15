@@ -803,7 +803,7 @@ def export_json(all_model_data, env_info, concurrency_levels, path):
         "models": models,
     }
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
     print(f"  JSON:  {path}")
 
@@ -817,7 +817,7 @@ def export_csv(all_model_data, path):
     if not all_results:
         return
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write(",".join(fields) + "\n")
         for r in all_results:
             d = r.to_dict()
@@ -894,7 +894,7 @@ def generate_chart(all_model_data, path):
                    W / 2))
     svg.append('<text x="{}" y="52" text-anchor="middle" '
                'font-size="11" font-family="sans-serif" '
-               'fill="#666">vLLM 0.17.0 — 4x A100 80GB (TP=4)'
+               'fill="#666">vLLM 0.17.0 -- 4x A100 80GB (TP=4)'
                '</text>'.format(W / 2))
 
     # Grid lines + ticks
@@ -986,7 +986,7 @@ def generate_chart(all_model_data, path):
     svg.append('</svg>')
 
     os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(svg))
     print(f"  Chart: {path}")
 
