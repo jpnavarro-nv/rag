@@ -17,6 +17,7 @@ HF_MODELS="
 nemotron3-120b | nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16
 gpt-oss-120b   | openai/gpt-oss-120b
 qwen3-122b     | Qwen/Qwen3.5-122B-A10B
+llama31-70b    | meta-llama/Llama-3.1-70B-Instruct
 "
 
 resolve_hf_model() {
