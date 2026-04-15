@@ -444,28 +444,18 @@ def run_concurrency_level(endpoint, prompts, concurrency, max_tokens,
             error_count[0] += 1
         completed[0] += 1
         with _progress_lock:
-            if concurrency == 1:
-                if result.status == "ok":
-                    sys.stderr.write(
-                        f"\r  [{completed[0]}/{total}] {result.prompt_id} "
-                        f"— {result.ttft_ms:.0f}ms TTFT, "
-                        f"{result.output_tok_s:.1f} tok/s, "
-                        f"{result.e2e_s:.1f}s E2E\n"
-                    )
-                else:
-                    sys.stderr.write(
-                        f"\r  [{completed[0]}/{total}] {result.prompt_id} "
-                        f"— ERROR: {result.error_message[:60]}\n"
-                    )
-            else:
-                err = ""
-                if error_count[0]:
-                    err = ", {} errors".format(error_count[0])
-                sys.stderr.write(
-                    f"\r  [conc={concurrency}] {completed[0]}/{total} done"
-                    f"{err}      "
-                )
+            err = ""
+            if error_count[0]:
+                err = ", {} errors".format(error_count[0])
+            sys.stderr.write(
+                f"\r  [conc={concurrency}] {completed[0]}/{total} done"
+                f"{err}      "
+            )
             sys.stderr.flush()
+
+    sys.stderr.write(
+        f"  [conc={concurrency}] Running {total} prompts...\n")
+    sys.stderr.flush()
 
     if concurrency == 1:
         for prompt in prompts:
@@ -475,9 +465,6 @@ def run_concurrency_level(endpoint, prompts, concurrency, max_tokens,
             results.append(result)
             _report(result)
     else:
-        sys.stderr.write(
-            f"  [conc={concurrency}] Running {total} prompts...\n")
-        sys.stderr.flush()
         with ThreadPoolExecutor(max_workers=concurrency) as executor:
             futures = {}
             for prompt in prompts:
@@ -490,8 +477,9 @@ def run_concurrency_level(endpoint, prompts, concurrency, max_tokens,
                 result.concurrency = concurrency
                 results.append(result)
                 _report(result)
-        sys.stderr.write("\n")
-        sys.stderr.flush()
+
+    sys.stderr.write("\n")
+    sys.stderr.flush()
 
     t_total = time.monotonic() - t_start
     ok = [r for r in results if r.status == "ok"]
@@ -629,7 +617,7 @@ def print_model_summary(model_key, backend, conc_results):
 
     thinking = _has_thinking(conc_results)
 
-    headers = ["Conc", "TTFT(ms)", "Tok/s", "TPOT(ms)", "E2E(s)",
+    headers = ["Samples", "TTFT(ms)", "Tok/s", "TPOT(ms)", "E2E(s)",
                "SysTok/s"]
     if thinking:
         headers.append("Think(s)")
@@ -644,18 +632,18 @@ def print_model_summary(model_key, backend, conc_results):
 
         row = [
             str(cr.concurrency),
-            f"{statistics.median([r.ttft_ms for r in ok]):.0f}",
-            f"{statistics.median([r.output_tok_s for r in ok]):.1f}",
-            f"{statistics.median([r.tpot_ms for r in ok]):.1f}",
-            f"{statistics.median([r.e2e_s for r in ok]):.1f}",
+            f"{statistics.mean([r.ttft_ms for r in ok]):.0f}",
+            f"{statistics.mean([r.output_tok_s for r in ok]):.1f}",
+            f"{statistics.mean([r.tpot_ms for r in ok]):.1f}",
+            f"{statistics.mean([r.e2e_s for r in ok]):.1f}",
             f"{cr.system_tok_s:.1f}",
         ]
         if thinking:
             row.append(
-                f"{statistics.median([r.thinking_s for r in ok]):.1f}")
+                f"{statistics.mean([r.thinking_s for r in ok]):.1f}")
         rows.append(row)
 
-    col_widths = [6, 10, 8, 10, 8, 10]
+    col_widths = [7, 10, 8, 10, 8, 10]
     if thinking:
         col_widths.append(9)
     print(f"  {fmt_table(headers, rows, col_widths)}")
@@ -663,13 +651,13 @@ def print_model_summary(model_key, backend, conc_results):
 
 def print_summary_table(all_model_data):
     print("\n" + "=" * 80)
-    print("SUMMARY (across all prompts)")
+    print("SUMMARY — mean across all prompts")
     print("=" * 80)
 
     thinking = any(
         _has_thinking(crs) for _, crs in all_model_data)
 
-    headers = ["Model", "Backend", "Conc", "TTFT(ms)", "Tok/s",
+    headers = ["Model", "Backend", "Samples", "TTFT(ms)", "Tok/s",
                "TPOT(ms)", "E2E(s)", "SysTok/s", "Err"]
     if thinking:
         headers.insert(7, "Think(s)")
@@ -693,20 +681,20 @@ def print_summary_table(all_model_data):
                 endpoint.model_key,
                 endpoint.backend,
                 str(cr.concurrency),
-                f"{statistics.median([r.ttft_ms for r in ok]):.0f}",
-                f"{statistics.median([r.output_tok_s for r in ok]):.1f}",
-                f"{statistics.median([r.tpot_ms for r in ok]):.1f}",
-                f"{statistics.median([r.e2e_s for r in ok]):.1f}",
+                f"{statistics.mean([r.ttft_ms for r in ok]):.0f}",
+                f"{statistics.mean([r.output_tok_s for r in ok]):.1f}",
+                f"{statistics.mean([r.tpot_ms for r in ok]):.1f}",
+                f"{statistics.mean([r.e2e_s for r in ok]):.1f}",
                 f"{cr.system_tok_s:.1f}",
                 str(errors),
             ]
             if thinking:
-                think_med = statistics.median(
+                think_avg = statistics.mean(
                     [r.thinking_s for r in ok])
-                row.insert(7, f"{think_med:.1f}")
+                row.insert(7, f"{think_avg:.1f}")
             rows.append(row)
 
-    col_widths = [18, 8, 6, 10, 8, 10, 8, 10, 5]
+    col_widths = [18, 8, 7, 10, 8, 10, 8, 10, 5]
     if thinking:
         col_widths.insert(7, 9)
     print(fmt_table(headers, rows, col_widths))
