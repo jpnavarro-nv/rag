@@ -27,6 +27,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
@@ -243,6 +244,29 @@ def load_prompts(path):
     ]
 
 
+def select_prompts(prompts, max_prompts):
+    """Select up to max_prompts using round-robin across categories."""
+    if max_prompts is None or max_prompts >= len(prompts):
+        return prompts
+
+    # Group by category, preserving order within each category
+    by_cat = OrderedDict()
+    for p in prompts:
+        by_cat.setdefault(p.category, []).append(p)
+
+    selected = []
+    iterators = {cat: iter(ps) for cat, ps in by_cat.items()}
+    while len(selected) < max_prompts:
+        for cat in list(iterators):
+            if len(selected) >= max_prompts:
+                break
+            try:
+                selected.append(next(iterators[cat]))
+            except StopIteration:
+                del iterators[cat]
+    return selected
+
+
 # =============================================================================
 # Core benchmark (single request)
 # =============================================================================
@@ -431,12 +455,18 @@ _progress_lock = threading.Lock()
 
 def run_concurrency_level(endpoint, prompts, concurrency, max_tokens,
                           timeout, temperature):
-    """Run all prompts at a given concurrency level and return aggregated
-    results with system-level throughput metrics."""
+    """Run prompts at a given concurrency level and return aggregated
+    results with system-level throughput metrics.
+
+    When concurrency exceeds the number of prompts, prompts are recycled
+    round-robin so that every worker has a request to process.
+    """
+    total = max(len(prompts), concurrency)
+    request_prompts = [prompts[i % len(prompts)] for i in range(total)]
+
     results = []
     completed = [0]
     error_count = [0]
-    total = len(prompts)
     t_start = time.monotonic()
 
     def _report(result):
@@ -454,11 +484,12 @@ def run_concurrency_level(endpoint, prompts, concurrency, max_tokens,
             sys.stderr.flush()
 
     sys.stderr.write(
-        f"  [conc={concurrency}] Running {total} prompts...\n")
+        f"  [conc={concurrency}] Running {total} requests "
+        f"({len(prompts)} unique prompts)...\n")
     sys.stderr.flush()
 
     if concurrency == 1:
-        for prompt in prompts:
+        for prompt in request_prompts:
             result = run_single(endpoint, prompt, max_tokens, timeout,
                                 temperature)
             result.concurrency = concurrency
@@ -466,11 +497,11 @@ def run_concurrency_level(endpoint, prompts, concurrency, max_tokens,
             _report(result)
     else:
         with ThreadPoolExecutor(max_workers=concurrency) as executor:
-            futures = {}
-            for prompt in prompts:
+            futures = []
+            for prompt in request_prompts:
                 fut = executor.submit(run_single, endpoint, prompt,
                                       max_tokens, timeout, temperature)
-                futures[fut] = prompt
+                futures.append(fut)
 
             for fut in as_completed(futures):
                 result = fut.result()
@@ -995,6 +1026,12 @@ def main():
         help="Prompts JSON file (default: benchmark_prompts.json)",
     )
     parser.add_argument(
+        "--max-prompts", type=int, default=None, metavar="N",
+        help="Use N prompts (round-robin across categories). "
+             "When concurrency > N, prompts are recycled. "
+             "Default: use all prompts.",
+    )
+    parser.add_argument(
         "--concurrency",
         default=",".join(str(c) for c in DEFAULT_CONCURRENCY),
         help="Comma-separated concurrency levels "
@@ -1032,6 +1069,9 @@ def main():
 
     args = parser.parse_args()
 
+    if args.max_prompts is not None and args.max_prompts < 1:
+        parser.error("--max-prompts must be >= 1")
+
     # Parse concurrency levels
     try:
         conc_levels = sorted(set(
@@ -1061,11 +1101,13 @@ def main():
 
     # Load prompts
     try:
-        prompts = load_prompts(args.prompts)
+        all_prompts = load_prompts(args.prompts)
     except (OSError, json.JSONDecodeError) as e:
         print(f"ERROR: Cannot load prompts from {args.prompts}: {e}",
               file=sys.stderr)
         sys.exit(1)
+
+    prompts = select_prompts(all_prompts, args.max_prompts)
 
     env_info = collect_env_info(endpoints)
 
@@ -1073,7 +1115,8 @@ def main():
     print("=" * 80)
     print(f"LLM BENCHMARK — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 80)
-    print(f"  Prompts:      {len(prompts)}")
+    print(f"  Prompts:      {len(prompts)} "
+          f"(of {len(all_prompts)} available)")
     print(f"  Models:       {len(endpoints)}")
     print(f"  Concurrency:  {', '.join(str(c) for c in conc_levels)}")
     print(f"  Max tokens:   {args.max_tokens}")
