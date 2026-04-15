@@ -837,10 +837,10 @@ def export_csv(all_model_data, path):
 # SVG chart generation (pure Python, no external dependencies)
 # =============================================================================
 def generate_chart(all_model_data, path):
-    """Generate a latency-throughput SVG chart (NVIDIA-style).
+    """Generate a concurrency-throughput SVG chart.
 
-    X-axis: TTFT median (ms) — latency increases rightward.
-    Y-axis: System Tok/s — throughput increases upward.
+    X-axis: Number of Concurrent Inferences.
+    Y-axis: Throughput (tokens / second).
     Each point is a concurrency level, connected per model.
     """
     # Collect series data
@@ -850,8 +850,7 @@ def generate_chart(all_model_data, path):
         for cr in conc_results:
             ok = [r for r in cr.results if r.status == "ok"]
             if ok:
-                ttft_med = statistics.median([r.ttft_ms for r in ok])
-                points.append((cr.concurrency, ttft_med, cr.system_tok_s))
+                points.append((cr.concurrency, cr.system_tok_s))
         if points:
             series.append((endpoint.model_key, points))
 
@@ -865,14 +864,13 @@ def generate_chart(all_model_data, path):
     ph = H - mg["top"] - mg["bottom"]
 
     # Data ranges
-    all_x = [p[1] for _, pts in series for p in pts]
-    all_y = [p[2] for _, pts in series for p in pts]
+    all_x = [p[0] for _, pts in series for p in pts]
+    all_y = [p[1] for _, pts in series for p in pts]
 
-    x_lo = min(all_x) * 0.85
-    x_hi = max(all_x) * 1.15
-    if x_lo == x_hi:
-        x_lo *= 0.5
-        x_hi *= 1.5
+    x_lo = 0
+    x_hi = max(all_x) * 1.1
+    if x_hi == 0:
+        x_hi = 1
     y_lo = 0
     y_hi = max(all_y) * 1.15
     if y_hi == 0:
@@ -892,11 +890,11 @@ def generate_chart(all_model_data, path):
     # Title
     svg.append('<text x="{}" y="35" text-anchor="middle" '
                'font-size="16" font-family="sans-serif" '
-               'font-weight="bold">Latency vs Throughput</text>'.format(
+               'font-weight="bold">Throughput vs Concurrency</text>'.format(
                    W / 2))
     svg.append('<text x="{}" y="52" text-anchor="middle" '
                'font-size="11" font-family="sans-serif" '
-               'fill="#666">Points labeled with concurrency level'
+               'fill="#666">vLLM 0.17.0 — 4x A100 80GB (TP=4)'
                '</text>'.format(W / 2))
 
     # Grid lines + ticks
@@ -936,13 +934,13 @@ def generate_chart(all_model_data, path):
     # Axis labels
     svg.append('<text x="{}" y="{}" text-anchor="middle" '
                'font-size="12" font-family="sans-serif" '
-               'fill="#333">TTFT Median (ms)</text>'.format(
+               'fill="#333">Number of Concurrent Inferences</text>'.format(
                    mg["left"] + pw / 2, H - 15))
     svg.append('<text x="18" y="{}" text-anchor="middle" '
                'font-size="12" font-family="sans-serif" fill="#333" '
-               'transform="rotate(-90, 18, {})">System Throughput '
-               '(tok/s)</text>'.format(mg["top"] + ph / 2,
-                                       mg["top"] + ph / 2))
+               'transform="rotate(-90, 18, {})">Throughput '
+               '(tokens / second)</text>'.format(mg["top"] + ph / 2,
+                                                  mg["top"] + ph / 2))
 
     # Data series
     for idx, (model_key, points) in enumerate(series):
@@ -951,8 +949,8 @@ def generate_chart(all_model_data, path):
 
         # Line connecting points
         path_parts = []
-        for i, (conc, ttft, tps) in enumerate(sorted_pts):
-            x, y = sx(ttft), sy(tps)
+        for i, (conc, tps) in enumerate(sorted_pts):
+            x, y = sx(conc), sy(tps)
             if i == 0:
                 path_parts.append("M {:.1f} {:.1f}".format(x, y))
             else:
@@ -962,15 +960,15 @@ def generate_chart(all_model_data, path):
                        "".join(path_parts), color))
 
         # Points + labels
-        for conc, ttft, tps in sorted_pts:
-            x, y = sx(ttft), sy(tps)
+        for conc, tps in sorted_pts:
+            x, y = sx(conc), sy(tps)
             svg.append('<circle cx="{:.1f}" cy="{:.1f}" r="5" '
                        'fill="{}" stroke="white" '
                        'stroke-width="1.5"/>'.format(x, y, color))
             svg.append('<text x="{:.1f}" y="{:.1f}" font-size="9" '
                        'font-family="sans-serif" '
-                       'fill="{}">C={}</text>'.format(
-                           x + 8, y - 8, color, conc))
+                       'fill="{}">{:.0f}</text>'.format(
+                           x + 8, y - 8, color, tps))
 
     # Legend
     ly = mg["top"] + 15
