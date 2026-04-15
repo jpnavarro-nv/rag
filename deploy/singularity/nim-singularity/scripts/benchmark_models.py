@@ -3,7 +3,7 @@
 """Sequential and concurrent LLM benchmark for vLLM endpoints.
 
 Sweeps concurrency levels (default: 1, 2, 5, 10, 50) to produce a
-latency-throughput curve for each active model on the cluster.
+throughput-vs-concurrency curve for each active model on the cluster.
 
 Usage:
     python3 scripts/benchmark_models.py --discover
