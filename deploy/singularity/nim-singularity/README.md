@@ -1,8 +1,11 @@
-# LLM Standalone — Singularity + SLURM
+# LLM Standalone -- Singularity + SLURM
 
 Deploy LLMs on HPC clusters via vLLM, Singularity and SLURM.
-Each SLURM job allocates one exclusive node (4x A100 80GB) to serve one model.
+Each SLURM job allocates one exclusive node to serve one model.
 Multiple users and multiple models can run concurrently without conflict.
+
+Cluster is auto-detected from hostname (Gaia A100, LNCC H100).
+See `clusters/*.conf` for per-cluster settings.
 
 ## Requirements
 
@@ -13,33 +16,46 @@ Multiple users and multiple models can run concurrently without conflict.
 ## Quick Start
 
 ```bash
-# Set required environment variable
-export NIM_BASE_DIR="/path/to/shared/dir"
-
 # 1. Pull container image (one-time, shared by all models)
 ./build-nim-images.sh --list                        # see available models
 ./build-nim-images.sh nemotron3-120b                # pull vLLM SIF
 
-# 2. Download model weights (one-time per model)
+# 2. Build utility container (one-time, for model downloads)
+./build-tools-image.sh
+
+# 3. Download model weights from HuggingFace (one-time per model)
 ./download-nim-model.sh nemotron3-120b
 
-# 3. Submit a SLURM job
+# 4. Submit a SLURM job
 ./submit-nim-job.sh nemotron3-120b                  # allocates 1 full node
 
-# 4. Monitor startup
+# 5. Monitor startup
 tail -f $NIM_BASE_DIR/sessions/$USER/nim-<ID>.out
 
-# 5. Run inference (once "vLLM READY" appears in the log)
+# 6. Run inference (once "vLLM READY" appears in the log)
 python scripts/run_inference.py --url http://<node>:8000 "What is RAG?"
 
-# 6. Stop when done
+# 7. Stop when done
 scancel <job_id>
 ```
 
+## Cluster Auto-Detection
+
+The cluster is detected from hostname. No manual `export NIM_BASE_DIR` needed.
+
+| Cluster | GPU | Partition | Account | Time Limit | Base Dir |
+|---------|-----|-----------|---------|------------|----------|
+| Gaia | 4x A100 80GB | gpu | llm-tic | 8h | /gaia/finetune-llm/nims/runtime |
+| LNCC | 4x H100 | petrobr-h100 | lm_manutencao | 24h | /petrobr/lm_manutencao/jpnavarro/runtime |
+
+To override: `export NIM_BASE_DIR="/custom/path"` before running any script.
+To force a cluster: `export CLUSTER_NAME=lncc` on unrecognized hosts.
+
 ## Model Catalog
 
-Models are defined in `models.conf`. To add a new model, append one line — no code changes needed.
-All models share a single vLLM container (`vllm-openai-0.17.0.sif`).
+Models are defined in `models.conf`. To add a new model, append one line -- no
+code changes needed. All models share a single vLLM container
+(`vllm-openai-0.17.0.sif`).
 
 ```bash
 ./build-nim-images.sh --list    # show available models
@@ -95,6 +111,99 @@ python scripts/run_inference.py "Hello"
 python scripts/run_inference.py --url http://gpu-node-01:8000 --list
 ```
 
+## Benchmark
+
+The benchmark sweeps concurrency levels against all active endpoints,
+producing per-model throughput (tok/s) and latency metrics. Output includes
+JSON results, CSV export, and an SVG chart (throughput vs concurrency).
+
+### Running a Benchmark
+
+```bash
+# Auto-discover all active endpoints on the cluster
+python3 scripts/benchmark_models.py --discover
+
+# Or specify endpoints explicitly
+python3 scripts/benchmark_models.py --endpoints gpu-node-01:8000 gpu-node-02:8000
+```
+
+### Concurrency Levels
+
+Default sweep: 1, 2, 5, 10, 50. Override with `--concurrency`:
+
+```bash
+# Quality test (low concurrency, all 50 prompts)
+python3 scripts/benchmark_models.py --discover --concurrency 1,2,5,10,50
+
+# Saturation test (ramp up to 256, fewer prompts for speed)
+python3 scripts/benchmark_models.py --discover \
+    --max-prompts 6 \
+    --concurrency 1,2,4,8,16,32,64,128,256
+```
+
+### Prompt Selection
+
+By default, all 50 prompts from `benchmark_prompts.json` are used.
+Use `--max-prompts N` to select fewer (round-robin across categories).
+When concurrency exceeds the number of prompts, they are recycled so
+every worker always has a request.
+
+```bash
+# Use only 6 prompts (1 per category), good for saturation tests
+python3 scripts/benchmark_models.py --discover --max-prompts 6
+
+# Use all 50 prompts (default), good for quality/variance tests
+python3 scripts/benchmark_models.py --discover
+```
+
+### All Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--discover` | -- | Auto-discover endpoints from active SLURM jobs |
+| `--endpoints HOST:PORT ...` | -- | Explicit endpoint list |
+| `--prompts FILE` | benchmark_prompts.json | Prompts JSON file |
+| `--max-prompts N` | all | Round-robin select N prompts across categories |
+| `--concurrency L1,L2,...` | 1,2,5,10,50 | Concurrency levels to sweep |
+| `--max-tokens N` | 8192 | Max tokens per response |
+| `--timeout N` | 300 | Per-request timeout (seconds) |
+| `--temperature F` | 0 | Sampling temperature |
+| `--no-warmup` | off | Skip 3 warm-up requests per model |
+| `--output-json FILE` | auto | Override JSON output path |
+| `--output-csv FILE` | none | Also export results as CSV |
+
+### Output
+
+Results are saved to `out_benchmark/` with timestamped filenames:
+
+```
+out_benchmark/
+├── benchmark_<host>_<timestamp>.json    # full results with per-request data
+├── benchmark_<host>_<timestamp>.csv     # summary table (if --output-csv)
+└── benchmark_<host>_<timestamp>.svg     # throughput vs concurrency chart
+```
+
+### Typical Workflows
+
+```bash
+# 1. Start models (one job per model)
+./submit-nim-job.sh nemotron3-120b
+./submit-nim-job.sh llama31-70b
+
+# 2. Wait for "vLLM READY" in both logs
+./list-nims.sh            # check status: "ready" = good to go
+
+# 3. Run quality benchmark (default: 50 prompts, low concurrency)
+python3 scripts/benchmark_models.py --discover
+
+# 4. Run saturation benchmark (6 prompts, high concurrency)
+python3 scripts/benchmark_models.py --discover \
+    --max-prompts 6 \
+    --concurrency 1,2,4,8,16,32,64,128,256
+
+# 5. Results in out_benchmark/ -- open the SVG chart
+```
+
 ## Monitoring
 
 ```bash
@@ -103,6 +212,9 @@ python scripts/run_inference.py --url http://gpu-node-01:8000 --list
 
 # List only your endpoints
 ./list-nims.sh --mine
+
+# Auto-refresh every 5s
+./list-nims.sh --watch
 
 # Watch job output
 tail -f $NIM_BASE_DIR/sessions/$USER/nim-<ID>.out
@@ -114,20 +226,25 @@ echo $ENDPOINT
 
 ## Troubleshooting
 
-**vLLM dies during startup** — Check the log:
+**vLLM dies during startup** -- Check the log:
 ```bash
 tail -50 $NIM_BASE_DIR/sessions/$USER/nim-<ID>.out
 ```
 Common causes: insufficient GPU memory, missing model weights
 (`./download-nim-model.sh <key>`).
 
-**"SIF not found"** — Build the image first:
+**"SIF not found"** -- Build the image first:
 ```bash
 ./build-nim-images.sh <model-key>
 ```
 
-**"cannot connect"** — The model is still loading. First load can take
+**"cannot connect"** -- The model is still loading. First load can take
 10-60+ minutes while model weights are loaded. Monitor with `tail -f`.
 
-**Port conflicts** — Each job gets an exclusive node, so port 8000 (default)
+**Port conflicts** -- Each job gets an exclusive node, so port 8000 (default)
 is always available. No port configuration needed.
+
+**Unknown cluster** -- On unrecognized hosts, set the cluster manually:
+```bash
+export CLUSTER_NAME=gaia    # or lncc
+```
