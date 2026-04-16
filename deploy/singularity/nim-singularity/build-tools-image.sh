@@ -5,7 +5,6 @@
 # No custom build needed — direct pull from Docker Hub.
 #
 # Usage:
-#   export NIM_BASE_DIR="/path/to/shared/dir"
 #   ./build-tools-image.sh             # pull (skip if exists)
 #   ./build-tools-image.sh --force     # re-pull even if exists
 
@@ -13,11 +12,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ -z "$NIM_BASE_DIR" ]; then
-    echo "ERROR: NIM_BASE_DIR is not set."
-    echo "  export NIM_BASE_DIR=\"/path/to/shared/dir\""
-    exit 1
-fi
+[ -z "$NIM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
 
 source "$SCRIPT_DIR/nim-config.sh"
 

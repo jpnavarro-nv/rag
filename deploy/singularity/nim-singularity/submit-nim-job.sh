@@ -1,13 +1,12 @@
 #!/bin/bash
 # Submit a SLURM job that starts a vLLM LLM server on an exclusive compute node.
 #
-# Each submission allocates 1 full node (4x A100 80GB) for 1 model.
+# Cluster is auto-detected from hostname (see clusters/*.conf).
+# Each submission allocates 1 full node with all GPUs for 1 model.
 # Multiple users can submit multiple jobs concurrently — even the same model.
 # Stop with: scancel <job_id>
 #
 # Usage:
-#   export NIM_BASE_DIR="/path/to/shared/dir"
-#
 #   ./submit-nim-job.sh nemotron3-120b                # submit with defaults
 #   ./submit-nim-job.sh qwen3-122b --time=48:00:00    # override SLURM time
 #   ./submit-nim-job.sh --list                         # list available models
@@ -24,7 +23,7 @@ show_usage() {
     echo "Usage: ./submit-nim-job.sh [OPTIONS] MODEL [SBATCH_OPTIONS...]"
     echo ""
     echo "Submit a SLURM job that starts a vLLM LLM server on an exclusive node."
-    echo "Each job allocates 1 node with 4x A100 80GB GPUs."
+    echo "Each job allocates 1 node with all GPUs (cluster auto-detected)."
     echo ""
     echo "Options:"
     echo "  --list    List available models (from models.conf)"
@@ -75,19 +74,9 @@ if [ -z "$MODEL_KEY" ]; then
 fi
 
 # ==============================================================================
-# Validate required environment variables
+# Auto-detect cluster (sets NIM_BASE_DIR, SLURM_PARTITION, etc.)
 # ==============================================================================
-if [ -z "$NIM_BASE_DIR" ]; then
-    echo "ERROR: NIM_BASE_DIR is not set."
-    echo ""
-    echo "Set it to the shared directory for LLM data:"
-    echo "  export NIM_BASE_DIR=\"/path/to/shared/dir\""
-    exit 1
-fi
-
-# ==============================================================================
-# Source configuration
-# ==============================================================================
+source "$SCRIPT_DIR/cluster-config.sh"
 source "$SCRIPT_DIR/nim-config.sh"
 
 # ==============================================================================
@@ -126,11 +115,11 @@ export NIM_SCRIPT_DIR="$SCRIPT_DIR"
 JOB_ID=$(sbatch \
     --parsable \
     --job-name="nim-${MODEL_KEY}" \
-    --partition=gpu \
-    --account=llm-tic \
+    --partition="$SLURM_PARTITION" \
+    --account="$SLURM_ACCOUNT" \
     --nodes=1 \
-    --gres=gpu:4 \
-    --time=08:00:00 \
+    --gres="gpu:${SLURM_GPUS_PER_NODE}" \
+    --time="$SLURM_TIME" \
     --output="$NIM_SESSIONS_DIR/$USER/nim-%j.out" \
     --export=ALL \
     "${SBATCH_EXTRA[@]}" \

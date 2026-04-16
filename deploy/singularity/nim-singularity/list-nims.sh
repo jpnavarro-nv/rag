@@ -15,9 +15,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ==============================================================================
-# Source shared paths (needs NIM_BASE_DIR)
+# Auto-detect cluster if NIM_BASE_DIR not set
 # ==============================================================================
-export NIM_BASE_DIR="${NIM_BASE_DIR:?NIM_BASE_DIR must be set}"
+[ -z "$NIM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
 source "$SCRIPT_DIR/nim-dirs.sh"
 
 # ==============================================================================

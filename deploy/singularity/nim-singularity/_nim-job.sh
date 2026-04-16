@@ -1,9 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=nim-llm
-#SBATCH --partition=gpu
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:4
-#SBATCH --time=08:00:00
 # -----------------------------------------------------------------------
 # LLM SLURM Job Script (vLLM backend)
 #

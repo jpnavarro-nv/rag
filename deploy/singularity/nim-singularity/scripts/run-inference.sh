@@ -2,14 +2,13 @@
 # Run inference via nim-tools.sif. All arguments forwarded to run_inference.py.
 #
 # Usage:
-#   export NIM_BASE_DIR="/path/to/shared/dir"
 #   ./scripts/run-inference.sh --url http://node:8000 "Your question"
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-[ -z "$NIM_BASE_DIR" ] && { echo "ERROR: NIM_BASE_DIR is not set."; exit 1; }
+[ -z "$NIM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
 
 export NGC_API_KEY="${NGC_API_KEY:-placeholder}"
 source "$SCRIPT_DIR/nim-config.sh"

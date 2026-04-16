@@ -78,8 +78,9 @@ if [ ${#MODELS[@]} -eq 0 ]; then
 fi
 
 # ==============================================================================
-# Source configuration (validates NIM_BASE_DIR)
+# Source configuration (auto-detect cluster if NIM_BASE_DIR not set)
 # ==============================================================================
+[ -z "$NIM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
 source "$SCRIPT_DIR/nim-config.sh"
 
 # Resolve --all to actual model keys
