@@ -14,13 +14,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # HuggingFace model mapping (model_key | hf_repo)
 # ==============================================================================
 HF_MODELS="
-nemotron3-120b      | nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16
-nemotron3-120b-h100 | nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16
-gpt-oss-120b        | openai/gpt-oss-120b
-qwen3-122b          | Qwen/Qwen3.5-122B-A10B
-qwen3-122b-h100     | Qwen/Qwen3.5-122B-A10B
-llama31-70b         | meta-llama/Llama-3.1-70B-Instruct
-llama31-70b-h100    | meta-llama/Llama-3.1-70B-Instruct
+nemotron3-120b | nvidia/NVIDIA-Nemotron-3-Super-120B-A12B-BF16
+gpt-oss-120b   | openai/gpt-oss-120b
+qwen3-122b     | Qwen/Qwen3.5-122B-A10B
+llama31-70b    | meta-llama/Llama-3.1-70B-Instruct
 "
 
 resolve_hf_model() {
