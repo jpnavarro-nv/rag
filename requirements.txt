@@ -1,2 +1,3 @@
-jupyterlab>3.6.8
-aiohttp
+huggingface-hub[cli]
+requests
+openai

@@ -37,7 +37,7 @@ context_dev.md
 
 # Debug output dumps and benchmark results (local only)
 outputs_debug/
-deploy/singularity/llm-singularity/output/
+output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
