@@ -37,7 +37,7 @@ context_dev.md
 
 # Debug output dumps and benchmark results (local only)
 outputs_debug/
-deploy/singularity/nim-singularity/output/
+deploy/singularity/llm-singularity/output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -87,7 +87,3 @@ coverage/
 cover/
 *.log
 # Workbench Project Layout
-# Temporary legacy pull scripts (deprecated)
-deploy/singularity/scripts/pull-minimal-images.sh
-deploy/singularity/scripts/pull-all-images.sh
-
