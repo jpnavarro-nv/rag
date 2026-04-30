@@ -1,258 +1,149 @@
-# LLM Standalone -- Singularity + SLURM
+# LLM Standalone — Singularity + SLURM
 
-Stand up fast inference servers on HPC infrastructure, with Singularity as
-the container runtime and SLURM as the scheduler. Each SLURM job allocates
-one exclusive node to serve one model; multiple users and multiple models
-run concurrently without conflict.
+Stand up fast inference servers on HPC infrastructure, with Singularity as the
+container runtime and SLURM as the scheduler. Each SLURM job serves one model
+on one exclusive node; multiple users and multiple models run concurrently
+without conflict.
 
 Backends:
 
-- **vLLM** (today) -- accelerated, OpenAI-compatible serving from a single
+- **vLLM** (today) — accelerated, OpenAI-compatible serving from a single
   pinned vLLM SIF (`vllm-openai-0.17.0.sif`) shared across all models.
-- **NVIDIA NIM** (planned) -- support for NIM containers from NGC alongside
-  vLLM, selectable per model via `models.conf`. Not yet implemented.
+- **NVIDIA NIM** (planned) — selectable per model via `models.conf`.
 
-Cluster is auto-detected from hostname (Gaia A100, LNCC H100).
-See `clusters/*.conf` for per-cluster settings.
+Cluster is auto-detected from hostname (Gaia A100, LNCC H100). See
+`clusters/*.conf` for per-cluster settings.
 
 ## Requirements
 
-- Singularity
-- SLURM
-- `llm-tools.sif` utility container (provides Python, huggingface-cli)
+- Singularity, SLURM
+- `llm-tools.sif` utility container (built once via `./build-tools-image.sh`)
 
 ## Quick Start
 
 ```bash
-# 1. Pull container image (one-time, shared by all models)
-./build-llm-images.sh --list                        # see available models
-./build-llm-images.sh nemotron3-120b                # pull vLLM SIF
+# One-time setup per cluster
+./build-tools-image.sh                          # utility container
+./build-llm-images.sh nemotron3-120b            # vLLM SIF
+./download-llm-model.sh nemotron3-120b          # HF weights
 
-# 2. Build utility container (one-time, for model downloads)
-./build-tools-image.sh
+# Submit and use
+./submit-llm-job.sh nemotron3-120b              # 1 job = 1 node
+./list-llms.sh                                  # find your endpoint
+python scripts/run_inference.py --url http://<node>:8000 "Hello"
 
-# 3. Download model weights from HuggingFace (one-time per model)
-./download-llm-model.sh nemotron3-120b
-
-# 4. Submit a SLURM job
-./submit-llm-job.sh nemotron3-120b                  # allocates 1 full node
-
-# 5. Monitor startup
-tail -f $LLM_BASE_DIR/sessions/$USER/llm-<ID>.out
-
-# 6. Run inference (once "vLLM READY" appears in the log)
-python scripts/run_inference.py --url http://<node>:8000 "What is RAG?"
-
-# 7. Stop when done
+# Stop
 scancel <job_id>
 ```
 
+`./build-llm-images.sh --list` shows available models.
+
 ## Cluster Auto-Detection
 
-The cluster is detected from hostname. No manual `export LLM_BASE_DIR` needed.
+| Cluster | GPU | Partition | Account | Time | Base Dir |
+|---|---|---|---|---|---|
+| Gaia | 4× A100 80GB | gpu | llm-tic | 8h | /gaia/finetune-llm/nims/runtime |
+| LNCC | 4× H100 | petrobr-h100 | lm_manutencao | 24h | /petrobr/lm_manutencao/jpnavarro/runtime |
 
-| Cluster | GPU | Partition | Account | Time Limit | Base Dir |
-|---------|-----|-----------|---------|------------|----------|
-| Gaia | 4x A100 80GB | gpu | llm-tic | 8h | /gaia/finetune-llm/nims/runtime |
-| LNCC | 4x H100 | petrobr-h100 | lm_manutencao | 24h | /petrobr/lm_manutencao/jpnavarro/runtime |
+Override base dir with `LLM_BASE_DIR=...`. Force cluster on unrecognized
+hosts with `CLUSTER_NAME=lncc` (or `gaia`).
 
-To override: `export LLM_BASE_DIR="/custom/path"` before running any script.
-To force a cluster: `export CLUSTER_NAME=lncc` on unrecognized hosts.
+## Models
 
-## Model Catalog
-
-Models are defined in `models.conf`. To add a new model, append one line -- no
-code changes needed. All models share a single vLLM container
-(`vllm-openai-0.17.0.sif`).
+Defined in `models.conf` — one line per model, no code change to add. All
+vLLM models share a single SIF.
 
 ```bash
-./build-llm-images.sh --list    # show available models
-./submit-llm-job.sh --list      # same list
+./build-llm-images.sh --list      # available models
+./submit-llm-job.sh --list        # same list
 ```
 
-## Multi-User Workflow
-
-All users share the same `LLM_BASE_DIR`. Container images and model weights
-are shared (downloaded once). Each job gets its own isolated session directory:
+## Shared Storage Layout
 
 ```
 $LLM_BASE_DIR/
-├── containers/images/          # shared SIF files (read-only at runtime)
-├── models/<key>-hf/            # shared HuggingFace model weights
-└── sessions/
-    ├── alice/job_12345/        # Alice's job
-    └── bob/job_12346/          # Bob's job (same or different model)
+├── containers/images/             # SIFs (read-only at runtime)
+├── models/<key>-hf/               # HF weights (downloaded once, shared)
+└── sessions/<user>/job_<id>/
+    ├── llm.env                    # sourceable: NODE, PORT, ENDPOINT, ...
+    ├── llm.log                    # vLLM stdout/stderr
+    └── llm.pid
 ```
 
 ## Commands
 
-| Script | Description |
-|--------|-------------|
-| `build-llm-images.sh` | Pull vLLM SIF image (`--list`, `--all`, `--force`) |
-| `build-tools-image.sh` | Pull utility container for model downloads |
-| `download-llm-model.sh` | Download HuggingFace model weights (`--list`) |
-| `submit-llm-job.sh` | Submit a SLURM job to serve a model |
-| `list-llms.sh` | List active LLM endpoints across the cluster |
-| `scripts/run_inference.py` | Streaming inference client (`--url`, `--list`) |
-| `scripts/benchmark_models.py` | Benchmark with concurrency sweep (`--discover`) |
+| Script | Purpose |
+|---|---|
+| `build-llm-images.sh` | Pull vLLM SIF (`--list`, `--all`, `--force`) |
+| `build-tools-image.sh` | Pull utility container |
+| `download-llm-model.sh` | Pre-download HF weights (`--list`) |
+| `submit-llm-job.sh` | Submit SLURM job (extra args forwarded to `sbatch`) |
+| `list-llms.sh` | List active endpoints (`--mine`, `--watch[=N]`) |
+| `scripts/run_inference.py` | Streaming OpenAI-compatible client |
+| `scripts/benchmark_models.py` | Concurrency-sweep benchmark (`--discover`) |
 
 ### SLURM Overrides
 
 Extra arguments to `submit-llm-job.sh` are forwarded to `sbatch`:
 
 ```bash
-./submit-llm-job.sh qwen3-122b --time=48:00:00      # longer time limit
-./submit-llm-job.sh nemotron3-120b --partition=debug  # different partition
+./submit-llm-job.sh qwen3-122b --time=48:00:00
+./submit-llm-job.sh nemotron3-120b --partition=debug
 ```
 
 ### Inference Client
 
 ```bash
-# Explicit URL
-python scripts/run_inference.py --url http://gpu-node-01:8000 "Hello"
-
-# Or set via environment variable
-export LLM_URL="http://gpu-node-01:8000"
-python scripts/run_inference.py "Hello"
-
-# List models on the endpoint
-python scripts/run_inference.py --url http://gpu-node-01:8000 --list
+python scripts/run_inference.py --url http://<node>:8000 "Hello"
+export LLM_URL="http://<node>:8000" && python scripts/run_inference.py "Hello"
+python scripts/run_inference.py --url http://<node>:8000 --list  # models on endpoint
 ```
 
 ## Benchmark
 
-The benchmark sweeps concurrency levels against all active endpoints,
-producing per-model throughput (tok/s) and latency metrics. Output includes
-JSON results, CSV export, and an SVG chart (throughput vs concurrency).
-
-### Running a Benchmark
+Sweeps concurrency against active endpoints. Emits JSON, optional CSV, and
+an SVG chart (throughput vs concurrency).
 
 ```bash
-# Auto-discover all active endpoints on the cluster
+# Quality test (50 prompts, default concurrency 1,2,5,10,50)
 python3 scripts/benchmark_models.py --discover
 
-# Or specify endpoints explicitly
-python3 scripts/benchmark_models.py --endpoints gpu-node-01:8000 gpu-node-02:8000
-```
-
-### Concurrency Levels
-
-Default sweep: 1, 2, 5, 10, 50. Override with `--concurrency`:
-
-```bash
-# Quality test (low concurrency, all 50 prompts)
-python3 scripts/benchmark_models.py --discover --concurrency 1,2,5,10,50
-
-# Saturation test (ramp up to 256, fewer prompts for speed)
-python3 scripts/benchmark_models.py --discover \
-    --max-prompts 6 \
+# Saturation test (6 prompts, ramp concurrency)
+python3 scripts/benchmark_models.py --discover --max-prompts 6 \
     --concurrency 1,2,4,8,16,32,64,128,256
+
+# Explicit endpoints instead of --discover
+python3 scripts/benchmark_models.py --endpoints host1:8000 host2:8000
 ```
 
-### Prompt Selection
-
-By default, all 50 prompts from `benchmark_prompts.json` are used.
-Use `--max-prompts N` to select fewer (round-robin across categories).
-When concurrency exceeds the number of prompts, they are recycled so
-every worker always has a request.
-
-```bash
-# Use only 6 prompts (1 per category), good for saturation tests
-python3 scripts/benchmark_models.py --discover --max-prompts 6
-
-# Use all 50 prompts (default), good for quality/variance tests
-python3 scripts/benchmark_models.py --discover
-```
-
-### All Options
+Output: `out_benchmark/benchmark_<host>_<timestamp>.{json,csv,svg}`.
 
 | Option | Default | Description |
-|--------|---------|-------------|
-| `--discover` | -- | Auto-discover endpoints from active SLURM jobs |
-| `--endpoints HOST:PORT ...` | -- | Explicit endpoint list |
-| `--prompts FILE` | benchmark_prompts.json | Prompts JSON file |
-| `--max-prompts N` | all | Round-robin select N prompts across categories |
-| `--concurrency L1,L2,...` | 1,2,5,10,50 | Concurrency levels to sweep |
-| `--max-tokens N` | 8192 | Max tokens per response |
-| `--timeout N` | 300 | Per-request timeout (seconds) |
-| `--temperature F` | 0 | Sampling temperature |
+|---|---|---|
+| `--discover` | — | Auto-discover from active SLURM jobs |
+| `--endpoints` | — | Explicit `HOST:PORT` list |
+| `--max-prompts N` | all | Round-robin select N (recycled if concurrency > N) |
+| `--concurrency` | 1,2,5,10,50 | Sweep levels |
+| `--max-tokens` | 8192 | Per response |
+| `--timeout` | 300 | Per request (seconds) |
+| `--temperature` | 0 | Sampling |
 | `--no-warmup` | off | Skip 3 warm-up requests per model |
-| `--output-json FILE` | auto | Override JSON output path |
-| `--output-csv FILE` | none | Also export results as CSV |
-
-### Output
-
-Results are saved to `out_benchmark/` with timestamped filenames:
-
-```
-out_benchmark/
-├── benchmark_<host>_<timestamp>.json    # full results with per-request data
-├── benchmark_<host>_<timestamp>.csv     # summary table (if --output-csv)
-└── benchmark_<host>_<timestamp>.svg     # throughput vs concurrency chart
-```
-
-### Typical Workflows
-
-```bash
-# 1. Start models (one job per model)
-./submit-llm-job.sh nemotron3-120b
-./submit-llm-job.sh llama31-70b
-
-# 2. Wait for "vLLM READY" in both logs
-./list-llms.sh            # check status: "ready" = good to go
-
-# 3. Run quality benchmark (default: 50 prompts, low concurrency)
-python3 scripts/benchmark_models.py --discover
-
-# 4. Run saturation benchmark (6 prompts, high concurrency)
-python3 scripts/benchmark_models.py --discover \
-    --max-prompts 6 \
-    --concurrency 1,2,4,8,16,32,64,128,256
-
-# 5. Results in out_benchmark/ -- open the SVG chart
-```
+| `--output-csv` | — | Also export CSV |
 
 ## Monitoring
 
 ```bash
-# List all active endpoints
-./list-llms.sh
+./list-llms.sh                                          # all users
+./list-llms.sh --mine                                   # only $USER
+./list-llms.sh --watch=10                               # auto-refresh
 
-# List only your endpoints
-./list-llms.sh --mine
-
-# Auto-refresh every 5s
-./list-llms.sh --watch
-
-# Watch job output
-tail -f $LLM_BASE_DIR/sessions/$USER/llm-<ID>.out
-
-# Job metadata (sourceable)
-source $LLM_BASE_DIR/sessions/$USER/job_<ID>/llm.env
-echo $ENDPOINT
+tail -f $LLM_BASE_DIR/sessions/$USER/llm-<job_id>.out   # job stdout
+source $LLM_BASE_DIR/sessions/$USER/job_<id>/llm.env    # endpoint vars
 ```
 
 ## Troubleshooting
 
-**vLLM dies during startup** -- Check the log:
-```bash
-tail -50 $LLM_BASE_DIR/sessions/$USER/llm-<ID>.out
-```
-Common causes: insufficient GPU memory, missing model weights
-(`./download-llm-model.sh <key>`).
-
-**"SIF not found"** -- Build the image first:
-```bash
-./build-llm-images.sh <model-key>
-```
-
-**"cannot connect"** -- The model is still loading. First load can take
-10-60+ minutes while model weights are loaded. Monitor with `tail -f`.
-
-**Port conflicts** -- Each job gets an exclusive node, so port 8000 (default)
-is always available. No port configuration needed.
-
-**Unknown cluster** -- On unrecognized hosts, set the cluster manually:
-```bash
-export CLUSTER_NAME=gaia    # or lncc
-```
+- **vLLM dies during startup** → `tail -50 $LLM_BASE_DIR/sessions/$USER/llm-<id>.out`. Common: missing weights (`./download-llm-model.sh <key>`), insufficient GPU memory.
+- **"SIF not found"** → `./build-llm-images.sh <key>`.
+- **"cannot connect"** → still loading; first model load can take 10–60+ min.
+- **Unknown cluster** → `export CLUSTER_NAME=gaia` (or `lncc`).
