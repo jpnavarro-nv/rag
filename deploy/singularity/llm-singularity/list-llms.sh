@@ -1,24 +1,24 @@
 #!/bin/bash
 # List active LLM jobs across the cluster.
 #
-# Scans session directories for nim.env metadata files and cross-references
+# Scans session directories for llm.env metadata files and cross-references
 # with SLURM to show only running jobs. Works for all users by default.
 #
 # Usage:
-#   ./list-nims.sh              # show all active LLMs
-#   ./list-nims.sh --mine       # show only your LLMs
-#   ./list-nims.sh --watch      # auto-refresh every 5s (Ctrl+C to stop)
-#   ./list-nims.sh --watch=10   # auto-refresh every 10s
+#   ./list-llms.sh              # show all active LLMs
+#   ./list-llms.sh --mine       # show only your LLMs
+#   ./list-llms.sh --watch      # auto-refresh every 5s (Ctrl+C to stop)
+#   ./list-llms.sh --watch=10   # auto-refresh every 10s
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # ==============================================================================
-# Auto-detect cluster if NIM_BASE_DIR not set
+# Auto-detect cluster if LLM_BASE_DIR not set
 # ==============================================================================
-[ -z "$NIM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
-source "$SCRIPT_DIR/nim-dirs.sh"
+[ -z "$LLM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
+source "$SCRIPT_DIR/llm-dirs.sh"
 
 # ==============================================================================
 # Parse arguments
@@ -38,7 +38,7 @@ for arg in "$@"; do
             WATCH_INTERVAL="${arg#*=}"
             ;;
         --help|-h)
-            echo "Usage: ./list-nims.sh [OPTIONS]"
+            echo "Usage: ./list-llms.sh [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --mine, -m        Show only your LLMs (filter by \$USER)"
@@ -49,7 +49,7 @@ for arg in "$@"; do
             ;;
         *)
             echo "ERROR: Unknown option '$arg'."
-            echo "Run './list-nims.sh --help' for usage."
+            echo "Run './list-llms.sh --help' for usage."
             exit 1
             ;;
     esac
@@ -58,7 +58,7 @@ done
 # ==============================================================================
 # Main listing logic (called once or in a loop)
 # ==============================================================================
-list_nims() {
+list_llms() {
     # Collect active SLURM job IDs (fast lookup set)
     declare -A ACTIVE_JOBS
     while read -r jid; do
@@ -73,11 +73,11 @@ list_nims() {
     printf "%-10s %-12s %-18s %-8s %-16s %-6s %-8s %s\n" \
         "------" "----" "-----" "-------" "----" "----" "------" "--------"
 
-    # Scan session directories for nim.env files
-    for env_file in "$NIM_SESSIONS_DIR"/*/job_*/nim.env; do
+    # Scan session directories for llm.env files
+    for env_file in "$LLM_SESSIONS_DIR"/*/job_*/llm.env; do
         [ -f "$env_file" ] || continue
 
-        # Extract job ID from path: .../sessions/<user>/job_<id>/nim.env
+        # Extract job ID from path: .../sessions/<user>/job_<id>/llm.env
         local job_dir job_id session_user
         job_dir="$(dirname "$env_file")"
         job_id="${job_dir##*job_}"
@@ -91,7 +91,7 @@ list_nims() {
             continue
         fi
 
-        # Parse nim.env for metadata
+        # Parse llm.env for metadata
         local local_model="" local_node="" local_port="" local_endpoint="" local_backend=""
         while IFS='=' read -r key value; do
             value="${value%\"}" ; value="${value#\"}"
@@ -128,7 +128,7 @@ list_nims() {
         else
             echo "No active LLMs found."
         fi
-        echo "Submit a job with: ./submit-nim-job.sh <model-key>"
+        echo "Submit a job with: ./submit-llm-job.sh <model-key>"
     fi
 }
 
@@ -141,9 +141,9 @@ if [ "$WATCH_INTERVAL" -gt 0 ] 2>/dev/null; then
         clear
         echo "=== LLM Status (every ${WATCH_INTERVAL}s — Ctrl+C to stop) ==="
         echo ""
-        list_nims
+        list_llms
         sleep "$WATCH_INTERVAL"
     done
 else
-    list_nims
+    list_llms
 fi

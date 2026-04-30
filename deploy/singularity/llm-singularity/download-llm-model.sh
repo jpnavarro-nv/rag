@@ -1,10 +1,10 @@
 #!/bin/bash
-# Pre-download model weights from HuggingFace via nim-tools.sif.
+# Pre-download model weights from HuggingFace via llm-tools.sif.
 #
 # Usage:
-#   export NIM_BASE_DIR="/path/to/shared/dir"
-#   ./download-nim-model.sh nemotron3-120b     # download model weights
-#   ./download-nim-model.sh --list             # list available models
+#   export LLM_BASE_DIR="/path/to/shared/dir"
+#   ./download-llm-model.sh nemotron3-120b     # download model weights
+#   ./download-llm-model.sh --list             # list available models
 
 set -e
 
@@ -55,7 +55,7 @@ MODEL_KEY=""
 
 for arg in "$@"; do
     case "$arg" in
-        --help|-h) echo "Usage: ./download-nim-model.sh [--list|--help] MODEL"; exit 0 ;;
+        --help|-h) echo "Usage: ./download-llm-model.sh [--list|--help] MODEL"; exit 0 ;;
         --list|-l) list_hf_models; exit 0 ;;
         --*)       echo "Unknown option: $arg"; exit 1 ;;
         *)         MODEL_KEY="$arg" ;;
@@ -63,16 +63,16 @@ for arg in "$@"; do
 done
 
 [ -z "$MODEL_KEY" ] && { echo "ERROR: No model specified. Use --list to see models."; exit 1; }
-[ -z "$NIM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
+[ -z "$LLM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
 
 resolve_hf_model "$MODEL_KEY" || { echo "ERROR: Unknown model '$MODEL_KEY'."; list_hf_models; exit 1; }
 
-source "$SCRIPT_DIR/nim-config.sh"
+source "$SCRIPT_DIR/llm-config.sh"
 
-TOOLS_SIF="$NIM_IMAGES_DIR/nim-tools.sif"
-[ ! -f "$TOOLS_SIF" ] && { echo "ERROR: nim-tools.sif not found. Run ./build-tools-image.sh first."; exit 1; }
+TOOLS_SIF="$LLM_IMAGES_DIR/llm-tools.sif"
+[ ! -f "$TOOLS_SIF" ] && { echo "ERROR: llm-tools.sif not found. Run ./build-tools-image.sh first."; exit 1; }
 
-DOWNLOAD_DIR="$NIM_MODELS_DIR/${MODEL_KEY}-hf"
+DOWNLOAD_DIR="$LLM_MODELS_DIR/${MODEL_KEY}-hf"
 mkdir -p "$DOWNLOAD_DIR"
 
 echo "=== Model Download (HuggingFace) ==="
@@ -82,10 +82,10 @@ echo "  Target: $DOWNLOAD_DIR"
 echo ""
 
 singularity exec \
-    --bind "$NIM_BASE_DIR:$NIM_BASE_DIR" \
+    --bind "$LLM_BASE_DIR:$LLM_BASE_DIR" \
     "$TOOLS_SIF" \
     python3 -c "from huggingface_hub import snapshot_download; snapshot_download('$HF_REPO', local_dir='$DOWNLOAD_DIR')"
 
 echo ""
 echo "Done: $DOWNLOAD_DIR ($(du -sh "$DOWNLOAD_DIR" | cut -f1))"
-echo "Submit: ./submit-nim-job.sh $MODEL_KEY"
+echo "Submit: ./submit-llm-job.sh $MODEL_KEY"

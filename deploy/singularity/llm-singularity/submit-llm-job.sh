@@ -7,10 +7,10 @@
 # Stop with: scancel <job_id>
 #
 # Usage:
-#   ./submit-nim-job.sh nemotron3-120b                # submit with defaults
-#   ./submit-nim-job.sh qwen3-122b --time=48:00:00    # override SLURM time
-#   ./submit-nim-job.sh --list                         # list available models
-#   ./submit-nim-job.sh --help                         # usage help
+#   ./submit-llm-job.sh nemotron3-120b                # submit with defaults
+#   ./submit-llm-job.sh qwen3-122b --time=48:00:00    # override SLURM time
+#   ./submit-llm-job.sh --list                         # list available models
+#   ./submit-llm-job.sh --help                         # usage help
 
 set -e
 
@@ -20,7 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Usage
 # ==============================================================================
 show_usage() {
-    echo "Usage: ./submit-nim-job.sh [OPTIONS] MODEL [SBATCH_OPTIONS...]"
+    echo "Usage: ./submit-llm-job.sh [OPTIONS] MODEL [SBATCH_OPTIONS...]"
     echo ""
     echo "Submit a SLURM job that starts a vLLM LLM server on an exclusive node."
     echo "Each job allocates 1 node with all GPUs (cluster auto-detected)."
@@ -31,7 +31,7 @@ show_usage() {
     echo ""
     echo "Any extra arguments are forwarded to sbatch (e.g. --time=48:00:00)."
     echo ""
-    echo "Run './submit-nim-job.sh --list' to see available models."
+    echo "Run './submit-llm-job.sh --list' to see available models."
 }
 
 # ==============================================================================
@@ -47,10 +47,10 @@ for arg in "$@"; do
             exit 0
             ;;
         --list|-l)
-            export NIM_BASE_DIR="${NIM_BASE_DIR:-/tmp}"
-            source "$SCRIPT_DIR/nim-config.sh"
+            export LLM_BASE_DIR="${LLM_BASE_DIR:-/tmp}"
+            source "$SCRIPT_DIR/llm-config.sh"
             list_models
-            echo "Usage: ./submit-nim-job.sh MODEL [SBATCH_OPTIONS...]"
+            echo "Usage: ./submit-llm-job.sh MODEL [SBATCH_OPTIONS...]"
             exit 0
             ;;
         --*)
@@ -74,39 +74,39 @@ if [ -z "$MODEL_KEY" ]; then
 fi
 
 # ==============================================================================
-# Auto-detect cluster (sets NIM_BASE_DIR, SLURM_PARTITION, etc.)
+# Auto-detect cluster (sets LLM_BASE_DIR, SLURM_PARTITION, etc.)
 # ==============================================================================
 source "$SCRIPT_DIR/cluster-config.sh"
-source "$SCRIPT_DIR/nim-config.sh"
+source "$SCRIPT_DIR/llm-config.sh"
 
 # ==============================================================================
 # Resolve model and verify SIF exists
 # ==============================================================================
 resolve_model "$MODEL_KEY"
 
-if [ ! -f "$NIM_IMAGES_DIR/$SIF_NAME" ]; then
-    echo "ERROR: SIF not found: $NIM_IMAGES_DIR/$SIF_NAME"
+if [ ! -f "$LLM_IMAGES_DIR/$SIF_NAME" ]; then
+    echo "ERROR: SIF not found: $LLM_IMAGES_DIR/$SIF_NAME"
     echo ""
-    echo "Run './build-nim-images.sh $MODEL_KEY' first."
+    echo "Run './build-llm-images.sh $MODEL_KEY' first."
     exit 1
 fi
 
 # ==============================================================================
 # Ensure shared directories exist
 # ==============================================================================
-mkdir -p "$NIM_SESSIONS_DIR/$USER"
+mkdir -p "$LLM_SESSIONS_DIR/$USER"
 
 # ==============================================================================
 # Submit SLURM job
 # ==============================================================================
 echo "Submitting vLLM job: $MODEL_KEY ($MODEL_DESC)"
-echo "  SIF:   $NIM_IMAGES_DIR/$SIF_NAME"
+echo "  SIF:   $LLM_IMAGES_DIR/$SIF_NAME"
 echo "  Port:  $LLM_PORT"
 echo ""
 
 # Export the real script directory so the job script (which SLURM copies to
-# /var/spool/slurmd/) can find nim-config.sh and other files on shared storage.
-export NIM_SCRIPT_DIR="$SCRIPT_DIR"
+# /var/spool/slurmd/) can find llm-config.sh and other files on shared storage.
+export LLM_SCRIPT_DIR="$SCRIPT_DIR"
 
 # The --output path uses %j which SLURM expands to the job ID.
 # We write to a flat path in the user dir (which exists) because the per-job
@@ -114,24 +114,24 @@ export NIM_SCRIPT_DIR="$SCRIPT_DIR"
 # The job script symlinks slurm.out into the per-job directory.
 JOB_ID=$(sbatch \
     --parsable \
-    --job-name="nim-${MODEL_KEY}" \
+    --job-name="llm-${MODEL_KEY}" \
     --partition="$SLURM_PARTITION" \
     --account="$SLURM_ACCOUNT" \
     --nodes=1 \
     --gres="gpu:${SLURM_GPUS_PER_NODE}" \
     --time="$SLURM_TIME" \
-    --output="$NIM_SESSIONS_DIR/$USER/nim-%j.out" \
+    --output="$LLM_SESSIONS_DIR/$USER/llm-%j.out" \
     --export=ALL \
     "${SBATCH_EXTRA[@]}" \
-    "$SCRIPT_DIR/_nim-job.sh" "$MODEL_KEY")
+    "$SCRIPT_DIR/_llm-job.sh" "$MODEL_KEY")
 
 echo "Submitted batch job $JOB_ID"
 echo ""
 echo "Monitor:"
-echo "  tail -f $NIM_SESSIONS_DIR/$USER/nim-${JOB_ID}.out"
+echo "  tail -f $LLM_SESSIONS_DIR/$USER/llm-${JOB_ID}.out"
 echo ""
 echo "Stop:"
 echo "  scancel $JOB_ID"
 echo ""
-echo "List active NIMs:"
-echo "  ./list-nims.sh"
+echo "List active LLMs:"
+echo "  ./list-llms.sh"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pull nim-tools.sif (HuggingFace transformers-torch-light from Docker Hub).
+# Pull llm-tools.sif (HuggingFace transformers-torch-light from Docker Hub).
 #
 # Includes: python3, huggingface-cli, requests (pre-installed in base image).
 # No custom build needed — direct pull from Docker Hub.
@@ -12,24 +12,24 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-[ -z "$NIM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
+[ -z "$LLM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
 
-source "$SCRIPT_DIR/nim-config.sh"
+source "$SCRIPT_DIR/llm-config.sh"
 
-SIF_PATH="$NIM_IMAGES_DIR/nim-tools.sif"
+SIF_PATH="$LLM_IMAGES_DIR/llm-tools.sif"
 
 FORCE=false
 [ "$1" = "--force" ] && FORCE=true
 
 if [ -f "$SIF_PATH" ] && [ "$FORCE" = false ]; then
-    echo "nim-tools.sif already exists: $SIF_PATH"
+    echo "llm-tools.sif already exists: $SIF_PATH"
     echo "Use --force to re-pull."
     exit 0
 fi
 
-mkdir -p "$NIM_IMAGES_DIR"
+mkdir -p "$LLM_IMAGES_DIR"
 
-echo "Pulling nim-tools.sif (huggingface/transformers-torch-light)..."
+echo "Pulling llm-tools.sif (huggingface/transformers-torch-light)..."
 echo "  Output: $SIF_PATH"
 echo ""
 

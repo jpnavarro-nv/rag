@@ -171,7 +171,7 @@ def discover_endpoints(sessions_dir):
         pass
 
     endpoints = []
-    for env_file in sorted(glob.glob(f"{sessions_dir}/*/job_*/nim.env")):
+    for env_file in sorted(glob.glob(f"{sessions_dir}/*/job_*/llm.env")):
         job_dir = os.path.dirname(env_file)
         job_id = os.path.basename(job_dir).replace("job_", "")
 
@@ -1017,7 +1017,7 @@ def main():
     )
     group.add_argument(
         "--discover", action="store_true",
-        help="Auto-discover endpoints from $NIM_BASE_DIR/sessions/",
+        help="Auto-discover endpoints from $LLM_BASE_DIR/sessions/",
     )
     parser.add_argument(
         "--prompts", default=DEFAULT_PROMPTS,
@@ -1082,16 +1082,16 @@ def main():
 
     # Discover or parse endpoints
     if args.discover:
-        nim_base = os.environ.get("NIM_BASE_DIR")
-        if not nim_base:
-            print("ERROR: NIM_BASE_DIR must be set for --discover",
+        llm_base = os.environ.get("LLM_BASE_DIR")
+        if not llm_base:
+            print("ERROR: LLM_BASE_DIR must be set for --discover",
                   file=sys.stderr)
             sys.exit(1)
-        sessions_dir = f"{nim_base}/sessions"
+        sessions_dir = f"{llm_base}/sessions"
         endpoints = discover_endpoints(sessions_dir)
         if not endpoints:
             print("ERROR: No active endpoints found.", file=sys.stderr)
-            print("Check NIM_BASE_DIR and ensure models are running.",
+            print("Check LLM_BASE_DIR and ensure models are running.",
                   file=sys.stderr)
             sys.exit(1)
     else:

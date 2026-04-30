@@ -1,16 +1,16 @@
 #!/bin/bash
-#SBATCH --job-name=nim-llm
+#SBATCH --job-name=llm
 #SBATCH --nodes=1
 # -----------------------------------------------------------------------
 # LLM SLURM Job Script (vLLM backend)
 #
 # This script runs ON the compute node allocated by SLURM.
-# It is submitted by submit-nim-job.sh — do not run it directly.
+# It is submitted by submit-llm-job.sh — do not run it directly.
 #
 # Serves an OpenAI-compatible API via vLLM with pre-downloaded HF weights.
 #
 # Environment variables expected (passed via --export=ALL):
-#   NIM_BASE_DIR — mandatory
+#   LLM_BASE_DIR — mandatory
 #   CHECK_INTERVAL — optional (default: 15s)
 # -----------------------------------------------------------------------
 
@@ -18,32 +18,32 @@ set -euo pipefail
 
 MODEL_KEY="${1:?ERROR: MODEL_KEY argument required}"
 
-# NIM_SCRIPT_DIR is exported by submit-nim-job.sh and passed via --export=ALL.
+# LLM_SCRIPT_DIR is exported by submit-llm-job.sh and passed via --export=ALL.
 # We cannot use BASH_SOURCE here because SLURM copies the job script to
 # /var/spool/slurmd/job<ID>/ on the compute node — away from the other files.
-SCRIPT_DIR="${NIM_SCRIPT_DIR:?ERROR: NIM_SCRIPT_DIR not set (submit via submit-nim-job.sh)}"
+SCRIPT_DIR="${LLM_SCRIPT_DIR:?ERROR: LLM_SCRIPT_DIR not set (submit via submit-llm-job.sh)}"
 
 # ==============================================================================
 # Source configuration (paths, resolve_model, defaults)
 # ==============================================================================
-source "$SCRIPT_DIR/nim-config.sh"
+source "$SCRIPT_DIR/llm-config.sh"
 resolve_model "$MODEL_KEY"
 
 # ==============================================================================
 # Create per-job directory
 # ==============================================================================
-JOB_DIR="$NIM_SESSIONS_DIR/$USER/job_$SLURM_JOB_ID"
+JOB_DIR="$LLM_SESSIONS_DIR/$USER/job_$SLURM_JOB_ID"
 mkdir -p "$JOB_DIR/tmp"
 
 # Symlink SLURM output (written to flat path by sbatch) into the job directory
-SLURM_OUT="$NIM_SESSIONS_DIR/$USER/nim-${SLURM_JOB_ID}.out"
+SLURM_OUT="$LLM_SESSIONS_DIR/$USER/llm-${SLURM_JOB_ID}.out"
 if [ -f "$SLURM_OUT" ]; then
     ln -sf "$SLURM_OUT" "$JOB_DIR/slurm.out"
 fi
 
-LOG_FILE="$JOB_DIR/nim.log"
-PID_FILE="$JOB_DIR/nim.pid"
-ENV_FILE="$JOB_DIR/nim.env"
+LOG_FILE="$JOB_DIR/llm.log"
+PID_FILE="$JOB_DIR/llm.pid"
+ENV_FILE="$JOB_DIR/llm.env"
 
 # ==============================================================================
 # Write job metadata (sourceable by other scripts)
@@ -68,7 +68,7 @@ echo "Job ID:   $SLURM_JOB_ID"
 echo "Node:     $(hostname)"
 echo "Model:    $MODEL_KEY ($MODEL_ID)"
 echo "Backend:  vLLM"
-echo "SIF:      $NIM_IMAGES_DIR/$SIF_NAME"
+echo "SIF:      $LLM_IMAGES_DIR/$SIF_NAME"
 echo "Port:     $LLM_PORT"
 echo "GPUs:     $CUDA_VISIBLE_DEVICES"
 echo "Log:      $LOG_FILE"
@@ -85,10 +85,10 @@ GPU_COUNT=$(echo "$CUDA_VISIBLE_DEVICES" | tr ',' '\n' | wc -l)
 # ==============================================================================
 echo "Starting vLLM server..."
 
-HF_MODEL_DIR="$NIM_MODELS_DIR/${MODEL_KEY}-hf"
+HF_MODEL_DIR="$LLM_MODELS_DIR/${MODEL_KEY}-hf"
 if [ ! -d "$HF_MODEL_DIR" ] || [ -z "$(ls -A "$HF_MODEL_DIR" 2>/dev/null)" ]; then
     echo "ERROR: Model weights not found: $HF_MODEL_DIR"
-    echo "Run: ./download-nim-model.sh $MODEL_KEY"
+    echo "Run: ./download-llm-model.sh $MODEL_KEY"
     exit 1
 fi
 echo "Weights:  $HF_MODEL_DIR"
@@ -101,7 +101,7 @@ mkdir -p "$VLLM_CACHE"
 # than the host driver's native CUDA, LD_PRELOAD the compat libs so they
 # override the older host libcuda.so injected by --nv.
 VLLM_PRELOAD=()
-CUDA_COMPAT_LIB=$(singularity exec "$NIM_IMAGES_DIR/$SIF_NAME" \
+CUDA_COMPAT_LIB=$(singularity exec "$LLM_IMAGES_DIR/$SIF_NAME" \
     bash -c 'ls /usr/local/cuda-*/compat/libcuda.so.1 2>/dev/null | head -1')
 if [ -n "$CUDA_COMPAT_LIB" ]; then
     COMPAT_DIR=$(dirname "$CUDA_COMPAT_LIB")
@@ -126,7 +126,7 @@ singularity exec \
     "${VLLM_PRELOAD[@]}" \
     --bind "$VLLM_CACHE:/vllm-cache" \
     --bind "$HF_MODEL_DIR:/model" \
-    "$NIM_IMAGES_DIR/$SIF_NAME" \
+    "$LLM_IMAGES_DIR/$SIF_NAME" \
     python3 -m vllm.entrypoints.openai.api_server \
         --model /model \
         --tensor-parallel-size "$GPU_COUNT" \

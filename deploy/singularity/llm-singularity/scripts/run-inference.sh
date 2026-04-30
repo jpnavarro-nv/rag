@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run inference via nim-tools.sif. All arguments forwarded to run_inference.py.
+# Run inference via llm-tools.sif. All arguments forwarded to run_inference.py.
 #
 # Usage:
 #   ./scripts/run-inference.sh --url http://node:8000 "Your question"
@@ -8,13 +8,13 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-[ -z "$NIM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
+[ -z "$LLM_BASE_DIR" ] && source "$SCRIPT_DIR/cluster-config.sh"
 
 export NGC_API_KEY="${NGC_API_KEY:-placeholder}"
-source "$SCRIPT_DIR/nim-config.sh"
+source "$SCRIPT_DIR/llm-config.sh"
 
-TOOLS_SIF="$NIM_IMAGES_DIR/nim-tools.sif"
-[ ! -f "$TOOLS_SIF" ] && { echo "ERROR: nim-tools.sif not found. Run ./build-tools-image.sh first."; exit 1; }
+TOOLS_SIF="$LLM_IMAGES_DIR/llm-tools.sif"
+[ ! -f "$TOOLS_SIF" ] && { echo "ERROR: llm-tools.sif not found. Run ./build-tools-image.sh first."; exit 1; }
 
 singularity exec \
     --bind "$SCRIPT_DIR:$SCRIPT_DIR" \

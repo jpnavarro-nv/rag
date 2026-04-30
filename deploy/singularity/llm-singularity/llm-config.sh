@@ -1,18 +1,18 @@
 #!/bin/bash
 # Configuration and model catalog for LLM Singularity deployment (vLLM).
 #
-# Sources nim-dirs.sh for shared paths and provides:
+# Sources llm-dirs.sh for shared paths and provides:
 #   - resolve_model()   Lookup a model key in models.conf
 #   - list_models()     Print formatted table of available models
 #   - all_model_keys()  Return all model keys from models.conf
 #
 # Required environment variables (set before sourcing):
-#   NIM_BASE_DIR   — Base directory for all deployment data
+#   LLM_BASE_DIR   — Base directory for all deployment data
 
 # ==============================================================================
-# Shared paths (from nim-dirs.sh)
+# Shared paths (from llm-dirs.sh)
 # ==============================================================================
-source "$(dirname "${BASH_SOURCE[0]}")/nim-dirs.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/llm-dirs.sh"
 
 # ==============================================================================
 # Singularity configuration
@@ -31,7 +31,7 @@ export CHECK_INTERVAL=${CHECK_INTERVAL:-15}
 # ==============================================================================
 # Model catalog path
 # ==============================================================================
-_NIM_MODELS_CONF="$(dirname "${BASH_SOURCE[0]}")/models.conf"
+_LLM_MODELS_CONF="$(dirname "${BASH_SOURCE[0]}")/models.conf"
 
 # ==============================================================================
 # resolve_model() — Lookup a model key in models.conf
@@ -64,7 +64,7 @@ resolve_model() {
             [ -z "$MODEL_ID" ] && MODEL_ID="$MODEL_KEY"
             return 0
         fi
-    done < <(grep -v '^\s*#' "$_NIM_MODELS_CONF" | grep -v '^\s*$')
+    done < <(grep -v '^\s*#' "$_LLM_MODELS_CONF" | grep -v '^\s*$')
     echo "ERROR: Unknown model '$key'." >&2
     echo "Run with --list to see available models." >&2
     return 1
@@ -82,7 +82,7 @@ list_models() {
         m_key=$(echo "$m_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         m_desc=$(echo "$m_desc" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         printf "  %-18s %s\n" "$m_key" "$m_desc"
-    done < <(grep -v '^\s*#' "$_NIM_MODELS_CONF" | grep -v '^\s*$')
+    done < <(grep -v '^\s*#' "$_LLM_MODELS_CONF" | grep -v '^\s*$')
     echo ""
 }
 
@@ -92,5 +92,5 @@ list_models() {
 all_model_keys() {
     while IFS='|' read -r m_key _ _ _ _; do
         echo "$m_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
-    done < <(grep -v '^\s*#' "$_NIM_MODELS_CONF" | grep -v '^\s*$')
+    done < <(grep -v '^\s*#' "$_LLM_MODELS_CONF" | grep -v '^\s*$')
 }

@@ -7,7 +7,7 @@ Usage:
     python scripts/run_inference.py --list          # show supported models
     python scripts/run_inference.py --help          # usage help
 
-The endpoint URL can be set via --url or the NIM_URL environment variable.
+The endpoint URL can be set via --url or the LLM_URL environment variable.
 Default: http://localhost:8000
 
 No external dependencies — uses only Python standard library.
@@ -126,16 +126,16 @@ def main():
                 sys.stderr.buffer, encoding=sys.stderr.encoding, errors="replace"
             )
 
-    nim_url = os.environ.get("NIM_URL", DEFAULT_URL)
+    llm_url = os.environ.get("LLM_URL", DEFAULT_URL)
 
     parser = argparse.ArgumentParser(
         description="Stream inference from a vLLM endpoint.",
-        epilog="The endpoint URL can also be set via the NIM_URL environment variable.",
+        epilog="The endpoint URL can also be set via the LLM_URL environment variable.",
     )
     parser.add_argument("question", nargs="?", help="Question to send to the model")
     parser.add_argument(
-        "--url", default=nim_url,
-        help=f"Endpoint URL (default: NIM_URL env or {DEFAULT_URL})",
+        "--url", default=llm_url,
+        help=f"Endpoint URL (default: LLM_URL env or {DEFAULT_URL})",
     )
     parser.add_argument(
         "--list", "-l", action="store_true",

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Auto-detect cluster from hostname and export configuration.
 #
-# Sources the matching clusters/*.conf file, setting NIM_BASE_DIR,
+# Sources the matching clusters/*.conf file, setting LLM_BASE_DIR,
 # SLURM_PARTITION, SLURM_ACCOUNT, and other cluster-specific variables.
 #
 # Detection: matches hostname against known patterns. Falls back to
@@ -57,6 +57,6 @@ fi
 source "$_CONF"
 
 # Export all variables from the conf file
-export NIM_BASE_DIR SLURM_PARTITION SLURM_ACCOUNT SLURM_GPUS_PER_NODE SLURM_TIME CLUSTER_GPU CLUSTER_NAME
+export LLM_BASE_DIR SLURM_PARTITION SLURM_ACCOUNT SLURM_GPUS_PER_NODE SLURM_TIME CLUSTER_GPU CLUSTER_NAME
 
-echo "Cluster: $CLUSTER_NAME ($CLUSTER_GPU) — $NIM_BASE_DIR"
+echo "Cluster: $CLUSTER_NAME ($CLUSTER_GPU) — $LLM_BASE_DIR"

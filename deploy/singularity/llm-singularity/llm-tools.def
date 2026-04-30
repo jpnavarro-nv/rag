@@ -1,0 +1,5 @@
+Bootstrap: docker
+From: huggingface/transformers-torch-light:latest
+
+%labels
+    Description LLM utility container built on HuggingFace transformers-torch-light
