@@ -7,7 +7,7 @@ Scripts for deploying the NVIDIA RAG Blueprint on HPC clusters using Singularity
 ```bash
 # 1. Set required environment variables
 export NGC_API_KEY='your-ngc-api-key'
-export RAG_BASE_DIR='/path/to/rag-workdir'   # default: $HOME/rag-test
+export RAG_BASE_DIR='/path/to/rag-workdir'   # REQUIRED — no default
 
 # 2. Build all images (one-time setup, ~30-60 min)
 cd deploy/singularity
@@ -43,7 +43,7 @@ cd deploy/singularity
 | Variable | Description |
 |----------|-------------|
 | `NGC_API_KEY` | NVIDIA NGC API key (required for NGC pulls and NIM builds) |
-| `RAG_BASE_DIR` | Base working directory. Images go in `$RAG_BASE_DIR/containers/images`, cache in `$RAG_BASE_DIR/containers/cache`. Default: `$HOME/rag-test` |
+| `RAG_BASE_DIR` | **Required.** Base working directory. Images go in `$RAG_BASE_DIR/containers/images`, cache in `$RAG_BASE_DIR/containers/cache`. No default — the scripts exit if unset. |
 
 ## Startup Script Reference
 

@@ -7,12 +7,21 @@
 #
 # Required environment variables (set before sourcing):
 #   NGC_API_KEY     - NVIDIA NGC API key for NIMs
-#   RAG_BASE_DIR    - Base directory for all RAG data (optional, defaults to $HOME/rag-test)
+#   RAG_BASE_DIR    - Base directory for all RAG data (REQUIRED — no default)
 
 # ==============================================================================
 # Permanent Base Directories
 # ==============================================================================
-export RAG_BASE_DIR=${RAG_BASE_DIR:-$HOME/rag-test}
+if [ -z "${RAG_BASE_DIR:-}" ]; then
+    echo "ERROR: RAG_BASE_DIR is not set." >&2
+    echo "" >&2
+    echo "Set it explicitly before running:" >&2
+    echo "  export RAG_BASE_DIR=/path/to/rag-workdir" >&2
+    echo "" >&2
+    echo "Use a fast local or parallel filesystem (NVMe scratch, GPFS, BeeGFS)." >&2
+    echo "Avoid NFS home directories — they significantly slow down model loading." >&2
+    return 1 2>/dev/null || exit 1
+fi
 
 # All permanent paths (containers, db, models) are defined centrally in dirs.sh
 source "$(dirname "${BASH_SOURCE[0]}")/dirs.sh"

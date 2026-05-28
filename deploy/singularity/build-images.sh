@@ -44,7 +44,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # build-images.sh is a one-time setup script independent of the exec-session
 # lifecycle managed by config.sh / 01-start-infrastructure.sh.
 # It only needs the permanent container paths defined in dirs.sh.
-export RAG_BASE_DIR="${RAG_BASE_DIR:-$HOME/rag-test}"
+if [ -z "${RAG_BASE_DIR:-}" ]; then
+    echo "ERROR: RAG_BASE_DIR is not set." >&2
+    echo "" >&2
+    echo "Set it explicitly before running:" >&2
+    echo "  export RAG_BASE_DIR=/path/to/rag-workdir" >&2
+    echo "  ./build-images.sh" >&2
+    echo "" >&2
+    echo "Use a fast local or parallel filesystem (NVMe scratch, GPFS, BeeGFS)." >&2
+    echo "~60 GB of SIF images plus ~50 GB of model cache will be written there." >&2
+    exit 1
+fi
 source "$SCRIPT_DIR/run/dirs.sh"
 
 OUTPUT_DIR="$RAG_IMAGES_DIR"

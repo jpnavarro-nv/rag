@@ -100,7 +100,9 @@ export NGC_API_KEY="nvapi-..."
 export RAG_BASE_DIR="/path/to/rag-workdir"
 ```
 
-`RAG_BASE_DIR` defaults to `$HOME/rag-test` if not set.
+`RAG_BASE_DIR` is **required** — there is no default. The scripts exit
+immediately with an error if it is unset, so you cannot accidentally write
+~100 GB of containers and model weights to a slow `$HOME` NFS mount.
 
 :::{important}
 **Use a high-speed local filesystem for `RAG_BASE_DIR`.** This directory stores:

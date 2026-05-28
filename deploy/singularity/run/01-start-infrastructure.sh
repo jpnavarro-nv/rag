@@ -9,15 +9,24 @@
 set -e
 
 # ==============================================================================
-# Step 1: Determine base directory (same default as config.sh)
+# Step 1: Require RAG_BASE_DIR (no default — force conscious choice)
 # ==============================================================================
-_RAG_BASE_DIR=${RAG_BASE_DIR:-$HOME/rag-test}
+if [ -z "${RAG_BASE_DIR:-}" ]; then
+    echo "ERROR: RAG_BASE_DIR is not set." >&2
+    echo "" >&2
+    echo "Set it explicitly before running:" >&2
+    echo "  export RAG_BASE_DIR=/path/to/rag-workdir" >&2
+    echo "" >&2
+    echo "Use a fast local or parallel filesystem (NVMe scratch, GPFS, BeeGFS)." >&2
+    echo "Avoid NFS home directories — they significantly slow down model loading." >&2
+    exit 1
+fi
 
 # ==============================================================================
 # Step 2: Stop any services left over from the previous session
 # ==============================================================================
 echo "=== Cleaning up previous session ==="
-_PREV_EXEC_FILE="$_RAG_BASE_DIR/.current_exec"
+_PREV_EXEC_FILE="$RAG_BASE_DIR/.current_exec"
 if [ -f "$_PREV_EXEC_FILE" ]; then
     _PREV_EXEC=$(cat "$_PREV_EXEC_FILE")
     _PREV_NAME=$(basename "$_PREV_EXEC")
@@ -70,10 +79,10 @@ echo ""
 # ==============================================================================
 _DATE=$(date +%Y_%m_%d)
 _IDX=1
-while [ -d "$_RAG_BASE_DIR/exec_${_DATE}_${_IDX}" ]; do
+while [ -d "$RAG_BASE_DIR/exec_${_DATE}_${_IDX}" ]; do
     _IDX=$((_IDX + 1))
 done
-_EXEC_DIR="$_RAG_BASE_DIR/exec_${_DATE}_${_IDX}"
+_EXEC_DIR="$RAG_BASE_DIR/exec_${_DATE}_${_IDX}"
 
 mkdir -p "$_EXEC_DIR/logs"
 mkdir -p "$_EXEC_DIR/tmp"
@@ -83,7 +92,7 @@ mkdir -p "$_EXEC_DIR/runtime/ingestor-temp"
 mkdir -p "$_EXEC_DIR/runtime/ingestor-venv-bin"
 mkdir -p "$_EXEC_DIR/runtime/nv-ingest-data"
 
-echo "$_EXEC_DIR" > "$_RAG_BASE_DIR/.current_exec"
+echo "$_EXEC_DIR" > "$RAG_BASE_DIR/.current_exec"
 echo "=== New session: $(basename $_EXEC_DIR) ==="
 echo ""
 
