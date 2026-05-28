@@ -170,6 +170,14 @@ cd run/
 Use the following procedure to start all services. The scripts must be run **in order**
 from the `deploy/singularity/run/` directory.
 
+:::{tip}
+For unattended deployment on clusters with a job scheduler, you can run the entire
+01–09 sequence as a single Slurm batch job — skip ahead to
+[Run as a Slurm Batch Job](#run-as-a-slurm-batch-job). The interactive path below
+is the same sequence step by step, useful for learning what each step does and
+for debugging when something goes wrong.
+:::
+
 Re-export `NGC_API_KEY` and `RAG_BASE_DIR` if you are starting a new shell session.
 
 ```bash
@@ -479,6 +487,84 @@ Everything stored under `RAG_BASE_DIR` is preserved across shutdowns:
 | `$RAG_BASE_DIR/models/` | NIM model weights (no re-download on next start) |
 | `$RAG_BASE_DIR/containers/images/` | `.sif` images (no re-pull on next start) |
 | `$RAG_BASE_DIR/containers/cache/` | Singularity image cache |
+
+
+## Run as a Slurm Batch Job
+
+For unattended deployment, `deploy/singularity/run/submit-job.sh` runs the entire
+01–09 startup sequence as a single Slurm batch job and then enters a supervisor
+loop that keeps the stack alive until you cancel the job. This is equivalent to
+running the 9 interactive steps in order.
+
+```bash
+cd deploy/singularity/run
+export NGC_API_KEY="nvapi-..."
+export RAG_BASE_DIR="/path/to/rag-workdir"
+
+sbatch --export=ALL submit-job.sh
+```
+
+`sbatch` prints `Submitted batch job <JOBID>` and returns immediately. The
+terminal is free.
+
+### How sbatch differs from running the scripts directly
+
+`sbatch` is **asynchronous**. It only queues the job on the scheduler and
+returns at once. The script `submit-job.sh` itself does not run on your login
+shell — it runs **later, on a compute node**, when Slurm allocates resources.
+All of its output (including the startup banner with absolute log path,
+`tail -F` command and `scancel` command pre-filled) is captured by Slurm and
+written to the output file declared by `#SBATCH --output=rag-setup-%j.log`,
+which lives in the directory you ran `sbatch` from:
+
+```
+<your-submit-dir>/rag-setup-<JOBID>.log
+```
+
+Nothing is printed to your terminal at submit time other than `sbatch`'s own
+`Submitted batch job <JOBID>` line. To see the banner and follow progress, open
+the log file:
+
+```bash
+tail -F rag-setup-<JOBID>.log
+```
+
+The first banner at the top of the file shows the job ID, node, GPU count,
+base directory and the exact `tail -F` / `scancel` commands. After roughly
+15–20 minutes — when all 9 startup steps complete — a second
+`RAG Blueprint READY` banner appears with the frontend and API URLs.
+
+:::{tip}
+Pressing **Ctrl-C** on `tail` does **not** stop the job. It only stops following
+the log. The job continues running on the compute node.
+:::
+
+### Stopping the job
+
+Use `scancel` to stop the stack cleanly:
+
+```bash
+scancel <JOBID>
+```
+
+`submit-job.sh` traps `SIGTERM`/`SIGINT` and runs `99-stop-all.sh` on cancel,
+so all backgrounded services (15+ processes including Ray actors, NIMs, Milvus,
+etc.) are shut down gracefully before the Slurm cgroup is torn down.
+
+### Slurm directives are site-specific
+
+The `#SBATCH` directives at the top of `submit-job.sh` (`--account`, `--partition`,
+`--gres`, `--time`) are tuned for a specific site. Edit them to match your cluster,
+or override on the CLI when submitting:
+
+```bash
+sbatch --account=my-account --partition=my-gpu-partition --time=04:00:00 \
+       --export=ALL submit-job.sh
+```
+
+The default `--time=08:00:00` includes a margin for the LLM 49B's first-time
+weight download (~60 min) plus several hours of usage. Lower it for short
+experiments to play nicely with the scheduler's fair-share policy.
 
 
 ## Advanced Deployment Considerations

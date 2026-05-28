@@ -60,6 +60,36 @@ cd deploy/singularity
 | `08-start-frontend.sh` | Frontend UI | 07 | 3000 |
 | `09-validate-all-services.sh` | Full health validation | all | — |
 | `99-stop-all.sh` | Stop all services | — | — |
+| `submit-job.sh` | Slurm batch wrapper — runs 01–09 in one job, supervises until `scancel` | Slurm | — |
+
+## Batch Mode (Slurm)
+
+For unattended deployment via the scheduler, use `submit-job.sh` to run 01–09
+as a single Slurm batch job:
+
+```bash
+sbatch --export=ALL submit-job.sh
+```
+
+`sbatch` is **asynchronous** — it queues the job and returns immediately with
+`Submitted batch job <JOBID>`. The script itself runs on the compute node when
+Slurm allocates resources, and its full output (including the early banner with
+the exact `tail -F` and `scancel` commands) is written to
+`rag-setup-<JOBID>.log` in the directory you ran `sbatch` from.
+
+To watch progress:
+
+```bash
+tail -F rag-setup-<JOBID>.log
+```
+
+Ctrl-C on `tail` only stops following the log — the job keeps running. To stop
+the stack cleanly: `scancel <JOBID>` (triggers a graceful `99-stop-all.sh` via
+the script's SIGTERM trap).
+
+The `#SBATCH` directives in `submit-job.sh` (`--account`, `--partition`,
+`--gres`, `--time`) are site-specific — edit them or override on the CLI.
+See `docs/deploy-singularity-self-hosted.md` for the full reference.
 
 ## Resource Requirements
 
