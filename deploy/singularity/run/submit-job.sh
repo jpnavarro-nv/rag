@@ -74,6 +74,11 @@ export CHECK_INTERVAL=15
 # present, fall back to BASH_SOURCE for direct (non-sbatch) invocation.
 SCRIPT_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
+# Resolve the Slurm output path the user can tail.  --output=rag-setup-%j.log
+# is relative to SLURM_SUBMIT_DIR (the dir where `sbatch` was invoked from), so
+# this same path appears in the early banner and in the READY banner later.
+SLURM_OUT_PATH="${SLURM_SUBMIT_DIR:-$(pwd)}/rag-setup-${SLURM_JOB_ID}.log"
+
 echo "======================================================"
 echo "  RAG Blueprint — Slurm Setup Job"
 echo "======================================================"
@@ -82,6 +87,9 @@ echo "  Node     : ${SLURMD_NODENAME}"
 echo "  GPUs     : ${SLURM_GPUS_ON_NODE:-${CUDA_VISIBLE_DEVICES}}"
 echo "  Base dir : ${RAG_BASE_DIR}"
 echo "  Started  : $(date)"
+echo "------------------------------------------------------"
+echo "  Follow   : tail -F ${SLURM_OUT_PATH}"
+echo "  Stop     : scancel ${SLURM_JOB_ID}"
 echo "======================================================"
 echo ""
 
