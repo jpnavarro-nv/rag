@@ -114,7 +114,7 @@ echo "  Base dir  : $RAG_BASE_DIR"
 echo "  User      : $RAG_USER"
 echo ""
 
-JOB_ID=$(sbatch "${SBATCH_ARGS[@]}" "$SCRIPT_DIR/submit-job.sh")
+JOB_ID=$(sbatch "${SBATCH_ARGS[@]}" "$SCRIPT_DIR/deploy-on-node.sh")
 SLURM_OUT="$USER_SESSIONS_DIR/rag-setup-${JOB_ID}.out"
 
 echo "======================================================"

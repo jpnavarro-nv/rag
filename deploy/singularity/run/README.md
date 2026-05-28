@@ -60,7 +60,7 @@ cd deploy/singularity
 | `08-start-frontend.sh` | Frontend UI | 07 | 3000 |
 | `09-validate-all-services.sh` | Full health validation | all | — |
 | `99-stop-all.sh` | Stop all services | — | — |
-| `submit-job.sh` | Slurm job script — runs 01–09 + supervisor (invoked by `submit.sh`) | Slurm | — |
+| `deploy-on-node.sh` | Slurm job script — runs 01–09 + supervisor (invoked by `submit.sh`) | Slurm | — |
 | `submit.sh` | **Wrapper for `sbatch`** — auto-detects cluster, submits the job, prints banner, exits | Slurm | — |
 | `cluster-config.sh` | Auto-detects cluster from hostname and sources `clusters/*.conf` | — | — |
 | `clusters/*.conf` | Per-cluster settings (RAG_BASE_DIR, partition, account, GPUs, walltime) | — | — |
@@ -98,7 +98,7 @@ the SIGTERM trap installed before 01-09 even starts).
 Cluster auto-detect can be overridden with `CLUSTER_NAME=lncc ./submit.sh`.
 To add a new cluster, create `clusters/<name>.conf` and add a hostname pattern
 to `cluster-config.sh`. See `docs/deploy-singularity-self-hosted.md` for the
-full reference, including direct `sbatch submit-job.sh` invocation if you do
+full reference, including direct `sbatch deploy-on-node.sh` invocation if you do
 not want to use the wrapper.
 
 ## Resource Requirements

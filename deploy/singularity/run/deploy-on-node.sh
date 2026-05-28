@@ -15,11 +15,11 @@
 # sbatch CLI — they intentionally are NOT hardcoded as #SBATCH directives
 # here so the script stays portable across clusters.
 #
-# Direct `sbatch submit-job.sh` still works, but you must supply the missing
+# Direct `sbatch deploy-on-node.sh` still works, but you must supply the missing
 # directives on the command line (or no job will start):
 #
 #   sbatch --account=ACCOUNT --partition=PART --gres=gpu:4 --export=ALL \
-#          submit-job.sh
+#          deploy-on-node.sh
 #
 # Stop the running stack with:
 #   scancel <JOBID>      # triggers graceful 99-stop-all.sh via trap
@@ -36,7 +36,7 @@ if [ -z "${NGC_API_KEY}" ]; then
     echo ""
     echo "Submit with:"
     echo "  export NGC_API_KEY=\"nvapi-...\""
-    echo "  sbatch --export=ALL,NGC_API_KEY=\$NGC_API_KEY,RAG_BASE_DIR=\$RAG_BASE_DIR submit-job.sh"
+    echo "  sbatch --export=ALL,NGC_API_KEY=\$NGC_API_KEY,RAG_BASE_DIR=\$RAG_BASE_DIR deploy-on-node.sh"
     exit 1
 fi
 
@@ -45,7 +45,7 @@ if [ -z "${RAG_BASE_DIR}" ]; then
     echo ""
     echo "Submit with:"
     echo "  export RAG_BASE_DIR=\"/path/to/rag-workdir\""
-    echo "  sbatch --export=ALL,NGC_API_KEY=\$NGC_API_KEY,RAG_BASE_DIR=\$RAG_BASE_DIR submit-job.sh"
+    echo "  sbatch --export=ALL,NGC_API_KEY=\$NGC_API_KEY,RAG_BASE_DIR=\$RAG_BASE_DIR deploy-on-node.sh"
     exit 1
 fi
 

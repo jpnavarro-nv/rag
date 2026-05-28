@@ -548,7 +548,7 @@ later on a compute node when Slurm allocates resources.
    pre-filled, and exits.
 
 `sbatch` is **asynchronous** — it queues the job and returns at once. The
-script that runs on the compute node (`submit-job.sh`, invoked by the
+script that runs on the compute node (`deploy-on-node.sh`, invoked by the
 wrapper) is what writes the actual progress to the log file. Nothing past
 the wrapper's banner is printed to your login shell.
 
@@ -629,21 +629,21 @@ Use `scancel` to stop the stack cleanly:
 scancel <JOBID>
 ```
 
-`submit-job.sh` installs a `SIGTERM`/`SIGINT` trap **before** the 01–09
+`deploy-on-node.sh` installs a `SIGTERM`/`SIGINT` trap **before** the 01–09
 sequence starts, so a `scancel` at any point — including during infrastructure
 startup — runs `99-stop-all.sh` and shuts down every backgrounded service
 gracefully before the Slurm cgroup is torn down.
 
 ### Direct sbatch (without the wrapper)
 
-You can still call `submit-job.sh` directly via `sbatch`, but you must supply
+You can still call `deploy-on-node.sh` directly via `sbatch`, but you must supply
 the cluster-specific flags yourself — the script intentionally has no
 `#SBATCH --account`, `--partition`, `--gres`, `--time`, or `--output`:
 
 ```bash
 sbatch --account=ACCOUNT --partition=PART --gres=gpu:4 \
        --output=/path/to/sessions/$USER/rag-setup-%j.out \
-       --export=ALL submit-job.sh
+       --export=ALL deploy-on-node.sh
 ```
 
 The wrapper is the recommended path because it handles all of this automatically
