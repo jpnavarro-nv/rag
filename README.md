@@ -168,6 +168,9 @@ The recommended way to get started is to deploy the NVIDIA RAG Blueprint
 with Docker Compose for a single node deployment, and using self-hosted on-premises models.
 For details, refer to [Get Started](docs/deploy-docker-self-hosted.md).
 
+For HPC clusters where Docker is not available (Slurm/PBS/LSF environments),
+refer to [Get Started on HPC with Singularity](docs/deploy-singularity-self-hosted.md).
+
 Refer to the [full documentation](docs/readme.md) to learn about the following:
 
 - Minimum Requirements

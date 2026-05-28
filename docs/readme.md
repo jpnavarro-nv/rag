@@ -32,11 +32,12 @@ For hardware requirements and other information, refer to the [Support Matrix](s
 
 ## Deployment Options for RAG Blueprint
 
-You can deploy the RAG Blueprint with Docker, Helm, or NIM Operator, and target dedicated hardware or a Kubernetes cluster. 
+You can deploy the RAG Blueprint with Docker, Helm, NIM Operator, or Singularity on HPC, targeting dedicated hardware, a Kubernetes cluster, or a Slurm-managed HPC cluster.
 Use the following documentation to deploy the blueprint.
 
 - [Deploy with Docker (Self-Hosted Models)](deploy-docker-self-hosted.md)
 - [Deploy with Docker (NVIDIA-Hosted Models)](deploy-docker-nvidia-hosted.md)
+- [Deploy on HPC with Singularity (Self-Hosted Models)](deploy-singularity-self-hosted.md)
 - [Deploy on Kubernetes with Helm](deploy-helm.md)
 - [Deploy on Kubernetes with Helm from the repository](deploy-helm-from-repo.md)
 - [Deploy on Kubernetes with Helm and MIG Support](mig-deployment.md)

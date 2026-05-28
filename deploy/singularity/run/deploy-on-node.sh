@@ -11,9 +11,9 @@
 #
 # The wrapper handles cluster auto-detection (account, partition, GPUs,
 # walltime) and per-user log routing.  It supplies the site-specific
-# `--account`, `--partition`, `--gres`, `--time`, `--output` flags via the
-# sbatch CLI — they intentionally are NOT hardcoded as #SBATCH directives
-# here so the script stays portable across clusters.
+# `--account`, `--partition`, `--gres`, `--output` (and `--time` when set in
+# the cluster conf) flags via the sbatch CLI — they intentionally are NOT
+# hardcoded as #SBATCH directives here so the script stays portable.
 #
 # Direct `sbatch deploy-on-node.sh` still works, but you must supply the missing
 # directives on the command line (or no job will start):
@@ -34,18 +34,18 @@
 if [ -z "${NGC_API_KEY}" ]; then
     echo "ERROR: NGC_API_KEY is not set."
     echo ""
-    echo "Submit with:"
+    echo "Run the wrapper from the login node:"
     echo "  export NGC_API_KEY=\"nvapi-...\""
-    echo "  sbatch --export=ALL,NGC_API_KEY=\$NGC_API_KEY,RAG_BASE_DIR=\$RAG_BASE_DIR deploy-on-node.sh"
+    echo "  cd deploy/singularity/run && ./submit.sh"
     exit 1
 fi
 
 if [ -z "${RAG_BASE_DIR}" ]; then
     echo "ERROR: RAG_BASE_DIR is not set."
     echo ""
-    echo "Submit with:"
-    echo "  export RAG_BASE_DIR=\"/path/to/rag-workdir\""
-    echo "  sbatch --export=ALL,NGC_API_KEY=\$NGC_API_KEY,RAG_BASE_DIR=\$RAG_BASE_DIR deploy-on-node.sh"
+    echo "The wrapper sources RAG_BASE_DIR from clusters/<name>.conf."
+    echo "Run from the login node:"
+    echo "  cd deploy/singularity/run && ./submit.sh"
     exit 1
 fi
 

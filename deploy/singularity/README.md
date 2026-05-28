@@ -2,32 +2,34 @@
 
 Singularity/Apptainer deployment for the NVIDIA RAG Blueprint on HPC clusters.
 
+The user-facing guide is at
+[`docs/deploy-singularity-self-hosted.md`](../../docs/deploy-singularity-self-hosted.md).
+This README is a directory reference.
+
 ## Directory Structure
 
-- `build-images.sh` — pull all SIF images (one-time setup)
+- `build-images.sh` — pull all SIF images (one-time setup, login node)
 - `configs/` — Milvus and other service configuration files
-- `run/` — orchestration scripts (01–99 numbered startup sequence)
+- `run/` — orchestration scripts (`submit.sh` wrapper + `01–09` startup sequence + `deploy-on-node.sh` job script)
+- `run/clusters/` — per-cluster Slurm settings (account, partition, GPUs, walltime, `RAG_BASE_DIR`)
 - `scripts/` — utility scripts (collection importer, drop collection)
-
-See `run/README.md` for the full startup sequence and script reference.
-
----
 
 ## Quick Start
 
 ```bash
-export NGC_API_KEY="your-key-here"
-export RAG_BASE_DIR=/scratch/rag   # images → $RAG_BASE_DIR/containers/images
+export NGC_API_KEY="nvapi-..."
 
 cd deploy/singularity
-./build-images.sh   # one-time setup, ~30-60 min
+./build-images.sh                # one-time, ~30-60 min, login node
 
-cd run/
-./01-start-infrastructure.sh
-# ... (see run/README.md)
+cd run
+./submit.sh                      # auto-detects cluster, fire-and-forget submit
 ```
 
----
+See [`run/README.md`](run/README.md) for the script reference and
+[`docs/deploy-singularity-self-hosted.md`](../../docs/deploy-singularity-self-hosted.md)
+for the full guide (including how to add a new cluster conf and how to use
+interactive mode for debugging).
 
 ## Image Reference
 
@@ -69,8 +71,6 @@ All images are pulled by `build-images.sh`. Versions are pinned at the top of th
 | `etcd.sif` | Key-value store (Milvus dependency) | `quay.io/coreos/etcd:v3.6.5` |
 | `redis.sif` | Task queue (nv-ingest + ingestor) | `redis/redis-stack:7.2.0-v18` |
 
----
-
 ## GPU Requirements
 
 | SIF | Min VRAM | Notes |
@@ -84,8 +84,8 @@ All images are pulled by `build-images.sh`. Versions are pinned at the top of th
 
 ## Storage Requirements
 
-- **Images:** ~60 GB
-- **Model cache:** ~50 GB (downloaded on first NIM start)
-- **Runtime data:** ~10–50 GB (logs, vector DB, object storage)
+- **Images:** ~60 GB (shared across users via `containers/images/`)
+- **Model cache:** ~50 GB (downloaded on first NIM start, shared via `models/`)
+- **Runtime data:** ~10–50 GB per session (logs, vector DB, object storage)
 
 **Recommended free space:** 200 GB

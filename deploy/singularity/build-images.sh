@@ -211,7 +211,11 @@ echo ""
 if [ $FAILED -eq 0 ]; then
     echo "All images ready at: $OUTPUT_DIR"
     echo ""
-    echo "Next step: cd run && ./01-start-infrastructure.sh"
+    echo "Next step (recommended, batch via Slurm):"
+    echo "  cd run && ./submit.sh"
+    echo ""
+    echo "Or interactive (debug / single-step):"
+    echo "  cd run && ./01-start-infrastructure.sh"
 else
     echo "⚠️  Some images failed. Check errors above."
     exit 1

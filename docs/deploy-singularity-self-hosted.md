@@ -7,7 +7,7 @@
 Use the following documentation to deploy the NVIDIA RAG Blueprint on HPC clusters
 using [Singularity](https://sylabs.io/singularity/), with self-hosted on-premises models.
 This deployment path is intended for environments where Docker is not available,
-such as shared HPC clusters managed by a job scheduler (SLURM, PBS, LSF).
+such as shared HPC clusters managed by a job scheduler (Slurm, PBS, LSF).
 
 For the Docker Compose deployment path, refer to
 [Get Started With Docker Compose](deploy-docker-self-hosted.md).
@@ -39,10 +39,12 @@ The deployment model differs from Docker Compose in a few key ways:
 - **SIF images.** Docker images are converted to single `.sif` files stored on disk.
   They are pulled once and reused across sessions.
 
-- **Exec sessions.** Each startup of `01-start-infrastructure.sh` creates a timestamped
-  directory (`exec_YYYY_MM_DD_N`) for logs and runtime state. Persistent data (vector
-  database, object storage, model weights) lives outside this directory and survives
-  across sessions.
+- **Per-user exec sessions.** Each run of the stack creates a timestamped session
+  directory under `$RAG_BASE_DIR/sessions/$USER/` for logs and runtime state. In
+  batch mode the directory is named `exec_YYYY_MM_DD_<JOBID>`; in interactive mode
+  it uses a date-indexed counter (`exec_YYYY_MM_DD_N`). Persistent data (vector
+  database, object storage, model weights) lives outside the session directory and
+  survives across sessions.
 
 - **`SINGULARITY_TMPDIR=/tmp`.** Singularity requires a local POSIX filesystem to
   stage GPU driver libraries and namespace structures. Using Lustre or NFS for this
@@ -90,19 +92,74 @@ The deployment model differs from Docker Compose in a few key ways:
    | Storage | ~200 GB free (60 GB images, 50 GB model cache, 10–50 GB runtime data) |
 
 
+## How It Works
+
+Two key concepts shape how this deployment is organised on a shared HPC cluster.
+
+### Shared data, per-user sessions
+
+The base directory contains both shared and per-user data. Shared data is
+downloaded once and read by every user and every job. Only the session directory
+(logs, PIDs, runtime files) is per-user.
+
+```
+$RAG_BASE_DIR/
+├── containers/{images,cache}/   ← shared (.sif files, ~60 GB)
+├── db/                          ← shared (Milvus, MinIO, etcd state)
+├── models/                      ← shared (NIM model weights, ~50 GB)
+└── sessions/
+    └── $USER/                   ← per-user (chmod 700)
+        ├── rag-setup-<JOBID>.out
+        └── exec_<DATE>_<JOBID>/
+            ├── logs/
+            ├── runtime/pids/
+            └── tmp/
+```
+
+A new user submitting their first job inherits the existing shared data — no
+60 GB re-download, no 50 GB re-cache. Two users running the stack concurrently
+on different nodes get isolated log/runtime trees but share read-only data.
+
+### Cluster auto-detect
+
+Site-specific values (`RAG_BASE_DIR`, Slurm partition, account, GPUs per node,
+walltime) live in plain files under `deploy/singularity/run/clusters/`:
+
+```
+clusters/
+├── gaia.conf      # Petrobras Gaia — A100, llm-tic account
+└── lncc.conf      # LNCC Santos Dumont — H100, lm_manutencao account
+```
+
+The wrapper (`submit.sh`) reads `hostname -f` and sources the matching conf.
+No `#SBATCH` directive is hard-coded inside the deployment scripts — every
+site-specific flag comes from data, so the same scripts run unchanged on any
+cluster once you add a conf file for it.
+
+
 ## Set Up the Working Directory (One-Time)
 
-Export the NGC API Key and the working directory. All images, model caches, and
-databases will be stored under `RAG_BASE_DIR`.
+Export the NGC API Key.
 
 ```bash
 export NGC_API_KEY="nvapi-..."
+```
+
+For the **batch** (recommended) flow, that is the only variable you need to set.
+`RAG_BASE_DIR` and all Slurm-specific values are sourced from your cluster's
+conf file in the next section.
+
+For the **interactive** flow (alternative, see later in this guide), you must
+also export `RAG_BASE_DIR` manually:
+
+```bash
 export RAG_BASE_DIR="/path/to/rag-workdir"
 ```
 
-`RAG_BASE_DIR` is **required** — there is no default. The scripts exit
-immediately with an error if it is unset, so you cannot accidentally write
-~100 GB of containers and model weights to a slow `$HOME` NFS mount.
+`RAG_BASE_DIR` is **required** in interactive mode — there is no default. The
+scripts exit immediately with an error if it is unset, so you cannot
+accidentally write ~100 GB of containers and model weights to a slow `$HOME`
+NFS mount.
 
 :::{important}
 **Use a high-speed local filesystem for `RAG_BASE_DIR`.** This directory stores:
@@ -116,20 +173,109 @@ longer startup times. Loading model weights from a slow filesystem can increase
 NIM startup time from minutes to tens of minutes.
 :::
 
-Navigate to the Singularity deployment directory.
+
+## Configure Your Cluster (One-Time)
+
+The repository ships with two cluster confs (`gaia`, `lncc`). If your cluster
+is one of them, skip to the next section. Otherwise, add a conf for your site.
+
+### Check whether your cluster is recognised
+
+From the login node:
 
 ```bash
-cd deploy/singularity
+hostname -f
+```
+
+Open `deploy/singularity/run/cluster-config.sh` and look for a regex that
+matches your hostname. Two cases are pre-registered:
+
+```bash
+case "$host" in
+    *gaia*.petrobras.com.br|gaiasc*|gaiab*)
+        echo "gaia" ;;
+    *lncc*|*sdumont*|*petrobr*)
+        echo "lncc" ;;
+esac
+```
+
+If no pattern matches, the wrapper prints an error listing the available
+clusters and exits — `./submit.sh` will not run until you add a conf.
+
+### Add a conf for a new cluster
+
+1. Copy an existing conf and edit the values:
+
+   ```bash
+   cd deploy/singularity/run/clusters
+   cp gaia.conf my-cluster.conf
+   ```
+
+2. Edit `my-cluster.conf` to match your site:
+
+   ```bash
+   RAG_BASE_DIR="${RAG_BASE_DIR:-/scratch/your-project/rag-workdir}"
+   SLURM_PARTITION="your-gpu-partition"
+   SLURM_ACCOUNT="your-account"
+   SLURM_GPUS_PER_NODE=4
+   SLURM_TIME=""               # empty = use partition default (effectively no limit)
+   CLUSTER_GPU="A100"          # or H100, B200, etc.
+   ```
+
+   Discovery commands you can run on the login node:
+
+   ```bash
+   sinfo -o "%P %D %G"                   # list partitions and GPU configs
+   sacctmgr show user $USER --json       # list Slurm accounts you can submit to
+   nvidia-smi --query-gpu=name --format=csv,noheader  # GPU model
+   ```
+
+3. Add a hostname pattern in `cluster-config.sh`:
+
+   ```bash
+   case "$host" in
+       *gaia*.petrobras.com.br|gaiasc*|gaiab*)
+           echo "gaia" ;;
+       *lncc*|*sdumont*|*petrobr*)
+           echo "lncc" ;;
+       *my-cluster*|*frontend*.my-cluster.edu)
+           echo "my-cluster" ;;          # ← add this
+   esac
+   ```
+
+4. Test that auto-detect works:
+
+   ```bash
+   source deploy/singularity/run/cluster-config.sh
+   # → Cluster: my-cluster (A100) — /scratch/...
+   ```
+
+You can also bypass auto-detect with the `CLUSTER_NAME` environment variable:
+
+```bash
+CLUSTER_NAME=lncc ./submit.sh
 ```
 
 
 ## Pull Images (One-Time Setup)
 
-Pull all required Singularity images from their registries. This step takes 30–60
-minutes on first run and only needs to be repeated when upgrading image versions.
-Images that already exist on disk are skipped automatically.
+Pull all required Singularity images from their registries. This step is
+**login-node only** — it needs outbound internet access to `nvcr.io` and to
+the public registries. It takes 30–60 minutes on first run and only needs to
+be repeated when upgrading image versions. Images that already exist on disk
+are skipped automatically.
 
 ```bash
+cd deploy/singularity
+./build-images.sh
+```
+
+If `RAG_BASE_DIR` is not yet set in the shell (you have not done the
+interactive setup), the script will fail with a clear error. In that case,
+either export it manually for the build, or source your cluster conf:
+
+```bash
+source run/cluster-config.sh
 ./build-images.sh
 ```
 
@@ -138,9 +284,9 @@ You should see output similar to the following.
 ```output
 === NVIDIA RAG Blueprint — Image Setup ===
 
-RAG_BASE_DIR:      /path/to/rag-workdir
-Output directory:  /path/to/rag-workdir/containers/images
-Singularity cache: /path/to/rag-workdir/containers/cache
+RAG_BASE_DIR:      /gaia/finetune-llm/rag/runtime
+Output directory:  /gaia/finetune-llm/rag/runtime/containers/images
+Singularity cache: /gaia/finetune-llm/rag/runtime/containers/cache
 
 ✅ NGC auth configured for nvcr.io
 
@@ -152,10 +298,6 @@ Singularity cache: /path/to/rag-workdir/containers/cache
 === Summary ===
 ✅ Success: 16
 ❌ Failed:  0
-
-All images ready at: /path/to/rag-workdir/containers/images
-
-Next step: cd run && ./01-start-infrastructure.sh
 ```
 
 Once complete, navigate to the run scripts directory.
@@ -165,337 +307,12 @@ cd run/
 ```
 
 
-## Start Services
-
-Use the following procedure to start all services. The scripts must be run **in order**
-from the `deploy/singularity/run/` directory.
-
-:::{tip}
-For unattended deployment on clusters with a job scheduler, you can run the entire
-01–09 sequence as a single Slurm batch job — skip ahead to
-[Run as a Slurm Batch Job](#run-as-a-slurm-batch-job). The interactive path below
-is the same sequence step by step, useful for learning what each step does and
-for debugging when something goes wrong.
-:::
-
-Re-export `NGC_API_KEY` and `RAG_BASE_DIR` if you are starting a new shell session.
-
-```bash
-export NGC_API_KEY="nvapi-..."
-export RAG_BASE_DIR="/path/to/rag-workdir"
-```
-
-
-### 1. Start infrastructure services
-
-Start etcd, MinIO, and Milvus. This also stops any services left over from a previous
-session and creates a fresh timestamped session directory for logs and runtime state.
-
-```bash
-./01-start-infrastructure.sh
-```
-
-You should see output similar to the following.
-
-```output
-=== Cleaning up previous session ===
-   No previous session found
-   ✅ Cleanup done
-
-=== New session: exec_2025_09_15_1 ===
-
-[1/3] Starting etcd...
-   ✅ etcd started (port 2379, PID 12345)
-   ✅ etcd is ready (2s)
-[2/3] Starting MinIO...
-   ✅ MinIO started (port 9010, PID 12346)
-   ✅ MinIO is ready (3s)
-[3/3] Starting Milvus standalone...
-   ✅ Milvus started (port 19530, PID 12347)
-   ✅ Milvus is ready (45s)
-
-=== Infrastructure Started ===
-✅ etcd:   localhost:2379   (PID 12345)
-✅ MinIO:  localhost:9010   (PID 12346)
-✅ Milvus: localhost:19530  (PID 12347)
-```
-
-
-### 2. Start Redis
-
-Start the Redis message queue used by NV-Ingest and the Ingestor Server.
-
-```bash
-./02-start-redis.sh
-```
-
-You should see output similar to the following.
-
-```output
-=== Starting Redis ===
-   ✅ Redis started (port 6379, PID 12348)
-   ✅ Redis is ready (1s)
-```
-
-
-### 3. Launch NIMs (non-blocking)
-
-Launch all NIM microservices. This step is **non-blocking** — it starts all NIM
-processes and returns immediately. NIMs are distributed across GPUs as follows:
-
-| GPU | Services |
-|-----|----------|
-| GPU 0 | Embedding, Ranking, Page Elements, Graphic Elements, Table Structure, PaddleOCR |
-| GPU 1 + 2 | LLM 49B (tensor parallel, TP=2) |
-| GPU 3 | VLM, NV-Ingest |
-
-```bash
-./03-start-nim-models.sh
-```
-
-You should see output similar to the following.
-
-```output
-=== Launching NIM Models ===
-
-[1/8] Embedding NIM (GPU 0, port 9080)...
-   ✅ Embedding NIM started (PID 12350)
-[2/8] Ranking NIM (GPU 0, port 1976)...
-   ✅ Ranking NIM started (PID 12351)
-[3/8] LLM NIM 49B (GPU 1+2, port 8999, TP=2)...
-   ✅ LLM NIM started (PID 12352)
-...
-=== All 8 NIM processes launched ===
-Next: Run 04-wait-nim-models.sh to wait for all NIMs to be ready.
-```
-
-
-### 4. Wait for NIMs to be ready
-
-Wait for all NIMs to pass their health checks. **On first run**, NIMs download and
-cache their model weights — this can take 5–30 minutes depending on model size and
-available bandwidth. Subsequent starts take 2–5 minutes.
-
-```bash
-./04-wait-nim-models.sh
-```
-
-The script polls each NIM until it responds healthy, then prints a summary.
-
-```output
-=== Waiting for NIMs to be ready ===
-
-   Service              Port    Status
-   ─────────────────────────────────────
-   Embedding NIM        9080    ✅ ready (42s)
-   Ranking NIM          1976    ✅ ready (38s)
-   LLM NIM 49B          8999    ✅ ready (8m12s)
-   VLM NIM              1977    ✅ ready (3m05s)
-   Page Elements        8000    ✅ ready (1m22s)
-   Graphic Elements     8003    ✅ ready (1m18s)
-   Table Structure      8009    ✅ ready (1m24s)
-   PaddleOCR            8016    ✅ ready (1m19s)
-
-=== All 8 NIMs ready ===
-```
-
-
-### 5. Start NV-Ingest
-
-Start the NV-Ingest document processing microservice. This script **blocks** until
-the internal Ray pipeline is fully initialised (2–5 minutes cold start).
-
-```bash
-./05-start-nv-ingest-ms.sh
-```
-
-You should see output similar to the following.
-
-```output
-=== Starting NV-Ingest Microservice ===
-
-   ✅ Redis running (PID 12348)
-   ✅ All prerequisite NIMs are running
-
-Starting NV-Ingest...
-   ✅ NV-Ingest process started (PID 12360)
-   ⏳ Waiting for Ray pipeline to be ready...
-   ✅ Ray pipeline ready (127s)
-
-=== NV-Ingest Started ===
-✅ NV-Ingest: http://localhost:7670
-```
-
-
-### 6. Start the Ingestor Server
-
-Start the document ingestion API.
-
-```bash
-./06-start-ingest-server.sh
-```
-
-You can verify the ingestor server is ready by running the following.
-
-```bash
-curl -s http://localhost:8082/health
-```
-
-You should see output similar to the following.
-
-```output
-{"message":"Service is up."}
-```
-
-
-### 7. Start the RAG Server
-
-Start the RAG query orchestrator, which handles all user queries by coordinating
-vector search, reranking, and LLM calls.
-
-```bash
-./07-start-rag-server.sh
-```
-
-You can verify the RAG server is ready by running the following.
-
-```bash
-curl -s http://localhost:8081/health
-```
-
-You should see output similar to the following.
-
-```output
-{"message":"Service is up."}
-```
-
-
-### 8. Start the Frontend (optional)
-
-Start the web UI. The frontend acts as a reverse proxy for the RAG Server and the
-Ingestor Server.
-
-```bash
-./08-start-frontend.sh
-```
-
-You should see output similar to the following.
-
-```output
-=== Frontend Started ===
-✅ Web UI: http://10.0.0.5:3000
-
-Open this URL in your browser to use the RAG interface.
-```
-
-:::{note}
-In Singularity (shared host network) there is no port mapping. The UI always
-listens on port 3000, regardless of how Docker Compose would map it externally.
-:::
-
-
-## Validate the Deployment
-
-Run the full health check to confirm all services are operational.
-
-```bash
-./09-validate-all-services.sh
-```
-
-All checks should pass.
-
-```output
-=== Validating All Services ===
-
-Infrastructure:
-   ✅ etcd        - port 2379
-   ✅ MinIO       - port 9010
-   ✅ Milvus      - port 19530
-
-Redis:
-   ✅ Redis       - port 6379
-
-NIM Models:
-   ✅ Embedding NIM     - HTTP 200
-   ✅ Ranking NIM       - HTTP 200
-   ✅ LLM NIM           - HTTP 200
-   ✅ VLM NIM           - HTTP 200
-   ✅ Page Elements     - HTTP 200
-   ✅ Graphic Elements  - HTTP 200
-   ✅ Table Structure   - HTTP 200
-   ✅ PaddleOCR         - HTTP 200
-
-Application Layer:
-   ✅ NV-Ingest         - HTTP 200
-   ✅ Ingestor Server   - HTTP 200
-   ✅ RAG Server        - HTTP 200
-
-Results: 15/15 checks passed
-```
-
-
-## Experiment with the Web User Interface
-
-After the RAG Blueprint is deployed, open a browser and navigate to the Frontend URL
-printed by `08-start-frontend.sh`. You can start uploading documents and asking
-questions immediately. For details, see [User Interface for NVIDIA RAG Blueprint](user-interface.md).
-
-
-## Ingest Documents
-
-Use the collection importer in `deploy/singularity/scripts/` to bulk-import documents.
-Each first-level subdirectory of the root directory becomes a separate collection.
-
-Install the required Python packages.
-
-```bash
-pip install -r deploy/singularity/scripts/requirements.txt
-```
-
-Run a dry run first to validate file readability before uploading.
-
-```bash
-python3 deploy/singularity/scripts/ingest_collections.py \
-  --root-dir /path/to/your/documents \
-  --dry-run
-```
-
-Then run the full import.
-
-```bash
-python3 deploy/singularity/scripts/ingest_collections.py \
-  --root-dir /path/to/your/documents
-```
-
-For the full list of options, refer to the
-[Collection Importer documentation](../deploy/singularity/scripts/README.md).
-
-
-## Shut Down Services
-
-To stop all running services and free all ports.
-
-```bash
-./99-stop-all.sh
-```
-
-Everything stored under `RAG_BASE_DIR` is preserved across shutdowns:
-
-| Path | Contents |
-|------|----------|
-| `$RAG_BASE_DIR/db/` | Milvus vector database, MinIO objects, etcd state |
-| `$RAG_BASE_DIR/models/` | NIM model weights (no re-download on next start) |
-| `$RAG_BASE_DIR/containers/images/` | `.sif` images (no re-pull on next start) |
-| `$RAG_BASE_DIR/containers/cache/` | Singularity image cache |
-
-
-## Run as a Slurm Batch Job
-
-For unattended deployment, the wrapper `deploy/singularity/run/submit.sh` runs
-the entire 01–09 startup sequence as a single Slurm batch job and then enters
-a supervisor loop that keeps the stack alive until you cancel the job. The
-wrapper is **fire-and-forget**: it submits, prints a banner, and returns
-control to your shell in under a second.
+## Deploy via Slurm Batch (`./submit.sh`)
+
+The recommended way to launch the RAG Blueprint is through the wrapper
+`submit.sh`. It runs on the **login node**, auto-detects your cluster,
+submits a Slurm batch job, prints a banner with the exact monitoring commands
+ready to copy, and returns control to your shell in under a second.
 
 ```bash
 cd deploy/singularity/run
@@ -528,126 +345,425 @@ Submitting RAG Blueprint to Slurm...
 ======================================================
 ```
 
-`RAG_BASE_DIR`, partition, account, GPU count and walltime are auto-resolved
-from the cluster config (see below). The wrapper exits in <1s; the job runs
-later on a compute node when Slurm allocates resources.
+The wrapper exits in <1s. The job runs on a compute node later, when Slurm
+allocates resources.
 
-### How the wrapper works
+### Watching progress
 
-`submit.sh` runs on the login node and:
-
-1. Validates `NGC_API_KEY` is exported (fail fast — before consuming queue time).
-2. Auto-detects the cluster from `hostname -f` and sources
-   `clusters/<name>.conf` (sets `RAG_BASE_DIR`, partition, account, etc.).
-3. Creates `$RAG_BASE_DIR/sessions/$USER/` (chmod 700) for per-user log and
-   runtime isolation.
-4. Calls `sbatch --parsable` with the site-specific flags assembled from the
-   cluster conf, including `--output=$RAG_BASE_DIR/sessions/$USER/rag-setup-%j.out`
-   so multiple users on the same cluster do not collide.
-5. Prints the early banner with `tail -F` / `squeue` / `scancel` commands
-   pre-filled, and exits.
-
-`sbatch` is **asynchronous** — it queues the job and returns at once. The
-script that runs on the compute node (`deploy-on-node.sh`, invoked by the
-wrapper) is what writes the actual progress to the log file. Nothing past
-the wrapper's banner is printed to your login shell.
-
-To watch progress on the compute node:
+`sbatch` is **asynchronous** — nothing is printed to your terminal after the
+banner above. To watch the job, copy the `Follow` command:
 
 ```bash
-tail -F /path/from/banner/rag-setup-<JOBID>.out
+tail -F /gaia/finetune-llm/rag/runtime/sessions/$USER/rag-setup-<JOBID>.out
 ```
 
-After roughly 15–20 minutes — when all 9 startup steps complete — a second
-`RAG Blueprint READY` banner appears in the log with the frontend and API URLs.
+The file appears once the scheduler allocates a node. The first thing you see
+is the job's own early banner with `Job ID`, `Node`, `GPUs`, `Base dir`, and
+the same `tail -F` / `scancel` commands echoed back. After 15–20 minutes —
+when all 9 startup steps complete — a second `RAG Blueprint READY` banner
+appears with the frontend and API URLs.
 
 :::{tip}
 Pressing **Ctrl-C** on `tail` does **not** stop the job. It only stops following
 the log. The job continues running on the compute node.
 :::
 
-### Multi-tenant: log structure on shared clusters
+### Walltime is unlimited by default
 
-Each user gets their own session tree under `$RAG_BASE_DIR/sessions/$USER/`:
+The cluster confs ship with `SLURM_TIME=""`. The wrapper omits the `--time`
+flag entirely when this is empty, so the partition's default/max walltime
+applies — effectively as long as the site policy allows. This matches the
+expected use of the deployment as a long-lived service (multi-day inference
+work), not a short batch job.
 
-```
-$RAG_BASE_DIR/
-├── containers/, db/, models/        ← shared across users (read once)
-└── sessions/
-    └── alice/                       ← chmod 700, private per user
-        ├── rag-setup-12345.out      ← Slurm output for job 12345
-        └── exec_2026_05_28_12345/   ← session dir (named after JOBID in batch)
-            ├── logs/                ← per-service logs (etcd, milvus, nim-*, etc.)
-            ├── runtime/pids/        ← PID files
-            └── tmp/
-```
-
-The shared paths (`containers/`, `db/`, `models/`) are downloaded once and
-reused by everyone. Only the session dir is per-user. Two users — or two
-batch jobs from the same user — never collide on logs, PIDs, or `.current_exec`.
-
-### Configuring your cluster
-
-Cluster-specific values live in plain files at `deploy/singularity/run/clusters/`:
-
-```
-clusters/
-├── gaia.conf      # Petrobras Gaia — A100, llm-tic account
-└── lncc.conf      # LNCC Santos Dumont — H100, lm_manutencao account
-```
-
-Each conf sets `RAG_BASE_DIR`, `SLURM_PARTITION`, `SLURM_ACCOUNT`,
-`SLURM_GPUS_PER_NODE`, `SLURM_TIME`, and `CLUSTER_GPU`. The wrapper picks the
-right one via `hostname -f` regex. To add a new cluster:
-
-1. Copy an existing conf to `clusters/<your-cluster>.conf`.
-2. Edit the values to match your site (storage path, partition, account, etc.).
-3. Add a hostname-pattern case in `cluster-config.sh`'s `_detect_cluster()` if
-   your hostname does not already match one of the existing patterns.
-
-To override the auto-detect:
+For short experiments where you want the job to clear the queue faster,
+override on the CLI:
 
 ```bash
-CLUSTER_NAME=lncc ./submit.sh
+./submit.sh --time=04:00:00
 ```
 
-To override a single sbatch flag on the CLI (extra args are forwarded):
+Any extra arguments to `./submit.sh` are forwarded to `sbatch`.
+
+### Safe to walk away
+
+The wrapper is fire-and-forget. The job's compute-side script installs a
+`SIGTERM`/`SIGINT` trap **before** running any startup step, so a `scancel`
+at any point — even mid-infrastructure-startup — runs `99-stop-all.sh` and
+shuts down every backgrounded service gracefully before the Slurm cgroup is
+torn down. You can close your laptop after submitting; the job survives.
+
+
+## Validate the Deployment
+
+Once the `RAG Blueprint READY` banner appears in the log, all services are
+expected to be healthy. The job script already runs `09-validate-all-services.sh`
+as the last step of startup, so the log contains the full validation output.
+
+```output
+=== Validating All Services ===
+
+Infrastructure:
+   ✅ etcd        - port 2379
+   ✅ MinIO       - port 9010
+   ✅ Milvus      - port 19530
+
+Redis:
+   ✅ Redis       - port 6379
+
+NIM Models:
+   ✅ Embedding NIM     - HTTP 200
+   ✅ Ranking NIM       - HTTP 200
+   ✅ LLM NIM           - HTTP 200
+   ✅ VLM NIM           - HTTP 200
+   ✅ Page Elements     - HTTP 200
+   ✅ Graphic Elements  - HTTP 200
+   ✅ Table Structure   - HTTP 200
+   ✅ PaddleOCR         - HTTP 200
+
+Application Layer:
+   ✅ NV-Ingest         - HTTP 200
+   ✅ Ingestor Server   - HTTP 200
+   ✅ RAG Server        - HTTP 200
+
+Results: 15/15 checks passed
+```
+
+To re-run validation manually from within the job's shell (or after `ssh`-ing
+to the compute node), source the job's environment and run:
 
 ```bash
-./submit.sh --time=04:00:00 --partition=my-priority-queue
+source $RAG_BASE_DIR/sessions/$USER/exec_*_<JOBID>/runtime/job.env  # optional, sets URLs
+$(dirname $RAG_SLURM_OUT)/../../../deploy/singularity/run/09-validate-all-services.sh
 ```
 
-`SLURM_TIME` is intentionally empty by default — the wrapper omits `--time`
-entirely so the partition's default/max walltime applies. Lower it via the
-CLI override when running short experiments.
 
-### Stopping the job
+## Use the Frontend
 
-Use `scancel` to stop the stack cleanly:
+The compute node where your job runs is typically not directly reachable from
+your laptop. Open an SSH tunnel through the login node.
+
+```bash
+ssh -L 8081:localhost:8081 -L 8082:localhost:8082 -L 3000:localhost:3000 \
+    LOGIN_NODE ssh -L 8081:localhost:8081 -L 8082:localhost:8082 -L 3000:localhost:3000 \
+    COMPUTE_NODE
+```
+
+Replace `LOGIN_NODE` with your cluster login hostname, and `COMPUTE_NODE` with
+the node Slurm allocated for your job — find it with `squeue -j <JOBID> -o %N`.
+
+After the tunnel is established, access services from your laptop:
+
+| Service | URL on your laptop |
+|---------|--------------------|
+| Web UI | `http://localhost:3000` |
+| RAG Server API docs | `http://localhost:8081/docs` |
+| Ingestor API docs | `http://localhost:8082/docs` |
+
+For details on the web UI, see [User Interface for NVIDIA RAG Blueprint](user-interface.md).
+
+
+## Ingest Documents
+
+Use the collection importer in `deploy/singularity/scripts/` to bulk-import
+documents. Each first-level subdirectory of the root directory becomes a
+separate collection on the server.
+
+Install the required Python packages on the host where you will run the
+importer (login node typically — the importer talks to the Ingestor Server
+over HTTP through the SSH tunnel, or directly on the compute node):
+
+```bash
+pip install -r deploy/singularity/scripts/requirements.txt
+```
+
+If `pip install` fails on a network-restricted cluster, the importer can run
+inside any singularity image that ships `requests` and `rich` — see the
+[Collection Importer documentation](../deploy/singularity/scripts/README.md)
+for the singularity-exec fallback.
+
+Run a dry run first to validate file readability before uploading.
+
+```bash
+python3 deploy/singularity/scripts/ingest_collections.py \
+  --root-dir /path/to/your/documents \
+  --dry-run
+```
+
+Then run the full import.
+
+```bash
+python3 deploy/singularity/scripts/ingest_collections.py \
+  --root-dir /path/to/your/documents
+```
+
+For the full list of options (parallel workers, batch size, dedup, specific
+collections), refer to the
+[Collection Importer documentation](../deploy/singularity/scripts/README.md).
+
+
+## Stop the Job
+
+To stop the batch deployment cleanly:
 
 ```bash
 scancel <JOBID>
 ```
 
-`deploy-on-node.sh` installs a `SIGTERM`/`SIGINT` trap **before** the 01–09
-sequence starts, so a `scancel` at any point — including during infrastructure
-startup — runs `99-stop-all.sh` and shuts down every backgrounded service
-gracefully before the Slurm cgroup is torn down.
+The job's `SIGTERM` trap runs `99-stop-all.sh` automatically, which stops
+every backgrounded service (15+ processes including Ray actors, NIMs, Milvus,
+etc.) before the Slurm cgroup is torn down. No orphans.
 
-### Direct sbatch (without the wrapper)
+Everything stored under `RAG_BASE_DIR` is preserved across shutdowns:
 
-You can still call `deploy-on-node.sh` directly via `sbatch`, but you must supply
+| Path | Contents |
+|------|----------|
+| `$RAG_BASE_DIR/db/` | Milvus vector database, MinIO objects, etcd state |
+| `$RAG_BASE_DIR/models/` | NIM model weights (no re-download on next start) |
+| `$RAG_BASE_DIR/containers/images/` | `.sif` images (no re-pull on next start) |
+| `$RAG_BASE_DIR/containers/cache/` | Singularity image cache |
+| `$RAG_BASE_DIR/sessions/$USER/exec_*/logs/` | Per-job logs (kept for inspection) |
+
+
+## Common Errors and Troubleshooting
+
+### `ERROR: NGC_API_KEY is not set` (on `./submit.sh`)
+
+The wrapper validates `NGC_API_KEY` on the login node before consuming any
+queue time. Export it and retry:
+
+```bash
+export NGC_API_KEY="nvapi-..."
+./submit.sh
+```
+
+### `ERROR: Cannot detect cluster from hostname '...'`
+
+The hostname did not match any regex in `cluster-config.sh`. Either add a
+pattern (see [Configure Your Cluster](#configure-your-cluster-one-time)) or
+force a specific cluster:
+
+```bash
+CLUSTER_NAME=lncc ./submit.sh
+```
+
+### `ERROR: <FIELD> is empty after sourcing <conf>`
+
+A required field is missing from the cluster conf. The error names which one
+(`RAG_BASE_DIR`, `SLURM_PARTITION`, `SLURM_ACCOUNT`, `SLURM_GPUS_PER_NODE`, or
+`CLUSTER_GPU`). Open the named conf and add the assignment.
+
+### Slurm output file does not appear after submit
+
+The Slurm output is created when Slurm allocates a node and the job actually
+starts. While the job is still in the queue (`squeue -j <JOBID>` shows state
+`PD`), no log file exists yet. Once the state becomes `R`, the file appears
+within seconds. Use `tail -F` (capital F) so it follows the file once it
+shows up — `-F` retries on `ENOENT`.
+
+### `tail -F` shows nothing but the early banner; no further progress
+
+Common causes:
+
+1. The job is waiting on the Slurm scheduler — check `squeue -j <JOBID>`.
+2. NIM model weights are being downloaded on first run — first-load can take
+   30–60 minutes for the 49B LLM. Watch `$RAG_BASE_DIR/sessions/$USER/exec_*/logs/nim-llm.log`.
+3. A NIM crashed silently — inspect the corresponding `*.log` in the same
+   `logs/` dir.
+
+### `scancel` did not free GPU memory
+
+The `SIGTERM` trap normally runs `99-stop-all.sh` and waits for graceful
+shutdown. If Slurm sent `SIGKILL` immediately (some sites do this), no trap
+runs. On the compute node, run `99-stop-all.sh` manually as the same user, or
+ask the site admin to give the job grace time on cancel.
+
+
+## Alternative: Interactive Mode (01–09 step by step)
+
+The interactive path runs the same 9 startup scripts that `deploy-on-node.sh`
+chains together, but one at a time from your shell. Use it for:
+
+- Learning what each step does
+- Debugging a specific service that fails to start (re-run only that step)
+- Restarting just the application layer (06–08) without touching the NIMs
+
+Re-export `NGC_API_KEY` and `RAG_BASE_DIR` if you are starting a new shell session.
+
+```bash
+export NGC_API_KEY="nvapi-..."
+export RAG_BASE_DIR="/path/to/rag-workdir"
+cd deploy/singularity/run
+```
+
+
+### 1. Start infrastructure services
+
+Start etcd, MinIO, and Milvus. This also stops any services left over from a previous
+session and creates a fresh timestamped session directory under
+`$RAG_BASE_DIR/sessions/$USER/`.
+
+```bash
+./01-start-infrastructure.sh
+```
+
+```output
+=== Cleaning up previous session ===
+   No previous session found
+   ✅ Cleanup done
+
+=== New session: exec_2026_05_28_1 (user: jpnavarro) ===
+
+[1/3] Starting etcd...
+   ✅ etcd started (port 2379, PID 12345)
+   ✅ etcd is ready (2s)
+[2/3] Starting MinIO...
+   ✅ MinIO started (port 9010, PID 12346)
+   ✅ MinIO is ready (3s)
+[3/3] Starting Milvus standalone...
+   ✅ Milvus started (port 19530, PID 12347)
+   ✅ Milvus is ready (45s)
+
+=== Infrastructure Started ===
+✅ etcd:   localhost:2379   (PID 12345)
+✅ MinIO:  localhost:9010   (PID 12346)
+✅ Milvus: localhost:19530  (PID 12347)
+```
+
+
+### 2. Start Redis
+
+Start the Redis message queue used by NV-Ingest and the Ingestor Server.
+
+```bash
+./02-start-redis.sh
+```
+
+
+### 3. Launch NIMs (non-blocking)
+
+Launch all NIM microservices. This step is **non-blocking** — it starts all NIM
+processes and returns immediately. NIMs are distributed across GPUs as follows:
+
+| GPU | Services |
+|-----|----------|
+| GPU 0 | Embedding, Ranking, Page Elements, Graphic Elements, Table Structure, PaddleOCR |
+| GPU 1 + 2 | LLM 49B (tensor parallel, TP=2) |
+| GPU 3 | VLM, NV-Ingest |
+
+```bash
+./03-start-nim-models.sh
+```
+
+
+### 4. Wait for NIMs to be ready
+
+Wait for all NIMs to pass their health checks. **On first run**, NIMs download and
+cache their model weights — this can take 5–30 minutes depending on model size and
+available bandwidth. Subsequent starts take 2–5 minutes.
+
+```bash
+./04-wait-nim-models.sh
+```
+
+```output
+=== Waiting for NIMs to be ready ===
+
+   Service              Port    Status
+   ─────────────────────────────────────
+   Embedding NIM        9080    ✅ ready (42s)
+   Ranking NIM          1976    ✅ ready (38s)
+   LLM NIM 49B          8999    ✅ ready (8m12s)
+   VLM NIM              1977    ✅ ready (3m05s)
+   Page Elements        8000    ✅ ready (1m22s)
+   Graphic Elements     8003    ✅ ready (1m18s)
+   Table Structure      8016    ✅ ready (1m24s)
+   PaddleOCR            8009    ✅ ready (1m19s)
+
+=== All 8 NIMs ready ===
+```
+
+
+### 5. Start NV-Ingest
+
+Start the NV-Ingest document processing microservice. This script **blocks** until
+the internal Ray pipeline is fully initialised (2–5 minutes cold start).
+
+```bash
+./05-start-nv-ingest-ms.sh
+```
+
+
+### 6. Start the Ingestor Server
+
+Start the document ingestion API.
+
+```bash
+./06-start-ingest-server.sh
+```
+
+Verify the ingestor server is ready:
+
+```bash
+curl -s http://localhost:8082/health
+```
+
+
+### 7. Start the RAG Server
+
+Start the RAG query orchestrator.
+
+```bash
+./07-start-rag-server.sh
+```
+
+Verify the RAG server is ready:
+
+```bash
+curl -s http://localhost:8081/health
+```
+
+
+### 8. Start the Frontend (optional)
+
+Start the web UI.
+
+```bash
+./08-start-frontend.sh
+```
+
+
+### 9. Validate
+
+Run the full health check.
+
+```bash
+./09-validate-all-services.sh
+```
+
+
+### Stopping the interactive deployment
+
+```bash
+./99-stop-all.sh
+```
+
+
+## Alternative: Direct sbatch (without the wrapper)
+
+You can call `deploy-on-node.sh` directly via `sbatch`, but you must supply
 the cluster-specific flags yourself — the script intentionally has no
 `#SBATCH --account`, `--partition`, `--gres`, `--time`, or `--output`:
 
 ```bash
 sbatch --account=ACCOUNT --partition=PART --gres=gpu:4 \
-       --output=/path/to/sessions/$USER/rag-setup-%j.out \
+       --output=$RAG_BASE_DIR/sessions/$USER/rag-setup-%j.out \
        --export=ALL deploy-on-node.sh
 ```
 
-The wrapper is the recommended path because it handles all of this automatically
-from the cluster conf.
+The wrapper is the recommended path because it handles all of this
+automatically from the cluster conf, validates env vars on the login node,
+and writes its output to the per-user sessions dir.
 
 
 ## Advanced Deployment Considerations
@@ -672,36 +788,27 @@ so logs for a specific job are at:
 tail -f $RAG_BASE_DIR/sessions/$USER/exec_*_<JOBID>/logs/rag-server.log
 ```
 
-### Remote access via SSH tunnel
-
-HPC compute nodes are typically not directly reachable from your laptop. Use SSH
-port forwarding to tunnel services through the login node.
+The Slurm output file itself is also symlinked into the per-exec logs dir for
+one-stop debugging:
 
 ```bash
-ssh -L 8081:localhost:8081 -L 8082:localhost:8082 -L 3000:localhost:3000 \
-    login-node ssh -L 8081:localhost:8081 -L 8082:localhost:8082 -L 3000:localhost:3000 \
-    compute-node
+tail -f $RAG_BASE_DIR/sessions/$USER/exec_*_<JOBID>/logs/slurm.out
 ```
-
-After the tunnel is established, access services from your laptop at:
-
-| Service | URL |
-|---------|-----|
-| RAG Server API docs | `http://localhost:8081/docs` |
-| Ingestor API docs | `http://localhost:8082/docs` |
-| Web UI | `http://localhost:3000` |
 
 ### GPU allocation
 
-The default layout assumes 4 GPUs (A100 40 GB or equivalent). To change GPU
-assignments, edit the relevant `run/nim/nim-*.sh` script and update the
-`CUDA_VISIBLE_DEVICES` variable before running `03-start-nim-models.sh`.
+The default layout assumes 4 GPUs (A100 80 GB or H100 80 GB). The 49B LLM
+requires 2× 80 GB in tensor-parallel mode. To change GPU assignments, edit
+the relevant `run/nim/nim-*.sh` script and update the `CUDA_VISIBLE_DEVICES`
+variable before running `03-start-nim-models.sh` (interactive mode), or
+adapt the layout before submitting a batch job.
 
 ### Re-running without restarting NIMs
 
-NIMs take the longest to start. If you only need to restart the application layer
-(ingestor server, RAG server, frontend), run scripts 06–08 individually without
-re-running scripts 03–05.
+NIMs take the longest to start. If you only need to restart the application
+layer (ingestor server, RAG server, frontend), `ssh` into the compute node
+(or use interactive mode) and run scripts 06–08 individually without re-running
+scripts 03–05.
 
 ### Port conflicts
 
@@ -711,11 +818,11 @@ Singularity runs on the **shared host network**, every port used by the blueprin
 must be free on the compute node.
 
 Every service port has a configurable default. To override a port, export the
-corresponding variable **before** running the startup scripts.
+corresponding variable **before** launching the deployment.
 
 ```bash
 export TABLE_STRUCTURE_PORT=8026   # change only what conflicts
-./03-start-nim-models.sh
+./submit.sh
 ```
 
 The full port table, with Singularity defaults:
@@ -747,12 +854,24 @@ maps `table-structure` to host port `8006`, while the Singularity default is
 `8016` — chosen to avoid a known conflict on the target HPC cluster. These
 divergences are intentional and will not be unified.
 
-To check for conflicts on a specific port before starting.
+To check for conflicts on a specific port before starting:
 
 ```bash
 lsof -i :8081
 lsof -i :8082
 lsof -i :3000
+```
+
+### Optional feature flags
+
+Feature flags that are purely env-var controlled — such as `ENABLE_QUERYREWRITER`,
+`ENABLE_REFLECTION`, `ENABLE_QUERY_DECOMPOSITION`, `ENABLE_FILTER_GENERATOR`, and
+`ENABLE_VLM_INFERENCE` — are supported. Export them before launching:
+
+```bash
+export ENABLE_QUERYREWRITER=True
+export ENABLE_REFLECTION=true
+./submit.sh
 ```
 
 
@@ -767,17 +886,6 @@ yet implemented in the Singularity deployment. They are planned for future versi
 | **Observability** | `observability.yaml` | Not supported | Requires OTEL collector, Prometheus and Grafana containers; significant infrastructure addition |
 | **NeMo Retriever OCR** | Alternative to PaddleOCR | Not supported | Requires swapping the OCR NIM; not yet wired into the NIM startup scripts |
 | **MIG (Multi-Instance GPU)** | `mig-deployment.md` | Not supported | Requires GPU partitioning configuration specific to the cluster scheduler |
-
-Feature flags that are purely env-var controlled — such as `ENABLE_QUERYREWRITER`,
-`ENABLE_REFLECTION`, `ENABLE_QUERY_DECOMPOSITION`, `ENABLE_FILTER_GENERATOR`, and
-`ENABLE_VLM_INFERENCE` — are already supported. Export the flag before running
-`07-start-rag-server.sh` to enable them.
-
-```bash
-export ENABLE_QUERYREWRITER=True
-export ENABLE_REFLECTION=true
-./07-start-rag-server.sh
-```
 
 
 ## Related Topics
