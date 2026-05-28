@@ -491,53 +491,135 @@ Everything stored under `RAG_BASE_DIR` is preserved across shutdowns:
 
 ## Run as a Slurm Batch Job
 
-For unattended deployment, `deploy/singularity/run/submit-job.sh` runs the entire
-01–09 startup sequence as a single Slurm batch job and then enters a supervisor
-loop that keeps the stack alive until you cancel the job. This is equivalent to
-running the 9 interactive steps in order.
+For unattended deployment, the wrapper `deploy/singularity/run/submit.sh` runs
+the entire 01–09 startup sequence as a single Slurm batch job and then enters
+a supervisor loop that keeps the stack alive until you cancel the job. The
+wrapper is **fire-and-forget**: it submits, prints a banner, and returns
+control to your shell in under a second.
 
 ```bash
 cd deploy/singularity/run
 export NGC_API_KEY="nvapi-..."
-export RAG_BASE_DIR="/path/to/rag-workdir"
 
-sbatch --export=ALL submit-job.sh
+./submit.sh
 ```
 
-`sbatch` prints `Submitted batch job <JOBID>` and returns immediately. The
-terminal is free.
+Output:
 
-### How sbatch differs from running the scripts directly
+```output
+Cluster: gaia (A100) — /gaia/finetune-llm/rag/runtime
 
-`sbatch` is **asynchronous**. It only queues the job on the scheduler and
-returns at once. The script `submit-job.sh` itself does not run on your login
-shell — it runs **later, on a compute node**, when Slurm allocates resources.
-All of its output (including the startup banner with absolute log path,
-`tail -F` command and `scancel` command pre-filled) is captured by Slurm and
-written to the output file declared by `#SBATCH --output=rag-setup-%j.log`,
-which lives in the directory you ran `sbatch` from:
+Submitting RAG Blueprint to Slurm...
+  Cluster   : gaia (A100)
+  Partition : gpu
+  Account   : llm-tic
+  GPUs      : 4
+  Walltime  : (partition default — no limit)
+  Base dir  : /gaia/finetune-llm/rag/runtime
+  User      : jpnavarro
 
+======================================================
+  RAG Blueprint — submitted
+======================================================
+  Job ID   : 12345
+  Follow   : tail -F /gaia/finetune-llm/rag/runtime/sessions/jpnavarro/rag-setup-12345.out
+  Status   : squeue -j 12345
+  Stop     : scancel 12345
+======================================================
 ```
-<your-submit-dir>/rag-setup-<JOBID>.log
-```
 
-Nothing is printed to your terminal at submit time other than `sbatch`'s own
-`Submitted batch job <JOBID>` line. To see the banner and follow progress, open
-the log file:
+`RAG_BASE_DIR`, partition, account, GPU count and walltime are auto-resolved
+from the cluster config (see below). The wrapper exits in <1s; the job runs
+later on a compute node when Slurm allocates resources.
+
+### How the wrapper works
+
+`submit.sh` runs on the login node and:
+
+1. Validates `NGC_API_KEY` is exported (fail fast — before consuming queue time).
+2. Auto-detects the cluster from `hostname -f` and sources
+   `clusters/<name>.conf` (sets `RAG_BASE_DIR`, partition, account, etc.).
+3. Creates `$RAG_BASE_DIR/sessions/$USER/` (chmod 700) for per-user log and
+   runtime isolation.
+4. Calls `sbatch --parsable` with the site-specific flags assembled from the
+   cluster conf, including `--output=$RAG_BASE_DIR/sessions/$USER/rag-setup-%j.out`
+   so multiple users on the same cluster do not collide.
+5. Prints the early banner with `tail -F` / `squeue` / `scancel` commands
+   pre-filled, and exits.
+
+`sbatch` is **asynchronous** — it queues the job and returns at once. The
+script that runs on the compute node (`submit-job.sh`, invoked by the
+wrapper) is what writes the actual progress to the log file. Nothing past
+the wrapper's banner is printed to your login shell.
+
+To watch progress on the compute node:
 
 ```bash
-tail -F rag-setup-<JOBID>.log
+tail -F /path/from/banner/rag-setup-<JOBID>.out
 ```
 
-The first banner at the top of the file shows the job ID, node, GPU count,
-base directory and the exact `tail -F` / `scancel` commands. After roughly
-15–20 minutes — when all 9 startup steps complete — a second
-`RAG Blueprint READY` banner appears with the frontend and API URLs.
+After roughly 15–20 minutes — when all 9 startup steps complete — a second
+`RAG Blueprint READY` banner appears in the log with the frontend and API URLs.
 
 :::{tip}
 Pressing **Ctrl-C** on `tail` does **not** stop the job. It only stops following
 the log. The job continues running on the compute node.
 :::
+
+### Multi-tenant: log structure on shared clusters
+
+Each user gets their own session tree under `$RAG_BASE_DIR/sessions/$USER/`:
+
+```
+$RAG_BASE_DIR/
+├── containers/, db/, models/        ← shared across users (read once)
+└── sessions/
+    └── alice/                       ← chmod 700, private per user
+        ├── rag-setup-12345.out      ← Slurm output for job 12345
+        └── exec_2026_05_28_12345/   ← session dir (named after JOBID in batch)
+            ├── logs/                ← per-service logs (etcd, milvus, nim-*, etc.)
+            ├── runtime/pids/        ← PID files
+            └── tmp/
+```
+
+The shared paths (`containers/`, `db/`, `models/`) are downloaded once and
+reused by everyone. Only the session dir is per-user. Two users — or two
+batch jobs from the same user — never collide on logs, PIDs, or `.current_exec`.
+
+### Configuring your cluster
+
+Cluster-specific values live in plain files at `deploy/singularity/run/clusters/`:
+
+```
+clusters/
+├── gaia.conf      # Petrobras Gaia — A100, llm-tic account
+└── lncc.conf      # LNCC Santos Dumont — H100, lm_manutencao account
+```
+
+Each conf sets `RAG_BASE_DIR`, `SLURM_PARTITION`, `SLURM_ACCOUNT`,
+`SLURM_GPUS_PER_NODE`, `SLURM_TIME`, and `CLUSTER_GPU`. The wrapper picks the
+right one via `hostname -f` regex. To add a new cluster:
+
+1. Copy an existing conf to `clusters/<your-cluster>.conf`.
+2. Edit the values to match your site (storage path, partition, account, etc.).
+3. Add a hostname-pattern case in `cluster-config.sh`'s `_detect_cluster()` if
+   your hostname does not already match one of the existing patterns.
+
+To override the auto-detect:
+
+```bash
+CLUSTER_NAME=lncc ./submit.sh
+```
+
+To override a single sbatch flag on the CLI (extra args are forwarded):
+
+```bash
+./submit.sh --time=04:00:00 --partition=my-priority-queue
+```
+
+`SLURM_TIME` is intentionally empty by default — the wrapper omits `--time`
+entirely so the partition's default/max walltime applies. Lower it via the
+CLI override when running short experiments.
 
 ### Stopping the job
 
@@ -547,39 +629,47 @@ Use `scancel` to stop the stack cleanly:
 scancel <JOBID>
 ```
 
-`submit-job.sh` traps `SIGTERM`/`SIGINT` and runs `99-stop-all.sh` on cancel,
-so all backgrounded services (15+ processes including Ray actors, NIMs, Milvus,
-etc.) are shut down gracefully before the Slurm cgroup is torn down.
+`submit-job.sh` installs a `SIGTERM`/`SIGINT` trap **before** the 01–09
+sequence starts, so a `scancel` at any point — including during infrastructure
+startup — runs `99-stop-all.sh` and shuts down every backgrounded service
+gracefully before the Slurm cgroup is torn down.
 
-### Slurm directives are site-specific
+### Direct sbatch (without the wrapper)
 
-The `#SBATCH` directives at the top of `submit-job.sh` (`--account`, `--partition`,
-`--gres`, `--time`) are tuned for a specific site. Edit them to match your cluster,
-or override on the CLI when submitting:
+You can still call `submit-job.sh` directly via `sbatch`, but you must supply
+the cluster-specific flags yourself — the script intentionally has no
+`#SBATCH --account`, `--partition`, `--gres`, `--time`, or `--output`:
 
 ```bash
-sbatch --account=my-account --partition=my-gpu-partition --time=04:00:00 \
+sbatch --account=ACCOUNT --partition=PART --gres=gpu:4 \
+       --output=/path/to/sessions/$USER/rag-setup-%j.out \
        --export=ALL submit-job.sh
 ```
 
-The default `--time=08:00:00` includes a margin for the LLM 49B's first-time
-weight download (~60 min) plus several hours of usage. Lower it for short
-experiments to play nicely with the scheduler's fair-share policy.
+The wrapper is the recommended path because it handles all of this automatically
+from the cluster conf.
 
 
 ## Advanced Deployment Considerations
 
 ### Logs
 
-Each session writes logs to a timestamped directory under `RAG_BASE_DIR`. To find
-and follow logs for a specific service.
+Each session writes logs to a per-user, timestamped directory under
+`$RAG_BASE_DIR/sessions/$USER/`. To find and follow logs for a specific service:
 
 ```bash
-tail -f $RAG_BASE_DIR/exec_*/logs/rag-server.log
+tail -f $RAG_BASE_DIR/sessions/$USER/exec_*/logs/rag-server.log
 ```
 
 ```bash
-tail -f $RAG_BASE_DIR/exec_*/logs/nv-ingest-ms.log
+tail -f $RAG_BASE_DIR/sessions/$USER/exec_*/logs/nv-ingest.log
+```
+
+In batch mode (via `submit.sh`) the exec dir is named `exec_<DATE>_<JOBID>`,
+so logs for a specific job are at:
+
+```bash
+tail -f $RAG_BASE_DIR/sessions/$USER/exec_*_<JOBID>/logs/rag-server.log
 ```
 
 ### Remote access via SSH tunnel

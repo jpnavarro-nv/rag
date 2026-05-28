@@ -22,11 +22,47 @@ if [ -z "${RAG_BASE_DIR:-}" ]; then
     exit 1
 fi
 
+# Catch a common foot-gun: literal `$VAR` in the path (single-quoted export,
+# or --export=RAG_BASE_DIR='/scratch/$USER/rag' where Slurm preserved the `$`).
+case "$RAG_BASE_DIR" in
+    *\$*)
+        echo "ERROR: RAG_BASE_DIR contains an unexpanded variable: $RAG_BASE_DIR" >&2
+        echo "Likely cause: exported with single quotes — re-export with double quotes." >&2
+        exit 1
+        ;;
+esac
+
+if [ ! -w "$RAG_BASE_DIR" ]; then
+    echo "ERROR: RAG_BASE_DIR is not writeable by user '$(id -un)': $RAG_BASE_DIR" >&2
+    exit 1
+fi
+
 # ==============================================================================
-# Step 2: Stop any services left over from the previous session
+# Step 2: Resolve per-user session dir (multi-tenant log isolation)
+# ==============================================================================
+# Load dirs.sh early so $RAG_USER and $RAG_SESSIONS_DIR are available for the
+# previous-session cleanup below.  config.sh is sourced again later, after the
+# new exec dir is recorded — that pass picks up RAG_EXEC_DIR/LOGS_DIR/etc.
+source "$(dirname "$0")/dirs.sh"
+
+_USER_SESSIONS_DIR="$RAG_SESSIONS_DIR/$RAG_USER"
+mkdir -p "$_USER_SESSIONS_DIR"
+chmod 700 "$_USER_SESSIONS_DIR" 2>/dev/null || true
+
+# Remove orphan .current_exec from pre-multi-tenant layout (one-time migration).
+# Pre-refactor sessions wrote to $RAG_BASE_DIR/.current_exec; the new pointer
+# lives under $_USER_SESSIONS_DIR.  If left behind, the old file is harmless
+# but misleading during debugging.
+if [ -f "$RAG_BASE_DIR/.current_exec" ]; then
+    echo "   Removing legacy pre-refactor pointer: $RAG_BASE_DIR/.current_exec"
+    rm -f "$RAG_BASE_DIR/.current_exec"
+fi
+
+# ==============================================================================
+# Step 3: Stop any services left over from the previous session (same user)
 # ==============================================================================
 echo "=== Cleaning up previous session ==="
-_PREV_EXEC_FILE="$RAG_BASE_DIR/.current_exec"
+_PREV_EXEC_FILE="$_USER_SESSIONS_DIR/.current_exec"
 if [ -f "$_PREV_EXEC_FILE" ]; then
     _PREV_EXEC=$(cat "$_PREV_EXEC_FILE")
     _PREV_NAME=$(basename "$_PREV_EXEC")
@@ -75,14 +111,22 @@ echo "   ✅ Cleanup done"
 echo ""
 
 # ==============================================================================
-# Step 3: Create new exec directory
+# Step 4: Create new exec directory under the per-user sessions root
 # ==============================================================================
+# When run inside Slurm, name the dir after $SLURM_JOB_ID for uniqueness across
+# concurrent batch jobs of the same user (JOBIDs are globally unique).  When
+# run interactively, fall back to a date-indexed counter.
 _DATE=$(date +%Y_%m_%d)
-_IDX=1
-while [ -d "$RAG_BASE_DIR/exec_${_DATE}_${_IDX}" ]; do
-    _IDX=$((_IDX + 1))
-done
-_EXEC_DIR="$RAG_BASE_DIR/exec_${_DATE}_${_IDX}"
+if [ -n "${SLURM_JOB_ID:-}" ]; then
+    _EXEC_NAME="exec_${_DATE}_${SLURM_JOB_ID}"
+else
+    _IDX=1
+    while [ -d "$_USER_SESSIONS_DIR/exec_${_DATE}_${_IDX}" ]; do
+        _IDX=$((_IDX + 1))
+    done
+    _EXEC_NAME="exec_${_DATE}_${_IDX}"
+fi
+_EXEC_DIR="$_USER_SESSIONS_DIR/$_EXEC_NAME"
 
 mkdir -p "$_EXEC_DIR/logs"
 mkdir -p "$_EXEC_DIR/tmp"
@@ -92,8 +136,8 @@ mkdir -p "$_EXEC_DIR/runtime/ingestor-temp"
 mkdir -p "$_EXEC_DIR/runtime/ingestor-venv-bin"
 mkdir -p "$_EXEC_DIR/runtime/nv-ingest-data"
 
-echo "$_EXEC_DIR" > "$RAG_BASE_DIR/.current_exec"
-echo "=== New session: $(basename $_EXEC_DIR) ==="
+echo "$_EXEC_DIR" > "$_USER_SESSIONS_DIR/.current_exec"
+echo "=== New session: $_EXEC_NAME (user: $RAG_USER) ==="
 echo ""
 
 # ==============================================================================

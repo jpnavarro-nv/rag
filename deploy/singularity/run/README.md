@@ -60,36 +60,46 @@ cd deploy/singularity
 | `08-start-frontend.sh` | Frontend UI | 07 | 3000 |
 | `09-validate-all-services.sh` | Full health validation | all | — |
 | `99-stop-all.sh` | Stop all services | — | — |
-| `submit-job.sh` | Slurm batch wrapper — runs 01–09 in one job, supervises until `scancel` | Slurm | — |
+| `submit-job.sh` | Slurm job script — runs 01–09 + supervisor (invoked by `submit.sh`) | Slurm | — |
+| `submit.sh` | **Wrapper for `sbatch`** — auto-detects cluster, submits the job, prints banner, exits | Slurm | — |
+| `cluster-config.sh` | Auto-detects cluster from hostname and sources `clusters/*.conf` | — | — |
+| `clusters/*.conf` | Per-cluster settings (RAG_BASE_DIR, partition, account, GPUs, walltime) | — | — |
 
 ## Batch Mode (Slurm)
 
-For unattended deployment via the scheduler, use `submit-job.sh` to run 01–09
-as a single Slurm batch job:
+For unattended deployment via the scheduler, use the **wrapper** `submit.sh`
+— it is fire-and-forget, runs on the login node, auto-detects the cluster,
+and prints a banner with the exact monitoring commands:
 
 ```bash
-sbatch --export=ALL submit-job.sh
+export NGC_API_KEY="nvapi-..."
+./submit.sh
 ```
 
-`sbatch` is **asynchronous** — it queues the job and returns immediately with
-`Submitted batch job <JOBID>`. The script itself runs on the compute node when
-Slurm allocates resources, and its full output (including the early banner with
-the exact `tail -F` and `scancel` commands) is written to
-`rag-setup-<JOBID>.log` in the directory you ran `sbatch` from.
+The wrapper exits in <1s.  The Slurm output for your job lands at:
 
-To watch progress:
+```
+$RAG_BASE_DIR/sessions/$USER/rag-setup-<JOBID>.out
+```
+
+— a per-user path, so concurrent users on the same cluster never collide.
+The banner shows the absolute path ready to copy.
+
+To watch progress (start any time after submit):
 
 ```bash
-tail -F rag-setup-<JOBID>.log
+tail -F $RAG_BASE_DIR/sessions/$USER/rag-setup-<JOBID>.out
 ```
 
 Ctrl-C on `tail` only stops following the log — the job keeps running. To stop
 the stack cleanly: `scancel <JOBID>` (triggers a graceful `99-stop-all.sh` via
-the script's SIGTERM trap).
+the SIGTERM trap installed before 01-09 even starts).
 
-The `#SBATCH` directives in `submit-job.sh` (`--account`, `--partition`,
-`--gres`, `--time`) are site-specific — edit them or override on the CLI.
-See `docs/deploy-singularity-self-hosted.md` for the full reference.
+Cluster auto-detect can be overridden with `CLUSTER_NAME=lncc ./submit.sh`.
+To add a new cluster, create `clusters/<name>.conf` and add a hostname pattern
+to `cluster-config.sh`. See `docs/deploy-singularity-self-hosted.md` for the
+full reference, including direct `sbatch submit-job.sh` invocation if you do
+not want to use the wrapper.
 
 ## Resource Requirements
 
@@ -120,7 +130,8 @@ ssh -L 8081:localhost:8081 -L 8082:localhost:8082 login-node \
 
 ## Troubleshooting
 
-- Logs are in `$RAG_BASE_DIR/exec_YYYY_MM_DD_N/logs/`. Use `ls $RAG_BASE_DIR/exec_*/` to find the current session directory.
+- Logs are in `$RAG_BASE_DIR/sessions/$USER/exec_YYYY_MM_DD_*/logs/`. Use `ls $RAG_BASE_DIR/sessions/$USER/exec_*/` to find your sessions (interactive sessions are numbered `_N`; batch sessions include the Slurm `_<JOBID>`).
 - NIMs not loading: check GPU memory with `nvidia-smi`.
 - Port conflicts: `lsof -i :PORT`.
 - Milvus auth errors: verify `region: us-east-1` in `milvus.yaml`.
+- Wrong cluster auto-detected: override with `CLUSTER_NAME=<name> ./submit.sh`.

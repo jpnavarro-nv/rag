@@ -28,9 +28,11 @@ source "$(dirname "${BASH_SOURCE[0]}")/dirs.sh"
 
 # ==============================================================================
 # Current Execution Directory (written by 01-start-infrastructure.sh)
-# Each ./01 run creates exec_YYYY_MM_DD_N and records it here.
+# Each ./01 run creates exec_YYYY_MM_DD_{N,SLURM_JOB_ID} under the per-user
+# sessions dir and records it here.  The pointer is per-user so concurrent
+# users on the same node never collide.
 # ==============================================================================
-_CURRENT_EXEC_FILE="$RAG_BASE_DIR/.current_exec"
+_CURRENT_EXEC_FILE="$RAG_SESSIONS_DIR/$RAG_USER/.current_exec"
 if [ -f "$_CURRENT_EXEC_FILE" ]; then
     export RAG_EXEC_DIR=$(cat "$_CURRENT_EXEC_FILE")
     export RAG_RUNTIME_DIR=$RAG_EXEC_DIR/runtime

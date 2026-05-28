@@ -2,36 +2,31 @@
 # ==============================================================================
 # Slurm batch job: RAG Blueprint full setup
 # ==============================================================================
-# Runs the complete startup sequence (01–09) asynchronously on a GPU node.
-# The job executes sequentially: each script must succeed before the next runs.
-# Progress is written to the Slurm output file; monitor it with:
+# Runs the complete startup sequence (01–09) on a GPU node, then enters a
+# supervisor loop that keeps the stack alive until `scancel`.
 #
-#   tail -f rag-setup-<JOBID>.log
+# *** Recommended invocation: via the wrapper submit.sh ***
 #
-# Submit (recommended — vars from current shell, no leak via scontrol show job):
-#   source ~/.rag-env             # exports NGC_API_KEY and RAG_BASE_DIR
-#   cd deploy/singularity/run
-#   sbatch --export=ALL ./submit-job.sh
+#   cd deploy/singularity/run && ./submit.sh
 #
-# Or, fully explicit (vars become visible in scontrol show job):
-#   sbatch --export=ALL,NGC_API_KEY=$NGC_API_KEY,RAG_BASE_DIR=$RAG_BASE_DIR \
+# The wrapper handles cluster auto-detection (account, partition, GPUs,
+# walltime) and per-user log routing.  It supplies the site-specific
+# `--account`, `--partition`, `--gres`, `--time`, `--output` flags via the
+# sbatch CLI — they intentionally are NOT hardcoded as #SBATCH directives
+# here so the script stays portable across clusters.
+#
+# Direct `sbatch submit-job.sh` still works, but you must supply the missing
+# directives on the command line (or no job will start):
+#
+#   sbatch --account=ACCOUNT --partition=PART --gres=gpu:4 --export=ALL \
 #          submit-job.sh
-#
-# Optional overrides at submission time:
-#   --output=/custom/path/slurm-%j.log
-#   --time=10:00:00
 #
 # Stop the running stack with:
 #   scancel <JOBID>      # triggers graceful 99-stop-all.sh via trap
 # ==============================================================================
 
 #SBATCH --job-name=rag-setup
-#SBATCH --partition=gpu
-#SBATCH --account=llm-tic
 #SBATCH --nodes=1
-#SBATCH --gres=gpu:4
-#SBATCH --time=08:00:00        # allow 60+ min for LLM 49B first-load weight download
-#SBATCH --output=rag-setup-%j.log
 
 # ==============================================================================
 # Validate required environment variables
@@ -74,16 +69,21 @@ export CHECK_INTERVAL=15
 # present, fall back to BASH_SOURCE for direct (non-sbatch) invocation.
 SCRIPT_DIR="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 
-# Resolve the Slurm output path the user can tail.  --output=rag-setup-%j.log
-# is relative to SLURM_SUBMIT_DIR (the dir where `sbatch` was invoked from), so
-# this same path appears in the early banner and in the READY banner later.
-SLURM_OUT_PATH="${SLURM_SUBMIT_DIR:-$(pwd)}/rag-setup-${SLURM_JOB_ID}.log"
+# Resolve the actual Slurm StdOut path — authoritative regardless of how the
+# wrapper passed --output.  Falls back to Slurm's default convention if
+# scontrol is unavailable or fails (e.g. very early during job start-up).
+SLURM_OUT_PATH=$(scontrol show job "$SLURM_JOB_ID" -o 2>/dev/null \
+                 | grep -oP 'StdOut=\K\S+' || true)
+if [ -z "$SLURM_OUT_PATH" ]; then
+    SLURM_OUT_PATH="${SLURM_SUBMIT_DIR:-$(pwd)}/slurm-${SLURM_JOB_ID}.out"
+fi
 
 echo "======================================================"
 echo "  RAG Blueprint — Slurm Setup Job"
 echo "======================================================"
 echo "  Job ID   : ${SLURM_JOB_ID}"
 echo "  Node     : ${SLURMD_NODENAME}"
+echo "  User     : ${USER:-$(id -un)}"
 echo "  GPUs     : ${SLURM_GPUS_ON_NODE:-${CUDA_VISIBLE_DEVICES}}"
 echo "  Base dir : ${RAG_BASE_DIR}"
 echo "  Started  : $(date)"
@@ -96,6 +96,27 @@ echo ""
 set -e
 
 cd "$SCRIPT_DIR"
+
+# ==============================================================================
+# Graceful shutdown handler — define BEFORE installing the trap and BEFORE
+# running 01-09, so a `scancel` during infrastructure startup still triggers
+# 99-stop-all.sh instead of leaving orphan etcd/MinIO/Milvus/NIM processes
+# in the cgroup.  Defensive: tolerates partial setup state (RAG_EXEC_DIR or
+# RAG_RUNTIME_DIR may not yet exist if scancel arrives during 01).
+# ==============================================================================
+cleanup() {
+    trap - SIGTERM SIGINT EXIT
+    echo ""
+    echo "[$(date -Iseconds)] Caught termination signal — running 99-stop-all.sh..."
+    if [ -x "$SCRIPT_DIR/99-stop-all.sh" ] || [ -f "$SCRIPT_DIR/99-stop-all.sh" ]; then
+        bash "$SCRIPT_DIR/99-stop-all.sh" || true
+    else
+        echo "[$(date -Iseconds)] WARNING: 99-stop-all.sh not found at $SCRIPT_DIR — skipping graceful shutdown"
+    fi
+    echo "[$(date -Iseconds)] RAG stack stopped."
+    exit 0
+}
+trap cleanup SIGTERM SIGINT
 
 echo "--- [1/9] Infrastructure (etcd, MinIO, Milvus) ---"
 bash 01-start-infrastructure.sh
@@ -134,9 +155,11 @@ bash 09-validate-all-services.sh
 source "$SCRIPT_DIR/config.sh" >/dev/null
 
 # Symlink the Slurm output into the per-exec logs dir for one-stop debugging.
-if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -n "$RAG_LOGS_DIR" ]; then
-    ln -sf "$SLURM_SUBMIT_DIR/rag-setup-${SLURM_JOB_ID}.log" \
-           "$RAG_LOGS_DIR/slurm.out" 2>/dev/null || true
+# $SLURM_OUT_PATH was resolved at the top of this script via scontrol — it
+# matches whatever the wrapper passed as --output (.out under sessions/$USER/
+# in the standard flow) or Slurm's default (slurm-<JOBID>.out in submit dir).
+if [ -n "$SLURM_OUT_PATH" ] && [ -n "$RAG_LOGS_DIR" ]; then
+    ln -sf "$SLURM_OUT_PATH" "$RAG_LOGS_DIR/slurm.out" 2>/dev/null || true
 fi
 
 # Sourceable job metadata (NODE/PORT for monitoring, scancel, debugging).
@@ -153,18 +176,6 @@ RAG_SERVER_URL=http://$(hostname):8081
 INGESTOR_URL=http://$(hostname):8082
 EOF
 fi
-
-# Graceful shutdown on scancel / SIGTERM / SIGINT.
-# Disarm trap on first call so re-entry during 99-stop-all.sh is a no-op.
-cleanup() {
-    trap - SIGTERM SIGINT EXIT
-    echo ""
-    echo "[$(date -Iseconds)] Caught termination signal — running 99-stop-all.sh..."
-    bash "$SCRIPT_DIR/99-stop-all.sh" || true
-    echo "[$(date -Iseconds)] RAG stack stopped."
-    exit 0
-}
-trap cleanup SIGTERM SIGINT
 
 echo ""
 echo "============================================================"
