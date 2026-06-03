@@ -117,21 +117,8 @@ $RAG_BASE_DIR/
 ```
 
 A new user submitting their first job inherits the existing shared data — no
-60 GB re-download, no 50 GB re-cache. The `containers/` and `models/` trees are
-effectively read-only at runtime and safe to share.
-
-> **One instance per base directory.** The `db/` tree (etcd, MinIO, Milvus) is
-> shared **and writable**, and the service ports are fixed — so only **one** RAG
-> instance can run against a given `RAG_BASE_DIR` at a time. Submitting a second
-> stack while one is already live would corrupt the shared database, so the
-> deployment refuses it: `submit.sh` fails fast on the login node, and
-> `deploy-on-node.sh` holds a lock (`$RAG_BASE_DIR/.rag-active.lock`) and exits
-> with *"já existe uma instância do RAG em execução"* if another live instance
-> holds it. The lock is released automatically on `scancel`/shutdown, and a
-> stale lock left by a crashed job is reclaimed on the next submit. Running
-> multiple **concurrent** instances (each isolated, sharing only the cached
-> images/models) is mapped as future work — it needs per-instance `db/`
-> isolation and is not supported yet.
+60 GB re-download, no 50 GB re-cache. Two users running the stack concurrently
+on different nodes get isolated log/runtime trees but share read-only data.
 
 ### Cluster auto-detect
 
