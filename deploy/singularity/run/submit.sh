@@ -81,6 +81,31 @@ mkdir -p "$USER_SESSIONS_DIR"
 chmod 700 "$USER_SESSIONS_DIR" 2>/dev/null || true
 
 # ==============================================================================
+# Single-instance pre-check (fail fast on the login node, before queueing)
+# ==============================================================================
+# Only one RAG instance per RAG_BASE_DIR is supported today (shared db/ + fixed
+# ports). The authoritative gate is the single-instance lock in
+# deploy-on-node.sh; here we just spare the user a wasted queue slot when an
+# instance is already live. Best-effort: any uncertainty (stale lock, no
+# squeue) → proceed and let the node-side guard decide.
+RAG_LOCK="$RAG_BASE_DIR/.rag-active.lock"
+if [ -f "$RAG_LOCK/info" ]; then
+    _holder_job=$(sed -n 's/^JOBID=//p' "$RAG_LOCK/info" 2>/dev/null || true)
+    if [ -n "$_holder_job" ] && command -v squeue >/dev/null 2>&1 \
+       && squeue -h -j "$_holder_job" 2>/dev/null | grep -q .; then
+        _holder_node=$(sed -n 's/^NODE=//p' "$RAG_LOCK/info" 2>/dev/null || true)
+        _holder_user=$(sed -n 's/^USER=//p' "$RAG_LOCK/info" 2>/dev/null || true)
+        echo "ERRO: já existe uma instância do RAG em execução para esta base:" >&2
+        echo "      RAG_BASE_DIR = $RAG_BASE_DIR" >&2
+        echo "      job=$_holder_job  nó=${_holder_node:-?}  usuário=${_holder_user:-?}" >&2
+        echo "" >&2
+        echo "Só é suportada UMA instância por RAG_BASE_DIR. Pare a ativa antes de submeter outra:" >&2
+        echo "      scancel $_holder_job" >&2
+        exit 1
+    fi
+fi
+
+# ==============================================================================
 # Build the sbatch command — site-specific values come from cluster-config.sh,
 # multi-tenant log routing comes from USER_SESSIONS_DIR.  --export=ALL is
 # baked in so NGC_API_KEY / RAG_BASE_DIR / etc. reach the compute node.

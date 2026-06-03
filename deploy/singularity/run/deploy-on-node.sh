@@ -55,6 +55,80 @@ if [ ! -d "${RAG_BASE_DIR}" ]; then
 fi
 
 # ==============================================================================
+# Single-instance guard
+# ==============================================================================
+# The stack assumes ONE instance per RAG_BASE_DIR: db/ (etcd/MinIO/Milvus) and
+# the fixed service ports are shared cluster-wide, so a second concurrent
+# instance corrupts the shared db. Acquire a global lock (atomic `mkdir` on the
+# shared FS) and refuse to start if another LIVE instance already holds it.
+# Best-effort: if the lock dir can't be created for unrelated reasons, warn and
+# proceed so a legitimate single run is never blocked. Concurrent multi-instance
+# support is tracked as technical debt (see deploy-singularity-self-hosted.md).
+RAG_LOCK="$RAG_BASE_DIR/.rag-active.lock"
+
+_lock_holder_alive() {
+    # Returns 0 if the JOBID recorded in the lock is still queued/running.
+    # If squeue is unavailable we cannot prove the holder is dead → assume alive
+    # (the safe choice: never silently stomp a possibly-running instance).
+    local jobid="$1"
+    [ -n "$jobid" ] || return 1
+    command -v squeue >/dev/null 2>&1 || return 0
+    squeue -h -j "$jobid" 2>/dev/null | grep -q .
+}
+
+_write_lock_info() {
+    cat > "$RAG_LOCK/info" <<EOF
+JOBID=${SLURM_JOB_ID:-}
+NODE=$(hostname)
+USER=${USER:-$(id -un)}
+STARTED_AT=$(date -Iseconds)
+EOF
+}
+
+_reject_second_instance() {
+    local info="$RAG_LOCK/info"
+    local h_job h_node h_user h_since
+    h_job=$(sed -n 's/^JOBID=//p'      "$info" 2>/dev/null)
+    h_node=$(sed -n 's/^NODE=//p'      "$info" 2>/dev/null)
+    h_user=$(sed -n 's/^USER=//p'      "$info" 2>/dev/null)
+    h_since=$(sed -n 's/^STARTED_AT=//p' "$info" 2>/dev/null)
+    echo ""
+    echo "ERRO: já existe uma instância do RAG em execução para esta base:"
+    echo "      RAG_BASE_DIR = $RAG_BASE_DIR"
+    echo "      job=${h_job:-?}  nó=${h_node:-?}  usuário=${h_user:-?}  desde=${h_since:-?}"
+    echo ""
+    echo "Só é suportada UMA instância por RAG_BASE_DIR (db/ e portas são"
+    echo "compartilhados). Pare a instância ativa antes de subir outra:"
+    echo "      scancel ${h_job:-<JOBID>}"
+    echo ""
+    exit 1
+}
+
+if mkdir "$RAG_LOCK" 2>/dev/null; then
+    _write_lock_info
+    echo "Single-instance lock adquirido: $RAG_LOCK"
+elif [ -d "$RAG_LOCK" ]; then
+    _holder_job=$(sed -n 's/^JOBID=//p' "$RAG_LOCK/info" 2>/dev/null)
+    if _lock_holder_alive "$_holder_job"; then
+        _reject_second_instance
+    fi
+    # Stale lock (holder gone) → reclaim once.
+    echo "Lock obsoleto (job ${_holder_job:-?} não está mais ativo) — recuperando..."
+    rm -rf "$RAG_LOCK"
+    if mkdir "$RAG_LOCK" 2>/dev/null; then
+        _write_lock_info
+        echo "Single-instance lock readquirido: $RAG_LOCK"
+    else
+        # Lost a race with another acquirer → treat as live, refuse.
+        _reject_second_instance
+    fi
+else
+    # mkdir failed but no dir present → FS/permission oddity. Degrade gracefully.
+    echo "AVISO: não foi possível criar o lock ($RAG_LOCK) — seguindo sem guard de instância única."
+    RAG_LOCK=""   # mark as not-held so cleanup() won't touch a foreign lock
+fi
+
+# ==============================================================================
 # Reduce polling output for batch logs
 # 04-wait-nim-models.sh defaults to CHECK_INTERVAL=2 (noisy in batch).
 # ==============================================================================
@@ -112,6 +186,14 @@ cleanup() {
         bash "$SCRIPT_DIR/99-stop-all.sh" || true
     else
         echo "[$(date -Iseconds)] WARNING: 99-stop-all.sh not found at $SCRIPT_DIR — skipping graceful shutdown"
+    fi
+    # Release the single-instance lock — only if it belongs to this job (never
+    # remove a lock held by another instance, e.g. after a degraded acquire).
+    if [ -n "${RAG_LOCK:-}" ] && [ -n "${SLURM_JOB_ID:-}" ] && [ -f "$RAG_LOCK/info" ]; then
+        if grep -qx "JOBID=$SLURM_JOB_ID" "$RAG_LOCK/info" 2>/dev/null; then
+            rm -rf "$RAG_LOCK" 2>/dev/null || true
+            echo "[$(date -Iseconds)] Single-instance lock released."
+        fi
     fi
     echo "[$(date -Iseconds)] RAG stack stopped."
     exit 0
