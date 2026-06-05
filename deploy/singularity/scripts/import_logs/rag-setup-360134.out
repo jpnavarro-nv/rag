@@ -1,0 +1,2959 @@
+Single-instance lock adquirido: /gaia/nvidia/partner/rag-refactor/.rag-active.lock
+======================================================
+  RAG Blueprint — Slurm Setup Job
+======================================================
+  Job ID   : 360134
+  Node     : gaiab01n03
+  User     : bglq
+  GPUs     : 0,1,2,3
+  Base dir : /gaia/nvidia/partner/rag-refactor
+  Started  : Wed Jun  3 12:14:20 -03 2026
+------------------------------------------------------
+  Follow   : tail -F /gaia/nvidia/partner/rag-refactor/sessions/bglq/rag-setup-360134.out
+  Stop     : scancel 360134
+======================================================
+
+--- [1/9] Infrastructure (etcd, MinIO, Milvus) ---
+=== Cleaning up previous session ===
+   Previous session: exec_2026_06_03_360133
+   ✅ Cleanup done
+
+=== New session: exec_2026_06_03_360134 (user: bglq) ===
+
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== Starting RAG Infrastructure Services ===
+
+[1/3] Starting etcd...
+   ✅ etcd started (port 2379, PID 1265351)
+   ⏳ Waiting for etcd to be ready...
+   ✅ etcd is ready (1s)
+[2/3] Starting MinIO...
+   ✅ MinIO started (port 9010, PID 1265423)
+   ⏳ Waiting for MinIO to be ready...
+   ✅ MinIO is ready (1s)
+[3/3] Starting Milvus standalone...
+   ✅ Milvus config ready
+   ✅ Milvus started (port 19530, PID 1265513)
+   ⏳ Waiting for Milvus to be ready (may take 30-90s)...
+   ✅ Milvus is ready (4s)
+
+=== Infrastructure Started ===
+✅ etcd:   localhost:2379   (PID 1265351)
+✅ MinIO:  localhost:9010   (PID 1265423)
+✅ Milvus: localhost:19530  (PID 1265513)
+
+Session: exec_2026_06_03_360134
+Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/
+DB:      /gaia/nvidia/partner/rag-refactor/db/
+
+Next: Run 02-start-redis.sh
+--- [2/9] Redis ---
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== Starting Redis ===
+
+Starting Redis on port 6379...
+   ✅ Redis process started (port 6379, PID 1265756)
+   ⏳ Waiting for Redis to be ready...
+   ✅ Redis is ready (via nc)
+
+=== Redis Started ===
+✅ Redis: localhost:6379 (PID 1265756)
+
+Logs: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/redis.log
+
+Next: Run 03-start-nim-models.sh to start NIM models
+--- [3/9] NIM models (fire and return) ---
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== Starting Retrieval NIMs ===
+   Embedding:  localhost:9080  (GPU 0)
+   Ranking:    localhost:1976  (GPU 0)
+   LLM:        localhost:8999  (GPU 1,2)
+
+   Launching Triton instance-count patchers (target: 2)...
+   Starting nemoretriever-embedding on port 9080, GPU 0...
+   ✅ nemoretriever-embedding started (PID 1265847, port 9080)
+      log: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/nemoretriever-embedding.log
+   Starting nemoretriever-ranking on port 1976, GPU 0...
+   ✅ nemoretriever-ranking started (PID 1266177, port 1976)
+      log: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/nemoretriever-ranking.log
+   Starting nim-llm on port 8999, GPU 1,2...
+   ✅ nim-llm started (PID 1266525, port 8999)
+      log: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/nim-llm.log
+
+✅ Retrieval NIMs launched
+   Monitor: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/nemoretriever-embedding.log
+   Monitor: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/nemoretriever-ranking.log
+   Monitor: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/nim-llm.log
+
+⚠️  LLM (49B) loads in ~10-15 min. Embedding/Ranking ready in ~2 min.
+
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== Starting Ingest NIMs ===
+   Page Elements:    localhost:8000  (GPU 0)
+   Graphic Elements: localhost:8003  (GPU 0)
+   Table Structure:  localhost:8016  (GPU 0)
+   PaddleOCR:        localhost:8009  (GPU 0)
+
+   Starting page-elements on port 8000, GPU 0...
+   ✅ page-elements started (PID 1266890, port 8000)
+      log: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/page-elements.log
+   Starting graphic-elements on port 8003, GPU 0...
+   Patched /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime/nim-work/ranking/tmp/run/triton-model-repository/nvidia_llama_3_2_nv_rerankqa_1b_v2/config.pbtxt: instance count 16 → 2
+   ✅ graphic-elements started (PID 1267502, port 8003)
+      log: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/graphic-elements.log
+   Starting table-structure on port 8016, GPU 0...
+   Patched /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime/nim-work/embedding/tmp/run/triton-model-repository/nvidia_llama_3_2_nv_embedqa_1b_v2/config.pbtxt: instance count 16 → 2
+   ✅ table-structure started (PID 1267907, port 8016)
+      log: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/table-structure.log
+   Starting paddle-ocr on port 8009, GPU 0...
+   ✅ paddle-ocr started (PID 1269285, port 8009)
+      log: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/paddle-ocr.log
+
+✅ Ingest NIMs launched
+   Monitor: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/page-elements.log
+   Monitor: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/graphic-elements.log
+   Monitor: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/table-structure.log
+   Monitor: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/paddle-ocr.log
+
+⚠️  Models load in ~30-40 s. Run 04-wait-nim-models.sh to monitor.
+
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== Starting VLM NIM ===
+   VLM: localhost:1977  (GPU 3)
+   Cache: /gaia/nvidia/partner/rag-refactor/models/vlm-cache
+
+   Starting vlm on port 1977, GPU 3...
+   ✅ vlm started (PID 1269899, port 1977)
+      log: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/vlm.log
+
+Monitor:  tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/vlm.log
+Health:   curl http://localhost:1977/v1/health/ready
+Stop:     kill $(cat /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime/pids/vlm.pid)
+
+⚠️  Model loads in ~5-10 min (~16GB download on first run).
+
+=== All NIM groups launched ===
+Next: bash 04-wait-nim-models.sh
+--- [4/9] Wait for NIM models to be ready ---
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+
+[0;34mStarting parallel monitoring of all 8 NIMs...[0m
+Waiting without timeout — LLM NIM (49B) can take up to 60 min on first load...
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[1;33m⏳[0m] Embedding NIM        (port 9080)  Waiting...
+  [[1;33m⏳[0m] Ranking NIM          (port 1976)  Waiting...
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Waiting...
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Waiting...
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[1;33m⏳[0m] Page Elements        (port 8000)  Waiting...
+  [[1;33m⏳[0m] Graphic Elements     (port 8003)  Waiting...
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Waiting...
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Waiting...
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m1/8 Ready[0m | Elapsed: 0s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 0s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 0s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[1;33m⏳[0m] Page Elements        (port 8000)  Loading... 0s
+  [[1;33m⏳[0m] Graphic Elements     (port 8003)  Loading... 0s
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 0s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 0s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m2/8 Ready[0m | Elapsed: 2s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 0s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 0s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[1;33m⏳[0m] Page Elements        (port 8000)  Loading... 0s
+  [[1;33m⏳[0m] Graphic Elements     (port 8003)  Loading... 0s
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 0s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 0s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m2/8 Ready[0m | Elapsed: 4s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 0s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 0s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[1;33m⏳[0m] Page Elements        (port 8000)  Loading... 0s
+  [[1;33m⏳[0m] Graphic Elements     (port 8003)  Loading... 0s
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 0s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 0s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m2/8 Ready[0m | Elapsed: 6s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 0s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 0s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[1;33m⏳[0m] Page Elements        (port 8000)  Loading... 0s
+  [[1;33m⏳[0m] Graphic Elements     (port 8003)  Loading... 0s
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 0s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 0s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m2/8 Ready[0m | Elapsed: 8s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 0s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 0s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[1;33m⏳[0m] Page Elements        (port 8000)  Loading... 0s
+  [[1;33m⏳[0m] Graphic Elements     (port 8003)  Loading... 0s
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 0s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 0s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m2/8 Ready[0m | Elapsed: 10s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 0s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 0s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[1;33m⏳[0m] Page Elements        (port 8000)  Loading... 0s
+  [[1;33m⏳[0m] Graphic Elements     (port 8003)  Loading... 0s
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 0s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 0s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m2/8 Ready[0m | Elapsed: 12s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 0s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 0s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[1;33m⏳[0m] Page Elements        (port 8000)  Loading... 0s
+  [[1;33m⏳[0m] Graphic Elements     (port 8003)  Loading... 0s
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 0s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 0s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m2/8 Ready[0m | Elapsed: 14s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 15s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 15s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 15s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 15s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m4/8 Ready[0m | Elapsed: 17s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 15s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 15s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 15s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 15s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m4/8 Ready[0m | Elapsed: 19s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 15s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 15s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 15s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 15s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m4/8 Ready[0m | Elapsed: 21s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 15s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 15s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 15s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 15s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m4/8 Ready[0m | Elapsed: 23s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 15s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 15s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 15s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 15s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m4/8 Ready[0m | Elapsed: 25s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 15s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 15s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 15s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 15s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m4/8 Ready[0m | Elapsed: 27s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 15s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 15s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[1;33m⏳[0m] Table Structure      (port 8016)  Loading... 15s
+  [[1;33m⏳[0m] PaddleOCR            (port 8009)  Loading... 15s
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m4/8 Ready[0m | Elapsed: 29s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 30s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 30s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 31s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 30s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 30s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 33s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 30s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 30s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 35s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 30s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 30s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 37s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 30s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 30s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 39s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 30s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 30s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 41s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 30s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 30s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 43s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 45s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 45s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 45s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 45s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 45s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 48s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 45s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 45s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 50s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 45s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 45s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 52s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 45s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 45s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 54s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 45s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 45s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 56s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 45s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 45s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 58s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 45s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 45s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 60s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 60s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 60s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 62s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 60s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 60s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 64s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 60s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 60s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 66s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 60s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 60s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 68s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 60s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 60s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 70s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 60s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 60s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 72s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[1;33m⏳[0m] LLM NIM              (port 8999)  Loading... 60s
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 60s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m6/8 Ready[0m | Elapsed: 74s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 75s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 76s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 75s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 79s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 75s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 81s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 75s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 83s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 75s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 85s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 75s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 87s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 75s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 89s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 90s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 91s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 90s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 93s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 90s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 95s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 90s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 97s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 90s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 99s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 90s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 101s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 90s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 103s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 105s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 105s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 105s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 107s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 105s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 110s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 105s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 112s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 105s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 114s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 105s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 116s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 105s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 118s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 105s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 120s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 120s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 122s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 120s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 124s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 120s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 126s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 120s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 128s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 120s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 130s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 120s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 132s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 120s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 134s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 135s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 136s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 135s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 138s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 135s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 140s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 135s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 143s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 135s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 145s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 135s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 147s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 135s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 149s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 150s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 151s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 150s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 153s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 150s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 155s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 150s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 157s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 150s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 159s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 150s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 161s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 150s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 163s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 150s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 165s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 165s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 167s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 165s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 169s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 165s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 171s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 165s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 173s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 165s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 176s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 165s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 178s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 165s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 180s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 180s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 182s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 180s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 184s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 180s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 186s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 180s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 188s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 180s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 190s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 180s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 192s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 180s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 194s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 195s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 196s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 195s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 198s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 195s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 200s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 195s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 202s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 195s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 204s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 195s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 206s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 195s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 209s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 211s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 211s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 211s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 213s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 211s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 215s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 211s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 217s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 211s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 219s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 211s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 221s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 211s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 223s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 211s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 225s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 226s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 227s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 226s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 229s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 226s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 231s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 226s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 233s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 226s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 235s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 226s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 237s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[1;33m⏳[0m] VLM NIM              (port 1977)  Loading... 226s
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m7/8 Ready[0m | Elapsed: 239s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[0;32m✅[0m] VLM NIM              (port 1977)  [0;32mReady[0m
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m8/8 Ready[0m | Elapsed: 241s
+
+[3J[H[2J
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         NIM Models - Real-Time Status Monitor                     ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+[0;36mLanguage Models (GPU 0, 1+2, 3):[0m
+  [[0;32m✅[0m] Embedding NIM        (port 9080)  [0;32mReady[0m
+  [[0;32m✅[0m] Ranking NIM          (port 1976)  [0;32mReady[0m
+  [[0;32m✅[0m] LLM NIM              (port 8999)  [0;32mReady[0m
+  [[0;32m✅[0m] VLM NIM              (port 1977)  [0;32mReady[0m
+
+[0;36mDocument Processing Models (GPU 0):[0m
+  [[0;32m✅[0m] Page Elements        (port 8000)  [0;32mReady[0m
+  [[0;32m✅[0m] Graphic Elements     (port 8003)  [0;32mReady[0m
+  [[0;32m✅[0m] Table Structure      (port 8016)  [0;32mReady[0m
+  [[0;32m✅[0m] PaddleOCR            (port 8009)  [0;32mReady[0m
+
+────────────────────────────────────────────────────────────────────
+Progress: [0;32m8/8 Ready[0m | Elapsed: 242s
+
+
+════════════════════════════════════════════════════════════════
+Summary
+════════════════════════════════════════════════════════════════
+
+Total NIMs:    8
+Ready:         [0;32m8[0m
+Failed:        [0;31m0[0m
+Total time:    242s
+
+[0;32m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;32m║  ✅  All NIMs Ready - Proceeding to Next Step                     ║[0m
+[0;32m╚════════════════════════════════════════════════════════════════════╝[0m
+
+Next: Run 05-start-nv-ingest-ms.sh to start NV-Ingest microservice
+--- [5/9] NV-Ingest microservice ---
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== Starting NV-Ingest Microservice ===
+
+Checking prerequisites...
+   ✅ Redis ready at localhost:6379
+   ✅ PaddleOCR ready at localhost:8009
+   ✅ Page Elements ready at localhost:8000
+
+Starting NV-Ingest Microservice...
+   ✅ NV-Ingest process started (port 7670, PID 1288360)
+   ⏳ Waiting for NV-Ingest to be ready (cold start may take several minutes)...
+   ✅ NV-Ingest HTTP ready (after 2s)
+   ⏳ Waiting for NV-Ingest Ray pipeline (not just HTTP) to be ready...
+   ⏳ submit_job probe: http=422 body='{"detail":[{"type":"string_type","loc":["body","payload"],"m' — attempt 1
+   ⏳ submit_job probe: http=422 body='{"detail":[{"type":"string_type","loc":["body","payload"],"m' — attempt 3
+   ⚠️  submit_job probe inconclusive (non-UUID response, http=422) — switching to Ray dashboard probe
+   ✅ NV-Ingest Ray GCS started (dashboard probe, attempt 4)
+      ⚠️  submit_job probe was inconclusive — waiting 300s for Ray actors...
+
+=== NV-Ingest Started ===
+✅ NV-Ingest: localhost:7670 (PID 1288360)
+
+Logs: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/nv-ingest.log
+
+Next: Run 06-start-ingest-server.sh to start Ingestor Server
+--- [6/9] Ingestor Server ---
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== Starting Ingestor Server ===
+
+Checking prerequisites...
+   ✅ Milvus ready at localhost:19530
+   ✅ MinIO ready at localhost:9010
+   ✅ Redis ready at localhost:6379
+   ✅ Embedding NIM ready at localhost:9080
+   ✅ NV-Ingest ready at localhost:7670
+
+Starting Ingestor Server on port 8082...
+Setting up ingestor venv bin overlay (one-time, ~30s)...
+INFO:    Environment variable SINGULARITY_TMPDIR is set, but APPTAINER_TMPDIR is preferred
+   ✅ venv bin overlay created at /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime/ingestor-venv-bin
+   ✅ Ingestor Server process started (port 8082, PID 1304108)
+   ⏳ Waiting for Ingestor Server to be ready...
+   ✅ Ingestor Server is ready
+
+=== Ingestor Server Started ===
+✅ Ingestor Server: http://localhost:8082
+   API Docs: http://localhost:8082/docs
+
+Logs: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/ingestor-server.log
+
+Next: Run 07-start-rag-server.sh to start the RAG Server
+--- [7/9] RAG Server ---
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== Starting RAG Server ===
+
+Checking infrastructure...
+   ✅ etcd running (PID 1265351)
+   ✅ MinIO running (PID 1265423)
+   ✅ Milvus running (PID 1265513)
+
+✅ All infrastructure services are running
+
+Starting RAG Server on port 8081...
+   LLM:       localhost:8999
+   Embedding: localhost:9080
+   Ranking:   localhost:1976
+   VLM:       http://localhost:1977/v1
+
+   ✅ RAG Server process started (port 8081, PID 1304281)
+   ⏳ Waiting for RAG Server to be ready (no timeout)...
+   ⏳ Loading... 0s   ⏳ Loading... 2s   ⏳ Loading... 4s   ✅ RAG Server is ready (6s)                                       
+
+=== RAG Server Started ===
+✅ RAG Server: http://localhost:8081
+   API Docs:   http://localhost:8081/docs
+
+Logs: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/rag-server.log
+
+Next: Run 08-start-frontend.sh to start the Web UI
+--- [8/9] Frontend ---
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== Starting RAG Frontend ===
+
+Checking prerequisites...
+   ✅ RAG Server ready at localhost:8081
+   ✅ Ingestor Server ready at localhost:8082
+
+Starting Frontend on port 3000...
+   RAG Server:      http://localhost:8081/v1  (proxy target)
+   Ingestor Server: http://localhost:8082/v1    (proxy target)
+   UI (local):      http://localhost:3000
+   UI (remote):     http://10.28.176.3:3000
+
+   ✅ Frontend process started (PID 1304857)
+   ⏳ Waiting for Frontend to be ready (no timeout)...
+   ✅ Frontend is ready (0s)                                         
+
+=== Frontend Started ===
+✅ Web UI: http://10.28.176.3:3000
+
+Open this URL in your browser to use the RAG interface.
+
+Logs: tail -f /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs/rag-frontend.log
+
+Next: Run 09-validate-all-services.sh to validate the complete stack
+--- [9/9] Validate all services ---
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+
+[0;34m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;34m║         RAG Stack Complete Validation                              ║[0m
+[0;34m╚════════════════════════════════════════════════════════════════════╝[0m
+
+
+[0;34m=====================================================================[0m
+[0;34m1. Infrastructure Services (etcd, MinIO, Milvus)[0m
+[0;34m=====================================================================[0m
+   [0;32m✅[0m etcd - Process running (PID 1265351)
+   [0;32m✅[0m etcd health - HTTP 200
+   [0;32m✅[0m MinIO - Process running (PID 1265423)
+   [0;32m✅[0m MinIO health - HTTP 200
+   [0;32m✅[0m Milvus - Process running (PID 1265513)
+   [0;32m✅[0m Milvus health - HTTP 200
+   [0;32m✅[0m Milvus API - Port 19530 open
+
+[0;34m=====================================================================[0m
+[0;34m2. Redis (Message Queue)[0m
+[0;34m=====================================================================[0m
+   [0;32m✅[0m Redis - Process running (PID 1265756)
+   [0;32m✅[0m Redis - Port 6379 open
+
+[0;34m=====================================================================[0m
+[0;34m3. NIM Models[0m
+[0;34m=====================================================================[0m
+   [0;32m✅[0m Embedding NIM - Process running (PID 1265847)
+   [0;32m✅[0m Embedding NIM - HTTP 200
+   [0;32m✅[0m Ranking NIM - Process running (PID 1266177)
+   [0;32m✅[0m Ranking NIM - HTTP 200
+   [0;32m✅[0m LLM NIM - Process running (PID 1266525)
+   [0;32m✅[0m LLM NIM - HTTP 200
+   [0;32m✅[0m VLM NIM - Process running (PID 1269899)
+   [0;32m✅[0m VLM NIM - HTTP 200
+   [0;32m✅[0m Page Elements - Process running (PID 1266890)
+   [0;32m✅[0m Page Elements - HTTP 200
+   [0;32m✅[0m Graphic Elements - Process running (PID 1267502)
+   [0;32m✅[0m Graphic Elements - HTTP 200
+   [0;32m✅[0m Table Structure - Process running (PID 1267907)
+   [0;32m✅[0m Table Structure - HTTP 200
+   [0;32m✅[0m PaddleOCR - Process running (PID 1269285)
+   [0;32m✅[0m PaddleOCR - HTTP 200
+
+[0;34m=====================================================================[0m
+[0;34m4. NV-Ingest Microservice[0m
+[0;34m=====================================================================[0m
+   [0;32m✅[0m NV-Ingest - Process running (PID 1288360)
+   [0;32m✅[0m NV-Ingest - HTTP 200
+
+[0;34m=====================================================================[0m
+[0;34m5. Application Servers[0m
+[0;34m=====================================================================[0m
+   [0;32m✅[0m Ingestor Server - Process running (PID 1304108)
+   [0;32m✅[0m Ingestor Server - HTTP 200
+   [0;32m✅[0m Ingestor API Docs - HTTP 200
+   [0;32m✅[0m RAG Server - Process running (PID 1304281)
+   [0;32m✅[0m RAG Server - HTTP 200
+   [0;32m✅[0m RAG API Docs - HTTP 200
+
+[0;34m=====================================================================[0m
+[0;34m6. Frontend (Web UI)[0m
+[0;34m=====================================================================[0m
+   [0;32m✅[0m Frontend - Process running (PID 1304857)
+   [0;32m✅[0m Frontend UI - HTTP 200
+
+[0;34m=====================================================================[0m
+[0;34mValidation Summary[0m
+[0;34m=====================================================================[0m
+
+Total Checks:  35
+Passed:        [0;32m35[0m
+Failed:        [0;31m0[0m
+
+[0;32m╔════════════════════════════════════════════════════════════════════╗[0m
+[0;32m║  ✅  ALL SERVICES OPERATIONAL - RAG Stack Ready for Use!          ║[0m
+[0;32m╚════════════════════════════════════════════════════════════════════╝[0m
+
+🎯 Quick Access URLs (use compute node IP from your browser):
+   • Web UI:          http://10.28.176.3:3000
+   • RAG Server API:  http://10.28.176.3:8081/docs
+   • Ingestor API:    http://10.28.176.3:8082/docs
+   • MinIO Console:   http://10.28.176.3:9011
+
+📝 Next Steps:
+   1. Use SSH tunnel to access from your laptop
+   2. Test document ingestion via Ingestor API
+   3. Query documents via RAG Server API
+
+============================================================
+  RAG Blueprint READY
+  Job ID    : 360134
+  Node      : gaiab01n03.ep.petrobras.com.br
+  Frontend  : http://gaiab01n03.ep.petrobras.com.br:3000
+  RAG API   : http://gaiab01n03.ep.petrobras.com.br:8081
+  Ingestor  : http://gaiab01n03.ep.petrobras.com.br:8082
+  Logs      : /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+  Job env   : /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/job.env
+  Stop      : scancel 360134
+============================================================
+slurmstepd: error: *** JOB 360134 ON gaiab01n03 CANCELLED AT 2026-06-05T10:58:45 ***
+
+[2026-06-05T10:59:07-03:00] Caught termination signal — running 99-stop-all.sh...
+=== Stopping All RAG Services ===
+
+✅ Configuration loaded
+
+Permanent:
+   Base:     /gaia/nvidia/partner/rag-refactor
+   Images:   /gaia/nvidia/partner/rag-refactor/containers/images
+   DB:       /gaia/nvidia/partner/rag-refactor/db
+
+Exec: exec_2026_06_03_360134
+   Logs:    /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/logs
+   Runtime: /gaia/nvidia/partner/rag-refactor/sessions/bglq/exec_2026_06_03_360134/runtime
+
+✅ NGC_API_KEY: nvapi-x_3U...W-q_
+
+=== [1/6] Stopping Application Servers ===
+   Stopping rag-frontend (PID 1304857)...
+   ✅ rag-frontend stopped
+   Stopping rag-server (PID 1304281)...
+   ✅ rag-server stopped
+   Stopping ingestor-server (PID 1304108)...
+   ✅ ingestor-server stopped
+
+=== [2/6] Stopping Ingestion Services ===
+   Stopping nv-ingest (PID 1288360)...
+   ✅ nv-ingest stopped
+   ✅ Ray sub-processes cleared
+   Stopping redis (PID 1265756)...
+   ✅ redis stopped
+
+=== [3/6] Stopping NIM Processes ===
+   Stopping vlm (PID 1269899)...
+   ⚠️  vlm still alive after 8 s — force killing...
+   ✅ vlm force-killed
+   Stopping nim-llm (PID 1266525)...
+   ✅ nim-llm stopped
+   Stopping nemoretriever-embedding (PID 1265847)...
+   ✅ nemoretriever-embedding stopped
+   Stopping nemoretriever-ranking (PID 1266177)...
+   ✅ nemoretriever-ranking stopped
+   Stopping page-elements (PID 1266890)...
+   ✅ page-elements stopped
+   Stopping graphic-elements (PID 1267502)...
+   ✅ graphic-elements stopped
+   Stopping table-structure (PID 1267907)...
+   ✅ table-structure stopped
+   Stopping paddle-ocr (PID 1269285)...
+   ✅ paddle-ocr stopped
+
+=== [4/6] Stopping Infrastructure ===
+   Stopping milvus (PID 1265513)...
+   ✅ milvus stopped
+   Stopping minio (PID 1265423)...
+   ✅ minio stopped
+   Stopping etcd (PID 1265351)...
+   ✅ etcd stopped
+
+=== [5/6] Cleaning Up Stray Instances & PID Files ===
+   ⊘  No singularity instances running
+
+=== [6/6] Releasing Ports ===
+   Releasing NV-Ingest HTTP (port 7670) — orphan PIDs: 1288425 1288432 1288433 1288434 1288435 1288436 1288437 1288438 1288439 1288440 1288442 1288445 1288681 1288729 1288730 1288731 1288873 1288874 1288877 1288884 1288934 1288935 1288950 1288958 1288988 1288989 1288999 1289004 1289009 1289040 1289088 1289144 1289148 1289377 1289407 1289456 1289472 1289511 1289514 1289518 1289581 1289618 1289628 1289637 1289665 1289688 1289737 1289743 1289746 1290052 1290089 1290118 1290197 1290199 1290207 1290301 1290419 1290702 1290715 1290777 1290787 1290814 1290872 1290916 1290999
+ 1288425 1288432 1288433 1288434 1288435 1288436 1288437 1288438 1288439 1288440 1288442 1288445 1288681 1288729 1288730 1288731 1288873 1288874 1288877 1288884 1288934 1288935 1288950 1288958 1288988 1288989 1288999 1289004 1289009 1289040 1289088 1289144 1289148 1289377 1289407 1289456 1289472 1289511 1289514 1289518 1289581 1289618 1289628 1289637 1289665 1289688 1289737 1289743 1289746 1290052 1290089 1290118 1290197 1290199 1290207 1290301 1290419 1290702 1290715 1290777 1290787 1290814 1290872 1290916 1290999   Releasing VLM (port 1977) — orphan PIDs: 1269971
+ 1269971   Releasing Embedding HTTP (port 9080) — orphan PIDs: 1268892
+ 1268892   Releasing Ranking HTTP (port 1976) — orphan PIDs: 1267954 1268102 1268103 1268104 1268105 1268106 1268107 1268108 1268109 1268110 1268111 1268113 1268115 1268117 1268119 1268120 1268121
+ 1267954 1268102 1268103 1268104 1268105 1268106 1268107 1268108 1268109 1268110 1268111 1268113 1268115 1268117 1268119 1268120 1268121   Releasing Page-Elements HTTP (port 8000) — orphan PIDs: 1270706 1271156 1271158 1271159 1271160 1271161 1271162 1271163 1271164 1271166 1271167 1271168 1271170 1271173 1271174 1271175 1271176
+ 1270706 1271156 1271158 1271159 1271160 1271161 1271162 1271163 1271164 1271166 1271167 1271168 1271170 1271173 1271174 1271175 1271176   Releasing Page-Elements gRPC (port 8001) — orphan PIDs: 1271958
+ 1271958   Releasing Graphic-Elements HTTP (port 8003) — orphan PIDs: 1272312 1272510 1272516 1272518 1272528 1272558 1272564 1272565 1272567 1272568 1272569 1272570 1272572 1272574 1272575 1272576 1272577
+ 1272312 1272510 1272516 1272518 1272528 1272558 1272564 1272565 1272567 1272568 1272569 1272570 1272572 1272574 1272575 1272576 1272577   Releasing Graphic-Elements gRPC (port 8004) — orphan PIDs: 1273356
+ 1273356   Releasing Table-Structure HTTP (port 8016) — orphan PIDs: 1274852 1275032 1275033 1275034 1275035 1275036 1275037 1275038 1275039 1275040 1275041 1275042 1275043 1275044 1275045 1275046 1275047
+ 1274852 1275032 1275033 1275034 1275035 1275036 1275037 1275038 1275039 1275040 1275041 1275042 1275043 1275044 1275045 1275046 1275047   Releasing Table-Structure gRPC (port 8017) — orphan PIDs: 1276205
+ 1276205   Releasing PaddleOCR HTTP (port 8009) — orphan PIDs: 1273718 1273882 1273883 1273884 1273885 1273886 1273887 1273888 1273889 1273890 1273891 1273892 1273893 1273894 1273895 1273896 1273897
+ 1273718 1273882 1273883 1273884 1273885 1273886 1273887 1273888 1273889 1273890 1273891 1273892 1273893 1273894 1273895 1273896 1273897   Releasing PaddleOCR gRPC (port 8010) — orphan PIDs: 1274832
+ 1274832
+=== Cleanup Complete ===
+
+To restart:
+  Full stack:  ./01-start-infrastructure.sh && ./02-start-redis.sh && ./03-start-nim-models.sh && ./04-wait-nim-models.sh && ./05-start-nv-ingest-ms.sh && ./06-start-ingest-server.sh && ./07-start-rag-server.sh && ./08-start-frontend.sh
+  Query-only:  ./01-start-infrastructure.sh && ./02-start-redis.sh && ./07-start-rag-server.sh && ./08-start-frontend.sh
+[2026-06-05T10:59:40-03:00] Single-instance lock released.
+[2026-06-05T10:59:40-03:00] RAG stack stopped.
