@@ -85,6 +85,10 @@ coverage/
 .pytest_cache/
 cover/
 *.log
+# Exception: keep collection-importer run logs so they can be committed for review
+!deploy/singularity/scripts/import_logs/
+!deploy/singularity/scripts/import_logs/**/
+!deploy/singularity/scripts/import_logs/**/*.log
 # Workbench Project Layout
 # Temporary legacy pull scripts (deprecated)
 deploy/singularity/scripts/pull-minimal-images.sh
