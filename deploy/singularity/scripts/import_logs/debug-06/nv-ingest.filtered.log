@@ -1,0 +1,159 @@
+### ERROS/READY
+### TAIL 200
+INFO:    Environment variable SINGULARITY_TMPDIR is set, but APPTAINER_TMPDIR is preferred
+[WARN  tini (1426241)] Tini is not running as PID 1 .
+Zombie processes will not be re-parented to Tini, so zombie reaping won't work.
+To fix the problem, run Tini as PID 1.
+[2026-06-05 12:13:42 -0300] [1426286] [INFO] Starting gunicorn 23.0.0
+[2026-06-05 12:13:42 -0300] [1426286] [INFO] Listening at: http://0.0.0.0:7670 (1426286)
+[2026-06-05 12:13:42 -0300] [1426286] [INFO] Using worker: uvicorn.workers.UvicornWorker
+[2026-06-05 12:13:42 -0300] [1426290] [INFO] Booting worker with pid: 1426290
+[2026-06-05 12:13:42 -0300] [1426291] [INFO] Booting worker with pid: 1426291
+[2026-06-05 12:13:42 -0300] [1426292] [INFO] Booting worker with pid: 1426292
+[2026-06-05 12:13:42 -0300] [1426293] [INFO] Booting worker with pid: 1426293
+[2026-06-05 12:13:42 -0300] [1426297] [INFO] Booting worker with pid: 1426297
+[2026-06-05 12:13:42 -0300] [1426302] [INFO] Booting worker with pid: 1426302
+[2026-06-05 12:13:42 -0300] [1426350] [INFO] Booting worker with pid: 1426350
+[2026-06-05 12:13:42 -0300] [1426351] [INFO] Booting worker with pid: 1426351
+[2026-06-05 12:13:42 -0300] [1426353] [INFO] Booting worker with pid: 1426353
+[2026-06-05 12:13:42 -0300] [1426356] [INFO] Booting worker with pid: 1426356
+[2026-06-05 12:13:42 -0300] [1426358] [INFO] Booting worker with pid: 1426358
+[2026-06-05 12:13:42 -0300] [1426359] [INFO] Booting worker with pid: 1426359
+[2026-06-05 12:13:42 -0300] [1426361] [INFO] Booting worker with pid: 1426361
+[2026-06-05 12:13:42 -0300] [1426504] [INFO] Booting worker with pid: 1426504
+[2026-06-05 12:13:42 -0300] [1426505] [INFO] Booting worker with pid: 1426505
+[2026-06-05 12:13:42 -0300] [1426506] [INFO] Booting worker with pid: 1426506
+[2026-06-05 12:13:42 -0300] [1426507] [INFO] Booting worker with pid: 1426507
+[2026-06-05 12:13:42 -0300] [1426508] [INFO] Booting worker with pid: 1426508
+[2026-06-05 12:13:42 -0300] [1426603] [INFO] Booting worker with pid: 1426603
+[2026-06-05 12:13:42 -0300] [1426657] [INFO] Booting worker with pid: 1426657
+[2026-06-05 12:13:42 -0300] [1426658] [INFO] Booting worker with pid: 1426658
+[2026-06-05 12:13:42 -0300] [1426661] [INFO] Booting worker with pid: 1426661
+[2026-06-05 12:13:43 -0300] [1426729] [INFO] Booting worker with pid: 1426729
+[2026-06-05 12:13:43 -0300] [1426742] [INFO] Booting worker with pid: 1426742
+[2026-06-05 12:13:43 -0300] [1427033] [INFO] Booting worker with pid: 1427033
+[2026-06-05 12:13:43 -0300] [1427058] [INFO] Booting worker with pid: 1427058
+[2026-06-05 12:13:43 -0300] [1427112] [INFO] Booting worker with pid: 1427112
+[2026-06-05 12:13:43 -0300] [1427118] [INFO] Booting worker with pid: 1427118
+[2026-06-05 12:13:43 -0300] [1427276] [INFO] Booting worker with pid: 1427276
+[2026-06-05 12:13:43 -0300] [1427416] [INFO] Booting worker with pid: 1427416
+[2026-06-05 12:13:43 -0300] [1427592] [INFO] Booting worker with pid: 1427592
+[2026-06-05 12:13:43 -0300] [1426353] [INFO] Started server process [1426353]
+[2026-06-05 12:13:43 -0300] [1426353] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426356] [INFO] Started server process [1426356]
+[2026-06-05 12:13:43 -0300] [1426356] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426353] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426351] [INFO] Started server process [1426351]
+[2026-06-05 12:13:43 -0300] [1426351] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426351] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426350] [INFO] Started server process [1426350]
+[2026-06-05 12:13:43 -0300] [1426350] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426350] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426356] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1427656] [INFO] Booting worker with pid: 1427656
+[2026-06-05 12:13:43 -0300] [1426291] [INFO] Started server process [1426291]
+[2026-06-05 12:13:43 -0300] [1426291] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426291] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426292] [INFO] Started server process [1426292]
+[2026-06-05 12:13:43 -0300] [1426292] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426292] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426361] [INFO] Started server process [1426361]
+[2026-06-05 12:13:43 -0300] [1426361] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426361] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426358] [INFO] Started server process [1426358]
+[2026-06-05 12:13:43 -0300] [1426358] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426358] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426359] [INFO] Started server process [1426359]
+[2026-06-05 12:13:43 -0300] [1426359] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426359] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426293] [INFO] Started server process [1426293]
+[2026-06-05 12:13:43 -0300] [1426293] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426293] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426297] [INFO] Started server process [1426297]
+[2026-06-05 12:13:43 -0300] [1426297] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426297] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426302] [INFO] Started server process [1426302]
+[2026-06-05 12:13:43 -0300] [1426302] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426302] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426504] [INFO] Started server process [1426504]
+[2026-06-05 12:13:43 -0300] [1426504] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426504] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426290] [INFO] Started server process [1426290]
+[2026-06-05 12:13:43 -0300] [1426290] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426290] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426508] [INFO] Started server process [1426508]
+[2026-06-05 12:13:43 -0300] [1426508] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426508] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426507] [INFO] Started server process [1426507]
+[2026-06-05 12:13:43 -0300] [1426507] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426507] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426505] [INFO] Started server process [1426505]
+[2026-06-05 12:13:43 -0300] [1426505] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426505] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426506] [INFO] Started server process [1426506]
+[2026-06-05 12:13:43 -0300] [1426506] [INFO] Waiting for application startup.
+[2026-06-05 12:13:43 -0300] [1426506] [INFO] Application startup complete.
+[2026-06-05 12:13:43 -0300] [1426657] [INFO] Started server process [1426657]
+[2026-06-05 12:13:43 -0300] [1426657] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1426657] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1426603] [INFO] Started server process [1426603]
+[2026-06-05 12:13:44 -0300] [1426603] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1426603] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1426658] [INFO] Started server process [1426658]
+[2026-06-05 12:13:44 -0300] [1426658] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1426658] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1426661] [INFO] Started server process [1426661]
+[2026-06-05 12:13:44 -0300] [1426661] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1426661] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1426729] [INFO] Started server process [1426729]
+[2026-06-05 12:13:44 -0300] [1426729] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1426729] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1426742] [INFO] Started server process [1426742]
+[2026-06-05 12:13:44 -0300] [1426742] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1426742] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1427033] [INFO] Started server process [1427033]
+[2026-06-05 12:13:44 -0300] [1427033] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1427033] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1427058] [INFO] Started server process [1427058]
+[2026-06-05 12:13:44 -0300] [1427058] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1427058] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1427118] [INFO] Started server process [1427118]
+[2026-06-05 12:13:44 -0300] [1427118] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1427118] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1427112] [INFO] Started server process [1427112]
+[2026-06-05 12:13:44 -0300] [1427112] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1427112] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1427276] [INFO] Started server process [1427276]
+[2026-06-05 12:13:44 -0300] [1427276] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1427416] [INFO] Started server process [1427416]
+[2026-06-05 12:13:44 -0300] [1427416] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1427276] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1427416] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1427656] [INFO] Started server process [1427656]
+[2026-06-05 12:13:44 -0300] [1427656] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1427592] [INFO] Started server process [1427592]
+[2026-06-05 12:13:44 -0300] [1427592] [INFO] Waiting for application startup.
+[2026-06-05 12:13:44 -0300] [1427656] [INFO] Application startup complete.
+[2026-06-05 12:13:44 -0300] [1427592] [INFO] Application startup complete.
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+INFO:nv_ingest_api.util.system.hardware_info:Detected 48 logical cores via psutil.
+INFO:nv_ingest_api.util.system.hardware_info:Detected 48 physical cores via psutil.
+INFO:nv_ingest_api.util.system.hardware_info:Detected 48 cores via os.sched_getaffinity.
+INFO:nv_ingest_api.util.system.hardware_info:Raw CPU limit determined: 48.00 (Method: sched_affinity)
+INFO:nv_ingest_api.util.system.hardware_info:Effective CPU core limit determined: 48.00 (Method: sched_affinity)
+2026-06-05 12:13:49,537 - INFO - __main__ - Log level overridden by CLI to INFO
+2026-06-05 12:13:49,537 - INFO - __main__ - Configuration loaded and validated.
+2026-06-05 12:13:49,538 - INFO - nv_ingest.framework.orchestration.ray.util.pipeline.pipeline_runners - Starting pipeline setup
+2026-06-05 12:13:49,538 - INFO - nv_ingest.framework.orchestration.ray.primitives.ray_pipeline - PIDController initialized using ScalingConfig.
+2026-06-05 12:13:49,539 - INFO - nv_ingest_api.util.system.hardware_info - Detected 48 logical cores via psutil.
+2026-06-05 12:13:49,539 - INFO - nv_ingest_api.util.system.hardware_info - Detected 48 physical cores via psutil.
+2026-06-05 12:13:49,539 - INFO - nv_ingest_api.util.system.hardware_info - Detected 48 cores via os.sched_getaffinity.
+2026-06-05 12:13:49,539 - INFO - nv_ingest_api.util.system.hardware_info - Raw CPU limit determined: 48.00 (Method: sched_affinity)
+2026-06-05 12:13:49,539 - INFO - nv_ingest_api.util.system.hardware_info - Effective CPU core limit determined: 48.00 (Method: sched_affinity)
+2026-06-05 12:13:49,539 - INFO - nv_ingest.framework.orchestration.ray.util.pipeline.pid_controller - [ConstraintMgr] Initialized. MaxReplicas=1, EffectiveCoreLimit=48.00 (Method: sched_affinity), CoreBasedReplicaLimit=48, MemThreshold=773371MB, EffectiveLimit=773371.0MB 
+2026-06-05 12:13:49,539 - INFO - nv_ingest.framework.orchestration.ray.primitives.ray_pipeline - ResourceConstraintManager initialized using ScalingConfig.
+2026-06-05 12:13:49,539 - INFO - nv_ingest.framework.orchestration.ray.primitives.ray_stat_collector - RayStatsCollector initialized (Interval: 10.0s, Actor Timeout: 5.0s, Queue Timeout: 2.0s, EMA Alpha: 0.1)
+2026-06-05 12:13:49,539 - INFO - nv_ingest.framework.orchestration.ray.primitives.ray_pipeline - RayStatsCollector initialized using StatsConfig.
+2026-06-05 12:13:49,539 - INFO - uvicorn - Applied Ray logging preset: PRODUCTION
+2026-06-05 12:13:49,539 - INFO - uvicorn - Ray logging configured: preset=PRODUCTION, level=ERROR, encoding=TEXT, additional_attrs=[], dedup_logs=1, log_to_driver=0, rotate_bytes=1073741824, rotate_backup_count=9
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
