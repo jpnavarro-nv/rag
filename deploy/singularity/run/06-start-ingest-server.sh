@@ -37,7 +37,10 @@ NVINGEST_PORT=${NVINGEST_PORT:-7670}
 wait_for_ingestor() {
     local host=$1
     local port=$2
-    local max_attempts=30
+    # Cold start on HPC (heavy nvidia_rag imports over SquashFS) can exceed 60s;
+    # default to 180s and allow override. /health uses check_dependencies=False,
+    # so this only waits on the app being up, not on Milvus/MinIO/nv-ingest.
+    local max_attempts=${INGESTOR_READY_ATTEMPTS:-90}
     local attempt=1
 
     echo "   ⏳ Waiting for Ingestor Server to be ready..."
@@ -45,6 +48,15 @@ wait_for_ingestor() {
         if curl -s "http://${host}:${port}/health" > /dev/null 2>&1; then
             echo "   ✅ Ingestor Server is ready"
             return 0
+        fi
+        # Bail out if the process died while we were waiting
+        if [ -f "$RAG_RUNTIME_DIR/pids/ingestor-server.pid" ]; then
+            local pid
+            pid=$(cat "$RAG_RUNTIME_DIR/pids/ingestor-server.pid")
+            if ! ps -p "$pid" > /dev/null 2>&1; then
+                echo "   ❌ Ingestor Server process died while waiting (PID $pid)"
+                return 1
+            fi
         fi
         sleep 2
         attempt=$((attempt + 1))
