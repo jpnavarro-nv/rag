@@ -445,13 +445,33 @@ def ingest_collection(
             try:
                 task_id = client.upload_batch(batch, result.collection_name, chunk_size, chunk_overlap)
                 task_result = client.poll_task(task_id)
-                failed_docs = task_result.get("result", {}).get("failed_documents", [])
+                # The server reports two distinct cases in failed_documents,
+                # distinguished by error_message: genuine pipeline failures vs
+                # "already exists" rejections. The latter mean the document is
+                # already in the collection (not a real failure) — count it as
+                # skipped, like dedup-skipped files.
+                failed_docs, already_present = [], []
+                for d in task_result.get("result", {}).get("failed_documents", []):
+                    if "already exists. Use update document" in (d.get("error_message") or ""):
+                        already_present.append(d)
+                    else:
+                        failed_docs.append(d)
                 batch_failed = len(failed_docs)
-                batch_ok = len(batch) - batch_failed
+                batch_skipped = len(already_present)
+                batch_ok = len(batch) - batch_failed - batch_skipped
                 failed_files_count += batch_failed
+                skipped += batch_skipped
                 with lock:
                     result.ingested_files += batch_ok
                     result.failed_files += batch_failed
+                    result.skipped_files += batch_skipped
+                if already_present:
+                    # Log full paths (not just the server-side basename) so that
+                    # two distinct files sharing a basename across subdirs — where
+                    # the second is rejected by name — are visible, not silently lost.
+                    ap_names = {d.get("document_name") for d in already_present}
+                    ap_paths = [str(p) for p in batch if p.name in ap_names]
+                    logger.warning(f"↷ {label}: {batch_skipped} doc(s) already present, skipped — {ap_paths}")
                 if batch_failed == 0:
                     logger.info(f"✅ {label} complete")
                 elif batch_ok > 0:

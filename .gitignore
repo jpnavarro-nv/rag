@@ -85,7 +85,10 @@ coverage/
 .pytest_cache/
 cover/
 *.log
-# Exception: keep collection-importer run logs so they can be committed for review
+# Under import_logs/ ONLY *.log may be committed (run logs for review).
+# Ignore everything else there so stray runtime/venv/job.env files copied in
+# by accident never get tracked.
+deploy/singularity/scripts/import_logs/**
 !deploy/singularity/scripts/import_logs/
 !deploy/singularity/scripts/import_logs/**/
 !deploy/singularity/scripts/import_logs/**/*.log
