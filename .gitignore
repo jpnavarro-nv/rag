@@ -85,13 +85,15 @@ coverage/
 .pytest_cache/
 cover/
 *.log
-# Under import_logs/ ONLY *.log may be committed (run logs for review).
-# Ignore everything else there so stray runtime/venv/job.env files copied in
-# by accident never get tracked.
+# Under import_logs/ only text log files (*.log/*.out/*.err) may be committed
+# (run + Slurm logs for review). Ignore everything else there so stray
+# runtime/venv/job.env binaries copied in by accident never get tracked.
 deploy/singularity/scripts/import_logs/**
 !deploy/singularity/scripts/import_logs/
 !deploy/singularity/scripts/import_logs/**/
 !deploy/singularity/scripts/import_logs/**/*.log
+!deploy/singularity/scripts/import_logs/**/*.out
+!deploy/singularity/scripts/import_logs/**/*.err
 # Workbench Project Layout
 # Temporary legacy pull scripts (deprecated)
 deploy/singularity/scripts/pull-minimal-images.sh
