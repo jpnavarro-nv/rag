@@ -1,0 +1,218 @@
+INFO:    Environment variable SINGULARITY_TMPDIR is set, but APPTAINER_TMPDIR is preferred
+INFO:     Uvicorn running on http://0.0.0.0:8081 (Press CTRL+C to quit)
+INFO:     Started parent process [1304300]
+/workspace/.venv/lib/python3.13/site-packages/pydantic/_internal/_fields.py:198: UserWarning: Field name "schema" in "MetadataSchema" shadows an attribute in parent "BaseModel"
+  warnings.warn(
+/workspace/.venv/lib/python3.13/site-packages/pydantic/_internal/_fields.py:198: UserWarning: Field name "schema" in "MetadataSchema" shadows an attribute in parent "BaseModel"
+  warnings.warn(
+/workspace/.venv/lib/python3.13/site-packages/pydantic/_internal/_fields.py:198: UserWarning: Field name "schema" in "MetadataSchema" shadows an attribute in parent "BaseModel"
+  warnings.warn(
+/workspace/.venv/lib/python3.13/site-packages/pydantic/_internal/_fields.py:198: UserWarning: Field name "schema" in "MetadataSchema" shadows an attribute in parent "BaseModel"
+  warnings.warn(
+/workspace/.venv/lib/python3.13/site-packages/pydantic/_internal/_fields.py:198: UserWarning: Field name "schema" in "MetadataSchema" shadows an attribute in parent "BaseModel"
+  warnings.warn(
+/workspace/.venv/lib/python3.13/site-packages/pydantic/_internal/_fields.py:198: UserWarning: Field name "schema" in "MetadataSchema" shadows an attribute in parent "BaseModel"
+  warnings.warn(
+/workspace/.venv/lib/python3.13/site-packages/pydantic/_internal/_fields.py:198: UserWarning: Field name "schema" in "MetadataSchema" shadows an attribute in parent "BaseModel"
+  warnings.warn(
+/workspace/.venv/lib/python3.13/site-packages/pydantic/_internal/_fields.py:198: UserWarning: Field name "schema" in "MetadataSchema" shadows an attribute in parent "BaseModel"
+  warnings.warn(
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/../rag_server/prompt.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/../rag_server/prompt.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/../rag_server/prompt.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/../rag_server/prompt.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/../rag_server/prompt.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/../rag_server/prompt.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/../rag_server/prompt.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/../rag_server/prompt.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /prompt_petrobras.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /prompt_petrobras.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /prompt_petrobras.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /prompt_petrobras.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /prompt_petrobras.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /prompt_petrobras.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /prompt_petrobras.yaml
+INFO:nvidia_rag.utils.llm:Using prompts config file from: /prompt_petrobras.yaml
+INFO:nvidia_rag.utils.common:embedding URL does not start with http(s)://, adding it: http://localhost:9080/v1
+INFO:nvidia_rag.utils.common:embedding URL does not start with http(s)://, adding it: http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using nvidia-ai-endpoints as model engine and nvidia/llama-3.2-nv-embedqa-1b-v2 and model for embeddings
+INFO:nvidia_rag.utils.embedding:Using nvidia-ai-endpoints as model engine and nvidia/llama-3.2-nv-embedqa-1b-v2 and model for embeddings
+INFO:nvidia_rag.utils.common:embedding URL does not start with http(s)://, adding it: http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using embedding model nvidia/llama-3.2-nv-embedqa-1b-v2 hosted at http://localhost:9080/v1
+INFO:nvidia_rag.utils.common:embedding URL does not start with http(s)://, adding it: http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using embedding model nvidia/llama-3.2-nv-embedqa-1b-v2 hosted at http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using nvidia-ai-endpoints as model engine and nvidia/llama-3.2-nv-embedqa-1b-v2 and model for embeddings
+INFO:nvidia_rag.utils.common:embedding URL does not start with http(s)://, adding it: http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using nvidia-ai-endpoints as model engine and nvidia/llama-3.2-nv-embedqa-1b-v2 and model for embeddings
+INFO:nvidia_rag.utils.common:embedding URL does not start with http(s)://, adding it: http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using embedding model nvidia/llama-3.2-nv-embedqa-1b-v2 hosted at http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using embedding model nvidia/llama-3.2-nv-embedqa-1b-v2 hosted at http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using nvidia-ai-endpoints as model engine and nvidia/llama-3.2-nv-embedqa-1b-v2 and model for embeddings
+INFO:nvidia_rag.utils.embedding:Using nvidia-ai-endpoints as model engine and nvidia/llama-3.2-nv-embedqa-1b-v2 and model for embeddings
+INFO:nvidia_rag.utils.common:embedding URL does not start with http(s)://, adding it: http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using embedding model nvidia/llama-3.2-nv-embedqa-1b-v2 hosted at http://localhost:9080/v1
+INFO:nvidia_rag.utils.common:embedding URL does not start with http(s)://, adding it: http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using embedding model nvidia/llama-3.2-nv-embedqa-1b-v2 hosted at http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using nvidia-ai-endpoints as model engine and nvidia/llama-3.2-nv-embedqa-1b-v2 and model for embeddings
+INFO:nvidia_rag.utils.embedding:Using nvidia-ai-endpoints as model engine and nvidia/llama-3.2-nv-embedqa-1b-v2 and model for embeddings
+INFO:nvidia_rag.utils.embedding:Using embedding model nvidia/llama-3.2-nv-embedqa-1b-v2 hosted at http://localhost:9080/v1
+INFO:nvidia_rag.utils.embedding:Using embedding model nvidia/llama-3.2-nv-embedqa-1b-v2 hosted at http://localhost:9080/v1
+INFO:nvidia_rag.utils.common:ranking URL does not start with http(s)://, adding it: http://localhost:1976/v1
+INFO:nvidia_rag.utils.reranker:Using ranking model hosted at http://localhost:1976/v1
+INFO:nvidia_rag.utils.common:ranking URL does not start with http(s)://, adding it: http://localhost:1976/v1
+INFO:nvidia_rag.utils.reranker:Using ranking model hosted at http://localhost:1976/v1
+INFO:nvidia_rag.utils.common:ranking URL does not start with http(s)://, adding it: http://localhost:1976/v1
+INFO:nvidia_rag.utils.common:ranking URL does not start with http(s)://, adding it: http://localhost:1976/v1
+INFO:nvidia_rag.utils.common:ranking URL does not start with http(s)://, adding it: http://localhost:1976/v1
+INFO:nvidia_rag.utils.common:ranking URL does not start with http(s)://, adding it: http://localhost:1976/v1
+INFO:nvidia_rag.utils.reranker:Using ranking model hosted at http://localhost:1976/v1
+INFO:nvidia_rag.utils.common:ranking URL does not start with http(s)://, adding it: http://localhost:1976/v1
+INFO:nvidia_rag.utils.common:ranking URL does not start with http(s)://, adding it: http://localhost:1976/v1
+INFO:nvidia_rag.utils.reranker:Using ranking model hosted at http://localhost:1976/v1
+INFO:nvidia_rag.utils.reranker:Using ranking model hosted at http://localhost:1976/v1
+INFO:nvidia_rag.utils.reranker:Using ranking model hosted at http://localhost:1976/v1
+INFO:nvidia_rag.utils.reranker:Using ranking model hosted at http://localhost:1976/v1
+INFO:nvidia_rag.utils.reranker:Using ranking model hosted at http://localhost:1976/v1
+/workspace/.venv/lib/python3.13/site-packages/langchain_nvidia_ai_endpoints/_common.py:255: UserWarning: Default model is set as: nvidia/llama-3.2-nv-rerankqa-1b-v2. 
+Set model using model parameter. 
+To get available models use available_models property.
+  warnings.warn(
+INFO:nvidia_rag.rag_server.main:Query rewriter llm config: model name nvidia/llama-3.3-nemotron-super-49b-v1.5, url localhost:8999, config {'temperature': 0, 'top_p': 0.1}
+/workspace/.venv/lib/python3.13/site-packages/langchain_nvidia_ai_endpoints/_common.py:255: UserWarning: Default model is set as: nvidia/llama-3.2-nv-rerankqa-1b-v2. 
+Set model using model parameter. 
+To get available models use available_models property.
+  warnings.warn(
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.rag_server.main:Query rewriter llm config: model name nvidia/llama-3.3-nemotron-super-49b-v1.5, url localhost:8999, config {'temperature': 0, 'top_p': 0.1}
+/workspace/.venv/lib/python3.13/site-packages/langchain_nvidia_ai_endpoints/_common.py:255: UserWarning: Default model is set as: nvidia/llama-3.2-nv-rerankqa-1b-v2. 
+Set model using model parameter. 
+To get available models use available_models property.
+  warnings.warn(
+INFO:nvidia_rag.rag_server.main:Query rewriter llm config: model name nvidia/llama-3.3-nemotron-super-49b-v1.5, url localhost:8999, config {'temperature': 0, 'top_p': 0.1}
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+/workspace/.venv/lib/python3.13/site-packages/langchain_nvidia_ai_endpoints/_common.py:255: UserWarning: Default model is set as: nvidia/llama-3.2-nv-rerankqa-1b-v2. 
+Set model using model parameter. 
+To get available models use available_models property.
+  warnings.warn(
+INFO:nvidia_rag.rag_server.main:Query rewriter llm config: model name nvidia/llama-3.3-nemotron-super-49b-v1.5, url localhost:8999, config {'temperature': 0, 'top_p': 0.1}
+/workspace/.venv/lib/python3.13/site-packages/langchain_nvidia_ai_endpoints/_common.py:255: UserWarning: Default model is set as: nvidia/llama-3.2-nv-rerankqa-1b-v2. 
+Set model using model parameter. 
+To get available models use available_models property.
+  warnings.warn(
+/workspace/.venv/lib/python3.13/site-packages/langchain_nvidia_ai_endpoints/_common.py:255: UserWarning: Default model is set as: nvidia/llama-3.2-nv-rerankqa-1b-v2. 
+Set model using model parameter. 
+To get available models use available_models property.
+  warnings.warn(
+INFO:nvidia_rag.rag_server.main:Query rewriter llm config: model name nvidia/llama-3.3-nemotron-super-49b-v1.5, url localhost:8999, config {'temperature': 0, 'top_p': 0.1}
+INFO:nvidia_rag.rag_server.main:Query rewriter llm config: model name nvidia/llama-3.3-nemotron-super-49b-v1.5, url localhost:8999, config {'temperature': 0, 'top_p': 0.1}
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+/workspace/.venv/lib/python3.13/site-packages/langchain_nvidia_ai_endpoints/_common.py:255: UserWarning: Default model is set as: nvidia/llama-3.2-nv-rerankqa-1b-v2. 
+Set model using model parameter. 
+To get available models use available_models property.
+  warnings.warn(
+INFO:nvidia_rag.rag_server.main:Query rewriter llm config: model name nvidia/llama-3.3-nemotron-super-49b-v1.5, url localhost:8999, config {'temperature': 0, 'top_p': 0.1}
+INFO:nvidia_rag.utils.llm:Think token filtering is enabled
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+/workspace/.venv/lib/python3.13/site-packages/langchain_nvidia_ai_endpoints/_common.py:255: UserWarning: Default model is set as: nvidia/llama-3.2-nv-rerankqa-1b-v2. 
+Set model using model parameter. 
+To get available models use available_models property.
+  warnings.warn(
+INFO:nvidia_rag.utils.llm:Think token filtering is enabled
+INFO:nvidia_rag.rag_server.main:Query rewriter llm config: model name nvidia/llama-3.3-nemotron-super-49b-v1.5, url localhost:8999, config {'temperature': 0, 'top_p': 0.1}
+INFO:nvidia_rag.utils.llm:Think token filtering is enabled
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Think token filtering is enabled
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Think token filtering is enabled
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Think token filtering is enabled
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Think token filtering is enabled
+INFO:nvidia_rag.utils.common:chat URL does not start with http(s)://, adding it: http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Using llm model nvidia/llama-3.3-nemotron-super-49b-v1.5 hosted at http://localhost:8999/v1
+INFO:nvidia_rag.utils.llm:Think token filtering is enabled
+INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+INFO:     Started server process [1304331]
+INFO:     Waiting for application startup.
+INFO:     Started server process [1304334]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Application startup complete.
+INFO:     Started server process [1304337]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [1304338]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [1304335]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [1304336]
+INFO:     Waiting for application startup.
+INFO:     Started server process [1304333]
+INFO:     Application startup complete.
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Started server process [1304332]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:nvidia_rag.rag_server.server:Checking service health...
+INFO:nvidia_rag.rag_server.server:Skipping dependency health checks as check_dependencies=False
+INFO:     127.0.0.1:59316 - "GET /health HTTP/1.1" 200 OK
+INFO:nvidia_rag.rag_server.server:Checking service health...
+INFO:nvidia_rag.rag_server.server:Skipping dependency health checks as check_dependencies=False
+INFO:     127.0.0.1:59332 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59334 - "GET /docs HTTP/1.1" 200 OK
