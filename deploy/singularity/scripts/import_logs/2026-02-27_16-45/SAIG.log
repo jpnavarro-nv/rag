@@ -1,0 +1,101 @@
+2026-02-27 16:45:25 | INFO     | === START  dir='/gaia/b04s/CONSORCIOS/SAIG'  collection='SAIG' ===
+2026-02-27 16:45:25 | INFO     | Discovered 13 supported file(s)
+2026-02-27 16:45:25 | WARNING  | create_collection error (may already exist): HTTPConnectionPool(host='localhost', port=8082): Max retries exceeded with url: /v1/collection (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8082): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-27 16:45:25 | WARNING  | list_documents failed — treating all files as new: HTTPConnectionPool(host='localhost', port=8082): Max retries exceeded with url: /v1/documents?collection_name=SAIG (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8082): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-27 16:45:25 | INFO     | Classification: 13 new, 0 already present
+2026-02-27 16:45:25 | INFO     | Uploading 1 batch(es) of up to 16 file(s) each
+2026-02-27 16:45:25 | INFO     | --- batch 1/1 (13 files) ---
+2026-02-27 16:45:25 | DEBUG    |   Files: ReportSAIG-13.pdf, ReportSAIG-14.pdf, ReportSAIG-15.pdf, ReportSAIG-16.pdf, ReportSAIG-17.pdf, ReportSAIG-18.pdf, ReportSAIG-19.pdf, ReportSAIG-20.pdf, ReportSAIG-21.pdf, ReportSAIG-22.pdf, ReportSAIG-23.pdf, ReportSAIG-24.pdf, ReportSAIG-25.pdf
+2026-02-27 16:45:28 | ERROR    | ❌ batch 1/1 (13 files) failed: HTTPConnectionPool(host='localhost', port=8082): Max retries exceeded with url: /v1/documents (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8082): Failed to establish a new connection: [Errno 111] Connection refused"))
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.14/site-packages/urllib3/connection.py", line 204, in _new_conn
+    sock = connection.create_connection(
+        (self._dns_host, self.port),
+    ...<2 lines>...
+        socket_options=self.socket_options,
+    )
+  File "/usr/local/lib/python3.14/site-packages/urllib3/util/connection.py", line 85, in create_connection
+    raise err
+  File "/usr/local/lib/python3.14/site-packages/urllib3/util/connection.py", line 73, in create_connection
+    sock.connect(sa)
+    ~~~~~~~~~~~~^^^^
+ConnectionRefusedError: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.14/site-packages/urllib3/connectionpool.py", line 787, in urlopen
+    response = self._make_request(
+        conn,
+    ...<10 lines>...
+        **response_kw,
+    )
+  File "/usr/local/lib/python3.14/site-packages/urllib3/connectionpool.py", line 493, in _make_request
+    conn.request(
+    ~~~~~~~~~~~~^
+        method,
+        ^^^^^^^
+    ...<6 lines>...
+        enforce_content_length=enforce_content_length,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.14/site-packages/urllib3/connection.py", line 500, in request
+    self.endheaders()
+    ~~~~~~~~~~~~~~~^^
+  File "/usr/local/lib/python3.14/http/client.py", line 1353, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.14/http/client.py", line 1113, in _send_output
+    self.send(msg)
+    ~~~~~~~~~^^^^^
+  File "/usr/local/lib/python3.14/http/client.py", line 1057, in send
+    self.connect()
+    ~~~~~~~~~~~~^^
+  File "/usr/local/lib/python3.14/site-packages/urllib3/connection.py", line 331, in connect
+    self.sock = self._new_conn()
+                ~~~~~~~~~~~~~~^^
+  File "/usr/local/lib/python3.14/site-packages/urllib3/connection.py", line 219, in _new_conn
+    raise NewConnectionError(
+        self, f"Failed to establish a new connection: {e}"
+    ) from e
+urllib3.exceptions.NewConnectionError: HTTPConnection(host='localhost', port=8082): Failed to establish a new connection: [Errno 111] Connection refused
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.14/site-packages/requests/adapters.py", line 644, in send
+    resp = conn.urlopen(
+        method=request.method,
+    ...<9 lines>...
+        chunked=chunked,
+    )
+  File "/usr/local/lib/python3.14/site-packages/urllib3/connectionpool.py", line 841, in urlopen
+    retries = retries.increment(
+        method, url, error=new_e, _pool=self, _stacktrace=sys.exc_info()[2]
+    )
+  File "/usr/local/lib/python3.14/site-packages/urllib3/util/retry.py", line 535, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=8082): Max retries exceeded with url: /v1/documents (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8082): Failed to establish a new connection: [Errno 111] Connection refused"))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/u/bglq/projects/rag/rag-refactor/deploy/singularity/scripts/ingest_collections.py", line 446, in ingest_collection
+    task_id = client.upload_batch(batch, result.collection_name, chunk_size, chunk_overlap)
+  File "/u/bglq/projects/rag/rag-refactor/deploy/singularity/scripts/ingest_collections.py", line 282, in upload_batch
+    resp = requests.post(url, files=files_form, timeout=300)
+  File "/usr/local/lib/python3.14/site-packages/requests/api.py", line 115, in post
+    return request("post", url, data=data, json=json, **kwargs)
+  File "/usr/local/lib/python3.14/site-packages/requests/api.py", line 59, in request
+    return session.request(method=method, url=url, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.14/site-packages/requests/sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+  File "/usr/local/lib/python3.14/site-packages/requests/sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+  File "/usr/local/lib/python3.14/site-packages/requests/adapters.py", line 677, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=8082): Max retries exceeded with url: /v1/documents (Caused by NewConnectionError("HTTPConnection(host='localhost', port=8082): Failed to establish a new connection: [Errno 111] Connection refused"))
+2026-02-27 16:45:28 | ERROR    | === TOTAL FAILURE  failed=13  skipped=0 ===
