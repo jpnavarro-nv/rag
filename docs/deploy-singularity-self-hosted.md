@@ -499,7 +499,7 @@ Run a dry run first to validate file readability before uploading.
 
 ```bash
 python3 deploy/singularity/scripts/ingest_collections.py \
-  --root-dir /path/to/your/documents \
+  --root-dir /gaia/b04s/CONSORCIOS \
   --dry-run
 ```
 
@@ -507,7 +507,7 @@ Then run the full import.
 
 ```bash
 python3 deploy/singularity/scripts/ingest_collections.py \
-  --root-dir /path/to/your/documents
+  --root-dir /gaia/b04s/CONSORCIOS
 ```
 
 For the full list of options (parallel workers, batch size, dedup, specific

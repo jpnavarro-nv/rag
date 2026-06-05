@@ -6,7 +6,7 @@ into the NVIDIA RAG Blueprint.
 ## How it works
 
 ```
-/path/to/data/
+/gaia/b04s/CONSORCIOS/
 ├── PROJECT_A/    →  collection: PROJECT_A   (all files inside, recursively)
 ├── PROJECT_B/    →  collection: PROJECT_B
 └── Data 2024/    →  collection: Data_2024   (spaces → underscores)
@@ -21,50 +21,110 @@ into the NVIDIA RAG Blueprint.
 
 ## Requirements
 
-- Python 3.10+
-- The **Ingestor Server** must be running and reachable (default: `localhost:8082`)
-- The script runs on the **host** — no container needed
+- Python 3.10+ (the script uses `list[Path]` / `dict[str, str]` generics)
+- The **Ingestor Server** must be running and reachable
+- Python deps: `requests` and `rich` (`pip install -r requirements.txt`)
+
+There are two ways to run, depending on the environment:
+
+- **A. Basic / local** — plain `python`, ingestor on `localhost`. The simplest case.
+- **B. HPC cluster** — run inside a container (PyPI is blocked) and point at the
+  ingestor running on a Slurm compute node.
+
+---
+
+## A. Basic usage (local, interactive)
+
+Use this when you can `pip install` the deps and the ingestor is on `localhost`
+(e.g. the importer runs on the same machine as the stack).
 
 ```bash
 pip install -r requirements.txt
-```
 
-If pip install fails (e.g. network-restricted cluster), use a container that ships
-`requests` and `rich` pre-installed:
-
-```bash
-singularity exec httpie_latest.sif python3 ingest_collections.py --root-dir /path/to/data
-```
-
-## Usage
-
-```bash
 # 1. Dry run — discover files, validate readability/permissions, no upload
-python ingest_collections.py --root-dir /path/to/data --dry-run
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --dry-run
 
-# 2. Full import with defaults
-python ingest_collections.py --root-dir /path/to/data
+# 2. Full import with defaults (ingestor at localhost:8082)
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS
 
 # 3. Process only specific collections
-python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A PROJECT_B
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A PROJECT_B
 
 # 4. Force full re-upload (ignore deduplication)
-python ingest_collections.py --root-dir /path/to/data --skip-dedup
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --skip-dedup
 
 # 5. Custom options
 python ingest_collections.py \
-  --root-dir /path/to/data \
+  --root-dir /gaia/b04s/CONSORCIOS \
   --ingestor-host localhost \
   --ingestor-port 8082 \
   --parallel-workers 4 \
   --batch-size 16 \
   --log-dir /scratch/import_logs
+```
 
-# 6. Via environment variables (useful in cluster job scripts)
+The ingestor host/port can also come from the environment (handy in scripts):
+
+```bash
 export INGESTOR_HOST=localhost
 export INGESTOR_PORT=8082
-python ingest_collections.py --root-dir /path/to/data --parallel-workers 6
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --parallel-workers 6
 ```
+
+---
+
+## B. HPC cluster usage (containerized + remote ingestor)
+
+On the cluster, `pip install` is blocked (network-restricted) and the RAG stack
+runs on a **Slurm compute node** (launched via `sbatch`), not on `localhost`.
+So we:
+
+1. run the importer inside a container that already ships `requests` + `rich`
+   (`httpie_latest.sif`, placed next to this script in `scripts/`);
+2. `--bind` the data directory into the container (it lives outside `$HOME`/cwd,
+   which Singularity does **not** mount by default);
+3. point `INGESTOR_HOST` at the compute node where the job is running.
+
+```bash
+# 1. Go to the scripts folder (where the .py and httpie_latest.sif live)
+cd deploy/singularity/scripts
+
+# 2. Data root (subdirs become collections)
+export PATH_TO_DATA=/gaia/b04s/CONSORCIOS
+
+# 3. Discover the node where the RAG job is running and point the ingestor at it
+export INGESTOR_HOST=$(squeue -h -u "$USER" -o '%N' | head -1)
+export INGESTOR_PORT=8082
+echo "Ingestor at: $INGESTOR_HOST:$INGESTOR_PORT"
+
+# 4. Dry run — validate readability/permissions, no upload
+singularity exec --bind "$PATH_TO_DATA" httpie_latest.sif \
+  python3 ingest_collections.py --root-dir "$PATH_TO_DATA" --dry-run
+
+# 5. Full import
+singularity exec --bind "$PATH_TO_DATA" httpie_latest.sif \
+  python3 ingest_collections.py --root-dir "$PATH_TO_DATA" --parallel-workers 6
+```
+
+Notes:
+
+- `--bind "$PATH_TO_DATA"` mounts the directory at the **same path** inside the
+  container, so `--root-dir "$PATH_TO_DATA"` resolves identically.
+- `INGESTOR_HOST` / `INGESTOR_PORT` are read from the environment by the script —
+  no need to also pass `--ingestor-host`.
+- If you have **more than one job** queued, `head -1` may pick the wrong one.
+  Filter by job name: `squeue -h -u "$USER" -n <job-name> -o '%N'`.
+- Authoritative alternative to `squeue`: the deploy writes the node into
+  `$RAG_EXEC_DIR/job.env`. Source it to get `$NODE`:
+  ```bash
+  export RAG_BASE_DIR=/path/to/rag-workdir
+  source "$(cat "$RAG_BASE_DIR/sessions/$USER/.current_exec")/job.env"
+  export INGESTOR_HOST=$NODE
+  ```
+- The ingestor must listen on `0.0.0.0` (not just loopback) to accept a connection
+  from another node. Quick check: `curl -s http://$INGESTOR_HOST:8082/v1/health`.
+- Per-collection logs are written to `import_logs/<timestamp>/` in the current
+  directory (`scripts/`), which Singularity mounts automatically (it is the cwd).
 
 ## Options
 
@@ -89,21 +149,21 @@ Use `--collections` to select only the directories you want:
 
 ```bash
 # Import a single collection
-python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A
 
 # Import several collections in one run
-python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A PROJECT_B PROJECT_C
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A PROJECT_B PROJECT_C
 
 # Combine with other flags (dry-run first, then import)
-python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A --dry-run
-python ingest_collections.py --root-dir /path/to/data --collections PROJECT_A
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A --dry-run
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A
 ```
 
 The names passed to `--collections` must match the **directory names** exactly
 (case-sensitive) as they appear on disk, not the sanitized collection names.
 
 ```
-/path/to/data/
+/gaia/b04s/CONSORCIOS/
 ├── PROJECT_A/    ← use "PROJECT_A"
 ├── Data 2024/    ← use "Data 2024"   (with the space)
 └── PROJ-BETA/    ← use "PROJ-BETA"   (with the hyphen)
@@ -112,7 +172,7 @@ The names passed to `--collections` must match the **directory names** exactly
 To discover available directory names before running:
 
 ```bash
-ls /path/to/data/
+ls /gaia/b04s/CONSORCIOS/
 ```
 
 If a name passed to `--collections` does not exist in `--root-dir`, the script
@@ -144,7 +204,7 @@ Deduplication is **enabled by default**. Before uploading, the script:
 To force a full re-upload (e.g. after changing chunk settings):
 
 ```bash
-python ingest_collections.py --root-dir /path/to/data --skip-dedup
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --skip-dedup
 ```
 
 ## Status indicators
@@ -203,5 +263,5 @@ To reset a collection completely before re-importing, use the blueprint's API:
 curl -X DELETE http://localhost:8082/v1/collection \
   -H "Content-Type: application/json" \
   -d '{"collection_name": "MY_COLLECTION"}'
-python ingest_collections.py --root-dir /path/to/data --collections MY_COLLECTION
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections MY_COLLECTION
 ```
