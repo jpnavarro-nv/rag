@@ -85,33 +85,29 @@ So we:
    which Singularity does **not** mount by default);
 3. point `INGESTOR_HOST` at the compute node where the job is running.
 
-**One-time — pull the container.** `httpie_latest.sif` bundles a Python with
-`requests` + `rich` (the only two deps the importer needs), so we skip the
-blocked `pip install`. From inside `scripts/`, pull it directly here:
-
-```bash
-singularity pull docker://alpine/httpie   # → writes httpie_latest.sif to the current dir
-```
-
-Then run the import flow:
-
 ```bash
 # 1. Go to the scripts folder (where the .py and httpie_latest.sif live)
 cd deploy/singularity/scripts
 
-# 2. Data root (subdirs become collections)
+# 2. One-time: pull the importer container into THIS folder.
+#    httpie_latest.sif bundles a Python with requests + rich (the only two deps
+#    the importer needs), so we avoid the blocked `pip install`.
+#    Writes ./httpie_latest.sif — skip this step if it is already here.
+singularity pull docker://alpine/httpie
+
+# 3. Data root (subdirs become collections)
 export PATH_TO_DATA=/gaia/b04s/CONSORCIOS
 
-# 3. Discover the node where the RAG job is running and point the ingestor at it
+# 4. Discover the node where the RAG job is running and point the ingestor at it
 export INGESTOR_HOST=$(squeue -h -u "$USER" -o '%N' | head -1)
 export INGESTOR_PORT=8082
 echo "Ingestor at: $INGESTOR_HOST:$INGESTOR_PORT"
 
-# 4. Dry run — validate readability/permissions, no upload
+# 5. Dry run — validate readability/permissions, no upload
 singularity exec --bind "$PATH_TO_DATA" httpie_latest.sif \
   python3 ingest_collections.py --root-dir "$PATH_TO_DATA" --dry-run
 
-# 5. Full import
+# 6. Full import
 singularity exec --bind "$PATH_TO_DATA" httpie_latest.sif \
   python3 ingest_collections.py --root-dir "$PATH_TO_DATA" --parallel-workers 6
 ```
