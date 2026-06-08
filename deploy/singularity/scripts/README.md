@@ -75,15 +75,11 @@ python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --parallel-workers
 
 ## B. HPC cluster usage (containerized + remote ingestor)
 
-On the cluster, `pip install` is blocked (network-restricted) and the RAG stack
-runs on a **Slurm compute node** (launched via `sbatch`), not on `localhost`.
-So we:
-
-1. run the importer inside a container that already ships `requests` + `rich`
-   (`httpie_latest.sif`, placed next to this script in `scripts/`);
-2. `--bind` the data directory into the container (it lives outside `$HOME`/cwd,
-   which Singularity does **not** mount by default);
-3. point `INGESTOR_HOST` at the compute node where the job is running.
+On the cluster, `pip install` is blocked and the RAG stack runs on a **Slurm
+compute node**, not `localhost`. So we run the importer inside a container
+(`httpie_latest.sif`, ships `requests` + `rich`), `--bind` the data dir (it lives
+outside cwd, which Singularity won't mount by default), and point `INGESTOR_HOST`
+at the job's node.
 
 ```bash
 # 1. Scripts folder
@@ -129,23 +125,13 @@ Notes:
 
 ## Importing specific collections
 
-By default the script processes **every** first-level subdirectory under `--root-dir`.
-Use `--collections` to select only the directories you want:
+By default the script processes **every** first-level subdirectory under
+`--root-dir`. Use `--collections` to pick specific ones — names must match the
+**directory names** exactly (case-sensitive), not the sanitized collection names:
 
 ```bash
-# Import a single collection
-python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A
-
-# Import several collections in one run
-python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A PROJECT_B PROJECT_C
-
-# Combine with other flags (dry-run first, then import)
-python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A --dry-run
-python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A
+python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --collections PROJECT_A PROJECT_B
 ```
-
-The names passed to `--collections` must match the **directory names** exactly
-(case-sensitive) as they appear on disk, not the sanitized collection names.
 
 ```
 /gaia/b04s/CONSORCIOS/
@@ -154,14 +140,8 @@ The names passed to `--collections` must match the **directory names** exactly
 └── PROJ-BETA/    ← use "PROJ-BETA"   (with the hyphen)
 ```
 
-To discover available directory names before running:
-
-```bash
-ls /gaia/b04s/CONSORCIOS/
-```
-
-If a name passed to `--collections` does not exist in `--root-dir`, the script
-exits immediately with an error listing the unknown names.
+List names with `ls /gaia/b04s/CONSORCIOS/`. An unknown name aborts the run
+immediately, listing the offenders.
 
 ## Dry run
 
@@ -200,6 +180,7 @@ python ingest_collections.py --root-dir /gaia/b04s/CONSORCIOS --skip-dedup
 | ✓ | green | Completed — all files ingested (or all readable in dry-run) |
 | ⚠ | yellow | Partial — some files failed (others succeeded) |
 | ✗ | red | Failed — no files ingested (or all unreadable in dry-run) |
+| ∅ | magenta | Unsupported — no extractable content (e.g. scanned/image-only PDFs) |
 | ⊘ | dim | Skipped — no supported files found in this directory |
 
 ## Supported file types
@@ -236,13 +217,8 @@ starting with a letter or underscore. The script sanitizes directory names autom
 
 ## Re-running
 
-The script uses **server-side deduplication** by default — re-running it is safe and
-efficient. Files already ingested with the same filename are skipped automatically.
-
-If a previous import was interrupted partway through a collection, simply re-run the
-script. Only the missing files will be uploaded.
-
-To reset a collection completely before re-importing, use the blueprint's API:
+Re-running is safe: dedup skips files already ingested, so an interrupted import
+just resumes — only the missing files upload. To reset a collection first:
 
 ```bash
 curl -X DELETE http://localhost:8082/v1/collection \
