@@ -85,6 +85,16 @@ So we:
    which Singularity does **not** mount by default);
 3. point `INGESTOR_HOST` at the compute node where the job is running.
 
+**One-time — pull the container.** `httpie_latest.sif` bundles a Python with
+`requests` + `rich` (the only two deps the importer needs), so we skip the
+blocked `pip install`. From inside `scripts/`, pull it directly here:
+
+```bash
+singularity pull docker://alpine/httpie   # → writes httpie_latest.sif to the current dir
+```
+
+Then run the import flow:
+
 ```bash
 # 1. Go to the scripts folder (where the .py and httpie_latest.sif live)
 cd deploy/singularity/scripts

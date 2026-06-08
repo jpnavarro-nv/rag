@@ -94,6 +94,10 @@ deploy/singularity/scripts/import_logs/**
 !deploy/singularity/scripts/import_logs/**/*.log
 !deploy/singularity/scripts/import_logs/**/*.out
 !deploy/singularity/scripts/import_logs/**/*.err
+# Singularity containers pulled into scripts/ (e.g. httpie_latest.sif for the
+# importer) — never commit container images.
+deploy/singularity/scripts/*.sif
+
 # Workbench Project Layout
 # Temporary legacy pull scripts (deprecated)
 deploy/singularity/scripts/pull-minimal-images.sh
