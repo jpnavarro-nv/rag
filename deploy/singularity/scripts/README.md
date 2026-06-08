@@ -86,51 +86,30 @@ So we:
 3. point `INGESTOR_HOST` at the compute node where the job is running.
 
 ```bash
-# 1. Go to the scripts folder (where the .py and httpie_latest.sif live)
+# 1. Scripts folder
 cd deploy/singularity/scripts
 
-# 2. One-time: pull the importer container into THIS folder.
-#    httpie_latest.sif bundles a Python with requests + rich (the only two deps
-#    the importer needs), so we avoid the blocked `pip install`.
-#    Writes ./httpie_latest.sif — skip this step if it is already here.
+# 2. One-time: pull the container (ships requests + rich). Skip if already here.
 singularity pull docker://alpine/httpie
 
-# 3. Data root (subdirs become collections)
+# 3. Data root + ingestor node
 export PATH_TO_DATA=/gaia/b04s/CONSORCIOS
-
-# 4. Discover the node where the RAG job is running and point the ingestor at it
 export INGESTOR_HOST=$(squeue -h -u "$USER" -o '%N' | head -1)
 export INGESTOR_PORT=8082
-echo "Ingestor at: $INGESTOR_HOST:$INGESTOR_PORT"
 
-# 5. Dry run — validate readability/permissions, no upload
+# 4. Dry run, then full import
 singularity exec --bind "$PATH_TO_DATA" httpie_latest.sif \
   python3 ingest_collections.py --root-dir "$PATH_TO_DATA" --dry-run
 
-# 6. Full import
 singularity exec --bind "$PATH_TO_DATA" httpie_latest.sif \
   python3 ingest_collections.py --root-dir "$PATH_TO_DATA" --parallel-workers 6
 ```
 
 Notes:
 
-- `--bind "$PATH_TO_DATA"` mounts the directory at the **same path** inside the
-  container, so `--root-dir "$PATH_TO_DATA"` resolves identically.
-- `INGESTOR_HOST` / `INGESTOR_PORT` are read from the environment by the script —
-  no need to also pass `--ingestor-host`.
-- If you have **more than one job** queued, `head -1` may pick the wrong one.
-  Filter by job name: `squeue -h -u "$USER" -n <job-name> -o '%N'`.
-- Authoritative alternative to `squeue`: the deploy writes the node into
-  `$RAG_EXEC_DIR/job.env`. Source it to get `$NODE`:
-  ```bash
-  export RAG_BASE_DIR=/path/to/rag-workdir
-  source "$(cat "$RAG_BASE_DIR/sessions/$USER/.current_exec")/job.env"
-  export INGESTOR_HOST=$NODE
-  ```
-- The ingestor must listen on `0.0.0.0` (not just loopback) to accept a connection
-  from another node. Quick check: `curl -s http://$INGESTOR_HOST:8082/v1/health`.
-- Per-collection logs are written to `import_logs/<timestamp>/` in the current
-  directory (`scripts/`), which Singularity mounts automatically (it is the cwd).
+- `--bind "$PATH_TO_DATA"` mounts it at the same path, so `--root-dir` resolves identically.
+- Multiple jobs queued? `head -1` may pick the wrong one — filter: `squeue -h -u "$USER" -n <job-name> -o '%N'`.
+- Ingestor must listen on `0.0.0.0` to accept a remote node. Check: `curl -s http://$INGESTOR_HOST:8082/v1/health`.
 
 ## Options
 
