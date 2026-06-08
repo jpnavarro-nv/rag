@@ -1,0 +1,18 @@
+2026-06-08 14:45:17 | INFO     | === START  dir='/gaia/b04s/CONSORCIOS/DEEPWAVE'  collection='DEEPWAVE' ===
+2026-06-08 14:45:17 | INFO     | Discovered 241 supported file(s)
+2026-06-08 14:45:17 | INFO     | Collection 'DEEPWAVE' created: {"message":"Collection DEEPWAVE already exists.","collection_name":"DEEPWAVE"}
+2026-06-08 14:45:18 | INFO     | list_documents: 237 existing doc(s) in 'DEEPWAVE' (total reported: 237)
+2026-06-08 14:45:18 | INFO     | Classification: 1 new, 240 already present
+2026-06-08 14:45:18 | INFO     | Uploading 1 batch(es) of up to 16 file(s) each
+2026-06-08 14:45:18 | INFO     | --- batch 1/1 (1 files) ---
+2026-06-08 14:45:18 | DEBUG    |   Files: DeepWave Consortium - Annual Meeting Houston Agenda [Links].pdf
+2026-06-08 14:45:18 | INFO     | Upload accepted → task_id=d00ef2e5-15a2-45d0-9f58-5f9510fb2a22
+2026-06-08 14:45:18 | DEBUG    | Task d00ef2e5-15a2-45d0-9f58-5f9510fb2a22 state=PENDING elapsed=0s — waiting …
+2026-06-08 14:45:23 | ERROR    | ❌ batch 1/1 (1 files) failed: Task d00ef2e5-15a2-45d0-9f58-5f9510fb2a22 ended with state=FAILED: {'state': 'FAILED', 'result': {'message': 'No records with Embeddings to insert detected.', 'total_documents': 0, 'documents': [], 'failed_documents': [], 'validation_errors': []}}
+Traceback (most recent call last):
+  File "/u/bglq/projects/rag/rag-refactor/deploy/singularity/scripts/ingest_collections.py", line 447, in ingest_collection
+    task_result = client.poll_task(task_id)
+  File "/u/bglq/projects/rag/rag-refactor/deploy/singularity/scripts/ingest_collections.py", line 334, in poll_task
+    raise RuntimeError(f"Task {task_id} ended with state={state}: {data}")
+RuntimeError: Task d00ef2e5-15a2-45d0-9f58-5f9510fb2a22 ended with state=FAILED: {'state': 'FAILED', 'result': {'message': 'No records with Embeddings to insert detected.', 'total_documents': 0, 'documents': [], 'failed_documents': [], 'validation_errors': []}}
+2026-06-08 14:45:23 | ERROR    | === TOTAL FAILURE  failed=1  skipped=240 ===
