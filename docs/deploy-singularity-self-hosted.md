@@ -57,14 +57,8 @@ The deployment model differs from Docker Compose in a few key ways:
    1. From the top-right profile menu → **Account Settings → API Keys** (or go
       directly to [org.ngc.nvidia.com/setup/api-keys](https://org.ngc.nvidia.com/setup/api-keys)),
       then click **Generate Personal Key** (expiration *Never Expire*).
-   2. In the **Services Included** checklist, tick **NGC Catalog** — the scope
-      that authorises pulls from `nvcr.io` (this one alone is enough). You can
-      leave *Private Registry* (only for your org's own pushed images) and
-      *Public API Endpoints* (only for NVIDIA-hosted inference) unchecked. Copy
-      the key (`nvapi-...`).
-   3. On first pull, accept the EULA for the blueprint and NIM collections you
-      pull — otherwise `nvcr.io` returns `DENIED: Access Denied` even with a valid
-      key.
+   2. In the **Services Included** checklist, tick **NGC Catalog** — that alone
+      authorises the `nvcr.io` pulls. Copy the key (`nvapi-...`).
 
    Full procedure and key-expiration handling: [Get an API Key](api-key.md).
 
