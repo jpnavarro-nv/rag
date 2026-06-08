@@ -110,11 +110,12 @@ CONTENT_TYPES: dict[str, str] = {
 class CollectionResult:
     dir_path: Path
     collection_name: str
-    status: str = "pending"        # pending | running | done | partial | failed | skipped
+    status: str = "pending"        # pending | running | done | partial | failed | skipped | unsupported
     total_files: int = 0           # files to upload this run (new)
     ingested_files: int = 0
     failed_files: int = 0
     skipped_files: int = 0         # files skipped because already present in server
+    unsupported_files: int = 0     # files nv-ingest produced no embeddable records for (e.g. scanned/image-only PDFs)
     current_step: str = "Queued"
     error: Optional[str] = None
     start_time: Optional[float] = None
@@ -213,6 +214,29 @@ def make_logger(log_path: Path, name: str) -> logging.Logger:
 # Ingestor API client
 # (follows patterns from scripts/batch_ingestion.py in this repository)
 # ==============================================================================
+
+class EmptyExtractionError(RuntimeError):
+    """An nv-ingest task ended FAILED having produced zero embeddable records.
+
+    This is NOT an infrastructure/pipeline crash: nv-ingest ran the pipeline but
+    the document(s) yielded no embeddable content (no extractable text, tables,
+    or charts). The typical cause is scanned / image-only PDFs with no text layer
+    while image extraction and full-page OCR are disabled. It is deterministic —
+    re-uploading the same files won't help until either the extraction config
+    changes (e.g. enable image extraction) or the files are OCR'd beforehand.
+
+    Identified by the server message "No records with Embeddings to insert
+    detected." (with total_documents=0 and an empty failed_documents list).
+    """
+
+    def __init__(self, task_id: str, server_message: str, result: dict) -> None:
+        self.task_id = task_id
+        self.server_message = server_message
+        self.result = result
+        super().__init__(
+            f"Task {task_id} produced no embeddable records: {server_message}"
+        )
+
 
 class IngestionClient:
 
@@ -331,6 +355,24 @@ class IngestionClient:
                 return data
 
             if state in ("FAILED", "UNKNOWN"):
+                result_obj = data.get("result") or {}
+                server_msg = (result_obj.get("message") or "").strip()
+                # nv-ingest signals "the job produced nothing embeddable" with
+                # this exact message AND total_documents=0 / failed_documents=[].
+                # That is a content problem (e.g. scanned/image-only PDFs), not an
+                # infra failure — raise a distinct, actionable error so the caller
+                # can classify it as 'unsupported' instead of a hard failure.
+                # We require BOTH the message and the empty-result signature so a
+                # genuine outage (which would carry failed_documents or a different
+                # message) still surfaces loudly as a RuntimeError below.
+                empty_signature = (
+                    result_obj.get("total_documents", 0) == 0
+                    and not result_obj.get("failed_documents")
+                )
+                if "no records with embeddings to insert" in server_msg.lower() and empty_signature:
+                    raise EmptyExtractionError(
+                        task_id, server_msg or "No embeddable records produced", result_obj
+                    )
                 raise RuntimeError(f"Task {task_id} ended with state={state}: {data}")
 
             if elapsed > timeout:
@@ -435,6 +477,7 @@ def ingest_collection(
         logger.info(f"Uploading {total_batches} batch(es) of up to {batch_size} file(s) each")
 
         failed_files_count = 0
+        unsupported_count = 0
 
         for batch_idx, batch in enumerate(batches, start=1):
             label = f"batch {batch_idx}/{total_batches} ({len(batch)} files)"
@@ -481,6 +524,27 @@ def ingest_collection(
                     names = [d.get("document_name") for d in failed_docs]
                     logger.error(f"❌ {label} all failed — {names}")
 
+            except EmptyExtractionError as exc:
+                # The whole batch produced zero embeddable records — NOT a crash.
+                # These files have no extractable content (e.g. scanned/image-only
+                # PDFs). Classify as 'unsupported' (distinct from failed/skipped)
+                # and log every file so the cause is explicit and actionable.
+                batch_paths = [str(p) for p in batch]
+                unsupported_count += len(batch)
+                with lock:
+                    result.unsupported_files += len(batch)
+                logger.error(
+                    f"∅ {label}: nv-ingest produced NO embeddable records "
+                    f"(task={exc.task_id}). Server message: \"{exc.server_message}\". "
+                    f"Most likely scanned/image-only PDFs, or files with no "
+                    f"extractable text/tables/charts, while image extraction and "
+                    f"full-page OCR are disabled. These files were NOT ingested; "
+                    f"they will be retried on the next run unless the extraction "
+                    f"config changes (e.g. APP_NVINGEST_EXTRACTIMAGES=True) or the "
+                    f"files are OCR'd beforehand. Files: {batch_paths}"
+                )
+                # Continue with next batch — fault-tolerant
+
             except Exception as exc:
                 logger.error(f"❌ {label} failed: {exc}", exc_info=True)
                 failed_files_count += len(batch)
@@ -489,21 +553,57 @@ def ingest_collection(
                 # Continue with next batch — fault-tolerant
 
         # ── 6. Finalize ───────────────────────────────────────────────────────
-        skip_note = f" · {skipped} already present" if skipped else ""
-        if failed_files_count == 0:
+        # Outcome categories are distinct:
+        #   ingested    — embedded and stored
+        #   failed      — genuine pipeline/infra failure (retryable as-is)
+        #   unsupported — pipeline produced no embeddable content (e.g. scanned
+        #                 PDFs); not a crash, but the file did not make it in
+        #   skipped     — already present on the server (dedup / "already exists")
+        note_bits = []
+        if skipped:
+            note_bits.append(f"{skipped} already present")
+        if unsupported_count:
+            note_bits.append(f"{unsupported_count} unsupported")
+        note = (" · " + " · ".join(note_bits)) if note_bits else ""
+        ok = result.ingested_files
+
+        if failed_files_count == 0 and unsupported_count == 0:
+            # Everything attempted got in (or was already present on the server).
+            # A batch that was entirely "already exists" (ok=0, skipped>0) lands
+            # here too — it is a success, not a failure.
             _update(result, lock, status="done", end_time=time.time(),
-                    current_step=f"Done ({result.ingested_files} files{skip_note})")
-            logger.info(f"=== SUCCESS  ingested={result.ingested_files}  skipped={skipped} ===")
-        elif result.ingested_files > 0:
-            step = f"{result.ingested_files} ok · {failed_files_count} failed{skip_note}"
-            _update(result, lock, status="partial", end_time=time.time(),
+                    current_step=f"Done ({ok} files{note})")
+            logger.info(f"=== SUCCESS  ingested={ok}  skipped={skipped} ===")
+        elif ok == 0 and failed_files_count == 0 and unsupported_count > 0:
+            # Nothing failed in the infra sense and nothing was ingested: every
+            # file attempted has no extractable content. Distinct status so this
+            # is NOT reported as a red "TOTAL FAILURE".
+            step = f"{unsupported_count} file(s): no extractable content"
+            _update(result, lock, status="unsupported", end_time=time.time(),
                     current_step=step, error=step)
-            logger.error(f"=== PARTIAL FAILURE  ok={result.ingested_files}  failed={failed_files_count}  skipped={skipped} ===")
-        else:
-            step = f"All {failed_files_count} files failed"
+            logger.error(
+                f"=== NO EXTRACTABLE CONTENT  unsupported={unsupported_count}  "
+                f"skipped={skipped} === (scanned/image-only PDFs or no extractable "
+                f"text/tables/charts — see the per-batch ∅ lines above)"
+            )
+        elif ok == 0 and unsupported_count == 0:
+            # ok==0, failed>0, unsupported==0 — a genuine, fully-failed collection.
+            step = f"All {failed_files_count} files failed{note}"
             _update(result, lock, status="failed", end_time=time.time(),
                     current_step=step, error=step)
-            logger.error(f"=== TOTAL FAILURE  failed={failed_files_count}  skipped={skipped} ===")
+            logger.error(
+                f"=== TOTAL FAILURE  failed={failed_files_count}  skipped={skipped} ==="
+            )
+        else:
+            # Any mix: some ingested alongside failures/unsupported, or both real
+            # failures and unsupported files with nothing ingested. Flag as partial.
+            step = f"{ok} ok · {failed_files_count} failed{note}"
+            _update(result, lock, status="partial", end_time=time.time(),
+                    current_step=step, error=step)
+            logger.error(
+                f"=== PARTIAL  ok={ok}  failed={failed_files_count}  "
+                f"unsupported={unsupported_count}  skipped={skipped} ==="
+            )
 
     except Exception as exc:
         logger.error(f"=== FATAL ERROR: {exc} ===", exc_info=True)
@@ -583,6 +683,7 @@ _STATUS_COLOR = {
     "partial": "yellow",
     "failed":  "red bold",
     "skipped": "dim",
+    "unsupported": "magenta",
 }
 _STATUS_ICON = {
     "pending": "·",
@@ -591,6 +692,7 @@ _STATUS_ICON = {
     "partial": "⚠",
     "failed":  "✗",
     "skipped": "⊘",
+    "unsupported": "∅",
 }
 
 
@@ -621,8 +723,8 @@ def build_table(results: list[CollectionResult], lock: threading.Lock) -> Table:
         color = _STATUS_COLOR.get(r.status, "white")
         icon  = _STATUS_ICON.get(r.status, "?")
 
-        # Files column: processed (success + failed) out of total
-        processed = r.ingested_files + r.failed_files
+        # Files column: processed (success + failed + unsupported) out of total
+        processed = r.ingested_files + r.failed_files + r.unsupported_files
         if r.total_files:
             files_str = f"{processed}/{r.total_files}"
         else:
@@ -650,10 +752,12 @@ def build_table(results: list[CollectionResult], lock: threading.Lock) -> Table:
         else:
             ok   = r.ingested_files
             fail = r.failed_files
+            unsup = r.unsupported_files
             total = r.total_files
             ok_part   = f"[green]✓{ok}[/]"
             fail_part = f"[red]✗{fail}[/]" if fail > 0 else f"[dim]✗0[/]"
-            status_cell = f"{ok_part} {fail_part} [dim]/{total}[/]"
+            unsup_part = f" [magenta]∅{unsup}[/]" if unsup > 0 else ""
+            status_cell = f"{ok_part} {fail_part}{unsup_part} [dim]/{total}[/]"
 
         table.add_row(
             f"[{color}]{icon}[/]",
@@ -863,15 +967,17 @@ def main() -> int:
         refresh()  # final snapshot
 
     # ── Summary report ─────────────────────────────────────────────────────────
-    done_results    = [r for r in results if r.status == "done"]
-    partial_results = [r for r in results if r.status == "partial"]
-    failed_results  = [r for r in results if r.status == "failed"]
-    skipped_results = [r for r in results if r.status == "skipped"]
+    done_results        = [r for r in results if r.status == "done"]
+    partial_results     = [r for r in results if r.status == "partial"]
+    failed_results      = [r for r in results if r.status == "failed"]
+    skipped_results     = [r for r in results if r.status == "skipped"]
+    unsupported_results = [r for r in results if r.status == "unsupported"]
 
-    total_files    = sum(r.total_files    for r in results)
-    ingested_files = sum(r.ingested_files for r in results)
-    failed_files   = sum(r.failed_files   for r in results)
-    skipped_files  = sum(r.skipped_files  for r in results)
+    total_files       = sum(r.total_files       for r in results)
+    ingested_files    = sum(r.ingested_files    for r in results)
+    failed_files      = sum(r.failed_files      for r in results)
+    skipped_files     = sum(r.skipped_files     for r in results)
+    unsupported_total = sum(r.unsupported_files for r in results)
 
     # Labels differ between dry-run (validation) and full run (ingestion)
     dr = args.dry_run
@@ -888,6 +994,8 @@ def main() -> int:
         console.print(f"  [yellow]⚠  Partial:         {len(partial_results)}  ({note})[/]")
     if skipped_results:
         console.print(f"  [dim]⊘  Skipped:         {len(skipped_results)}  (no supported files)[/]")
+    if unsupported_results:
+        console.print(f"  [magenta]∅  Unsupported:     {len(unsupported_results)}  (no extractable content)[/]")
     if failed_results:
         note = "all unreadable" if dr else "no files ingested"
         console.print(f"  [red]❌ Failed:          {len(failed_results)}  ({note})[/]")
@@ -901,6 +1009,8 @@ def main() -> int:
         console.print(f"  [green]Ingested:           {ingested_files}[/]")
         if skipped_files:
             console.print(f"  [dim]Already current:    {skipped_files}  (skipped)[/]")
+        if unsupported_total:
+            console.print(f"  [magenta]No extractable content: {unsupported_total}  (unsupported)[/]")
         if failed_files:
             console.print(f"  [red]Failed:             {failed_files}[/]")
     console.print()
@@ -928,6 +1038,15 @@ def main() -> int:
                 console.print(f"    Log:     {r.log_path}")
         console.print()
 
+    if unsupported_results:
+        console.print("[bold magenta]Collections with no extractable content (scanned/image-only?):[/]")
+        for r in unsupported_results:
+            console.print(f"  [magenta]• {r.collection_name}[/]")
+            console.print(f"    Result:  {r.error or 'see log'}")
+            console.print(f"    Hint:    enable image extraction / OCR the files, then re-run")
+            console.print(f"    Log:     {r.log_path}")
+        console.print()
+
     # Dry-run: print each unreadable file with its error
     if dr and unreadable_by_collection:
         console.print("[bold red]Unreadable files:[/]")
@@ -947,7 +1066,9 @@ def main() -> int:
     console.print("[bold white]══════════════════════════════════════════════[/]")
     console.print()
 
-    return 0 if not (failed_results or partial_results) else 1
+    # Unsupported collections are not crashes, but the files did NOT make it in,
+    # so the import is incomplete — return non-zero so automation notices.
+    return 0 if not (failed_results or partial_results or unsupported_results) else 1
 
 
 if __name__ == "__main__":
