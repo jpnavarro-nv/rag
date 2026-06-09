@@ -13,9 +13,7 @@ For the Docker Compose deployment path, refer to
 [Get Started With Docker Compose](deploy-docker-self-hosted.md).
 
 :::{tip}
-All code blocks in this guide are meant to be **copied and pasted into your terminal**.
-No command is meant to be run inline from this document. Each block is a self-contained
-unit you can paste as-is.
+Every code block is meant to be **copied and pasted as-is** into your terminal.
 :::
 
 
@@ -53,7 +51,16 @@ The deployment model differs from Docker Compose in a few key ways:
 
 ## Prerequisites
 
-1. [Get an NGC API Key](api-key.md).
+1. **Get an NGC API Key.** A free NGC account (any email) works — no paid
+   subscription required.
+
+   1. From the top-right profile menu → **Account Settings → API Keys** (or go
+      directly to [org.ngc.nvidia.com/setup/api-keys](https://org.ngc.nvidia.com/setup/api-keys)),
+      then click **Generate Personal Key** (expiration *Never Expire*).
+   2. In the **Services Included** checklist, tick **NGC Catalog** — that alone
+      authorises the `nvcr.io` pulls. Copy the key (`nvapi-...`).
+
+   Full procedure and key-expiration handling: [Get an API Key](api-key.md).
 
 2. Confirm that Singularity is installed and accessible on the compute node.
 
@@ -121,17 +128,14 @@ A new user submitting their first job inherits the existing shared data — no
 effectively read-only at runtime and safe to share.
 
 > **One instance per base directory.** The `db/` tree (etcd, MinIO, Milvus) is
-> shared **and writable**, and the service ports are fixed — so only **one** RAG
-> instance can run against a given `RAG_BASE_DIR` at a time. Submitting a second
-> stack while one is already live would corrupt the shared database, so the
-> deployment refuses it: `submit.sh` fails fast on the login node, and
-> `deploy-on-node.sh` holds a lock (`$RAG_BASE_DIR/.rag-active.lock`) and exits
-> with *"já existe uma instância do RAG em execução"* if another live instance
-> holds it. The lock is released automatically on `scancel`/shutdown, and a
-> stale lock left by a crashed job is reclaimed on the next submit. Running
-> multiple **concurrent** instances (each isolated, sharing only the cached
-> images/models) is mapped as future work — it needs per-instance `db/`
-> isolation and is not supported yet.
+> shared **and writable** and the service ports are fixed, so only **one** RAG
+> instance can run against a given `RAG_BASE_DIR` at a time — a second would
+> corrupt the shared database. A second submit is refused: `submit.sh` fails fast
+> on the login node, and `deploy-on-node.sh` holds a lock
+> (`$RAG_BASE_DIR/.rag-active.lock`), exiting with *"já existe uma instância do
+> RAG em execução"* — released on `scancel`/shutdown and reclaimed if a crashed
+> job left it stale. Running multiple **concurrent** instances
+> (per-instance `db/` isolation) is future work — not supported yet.
 
 ### Cluster auto-detect
 
@@ -358,23 +362,21 @@ Submitting RAG Blueprint to Slurm...
 ======================================================
 ```
 
-The wrapper exits in <1s. The job runs on a compute node later, when Slurm
-allocates resources.
+The job runs on a compute node later, when Slurm allocates resources.
 
 ### Watching progress
 
-`sbatch` is **asynchronous** — nothing is printed to your terminal after the
-banner above. To watch the job, copy the `Follow` command:
+`sbatch` is **asynchronous** — nothing prints to your terminal after the banner.
+To watch the job, copy the `Follow` command:
 
 ```bash
 tail -F /gaia/finetune-llm/rag/runtime/sessions/$USER/rag-setup-<JOBID>.out
 ```
 
-The file appears once the scheduler allocates a node. The first thing you see
-is the job's own early banner with `Job ID`, `Node`, `GPUs`, `Base dir`, and
-the same `tail -F` / `scancel` commands echoed back. After 15–20 minutes —
-when all 9 startup steps complete — a second `RAG Blueprint READY` banner
-appears with the frontend and API URLs.
+The file appears once Slurm allocates a node. You first see the job's early
+banner (`Job ID`, `Node`, `GPUs`, monitoring commands); after 15–20 minutes,
+when all 9 startup steps finish, a `RAG Blueprint READY` banner prints the
+frontend and API URLs.
 
 :::{tip}
 Pressing **Ctrl-C** on `tail` does **not** stop the job. It only stops following
