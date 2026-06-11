@@ -7,43 +7,43 @@ INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/p
 INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
 INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
 INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
-INFO:     Started server process [3395616]
+INFO:     Started server process [3439759]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8082 (Press CTRL+C to quit)
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:59426 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45984 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:59436 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45986 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:59452 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35104 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:59460 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35108 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:59466 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35112 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:59476 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35124 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:48808 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35138 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:48822 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:35142 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:48834 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36072 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:48838 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36074 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:48842 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36090 - "GET /health HTTP/1.1" 200 OK
 INFO:nvidia_rag.ingestor_server.server:Checking service health...
 INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
-INFO:     127.0.0.1:48850 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36106 - "GET /health HTTP/1.1" 200 OK
