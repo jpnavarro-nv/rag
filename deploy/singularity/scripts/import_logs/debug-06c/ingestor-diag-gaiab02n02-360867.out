@@ -1,0 +1,315 @@
+==============================================================
+ INGESTOR READINESS DIAGNOSTIC
+==============================================================
+node            : gaiab02n02
+slurm_job_id    : 360867
+port            : 8082 (hex 1F92)
+start_wallclock : 2026-06-11T12:15:24-03:00
+kernel          : 4.18.0-553.124.1.el8_10.x86_64
+curl_version    : curl 7.61.1 (x86_64-redhat-linux-gnu) libcurl/7.61.1 OpenSSL/1.1.1k zlib/1.2.11 brotli/1.0.6 libidn2/2.2.0 libpsl/0.20.2 (+libidn2/2.2.0) libssh/0.9.6/openssl/zlib nghttp2/1.33.0
+
+-- name resolution (crux of the IPv6 theory) --
+getent hosts localhost     : ::1             localhost localhost.localdomain localhost6 localhost6.localdomain6;
+getent hosts ip6-localhost : 
+/etc/hosts loopback lines  :
+    127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+    ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+logs_dir        : /gaia/nvidia/partner/rag-test/sessions/bglq/exec_2026_06_11_360867/logs
+==============================================================
+
+TIMELINE (elapsed | ss listeners on :8082 | curl localhost | curl 127.0.0.1)
+[2026-06-11T12:15:24-03:00] el=   0s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000720 | 127.0.0.1: rc=7 code=000 ip= t=0.000075
+[2026-06-11T12:15:27-03:00] el=   3s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000666 | 127.0.0.1: rc=7 code=000 ip= t=0.000133
+[2026-06-11T12:15:30-03:00] el=   6s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000856 | 127.0.0.1: rc=7 code=000 ip= t=0.000079
+[2026-06-11T12:15:33-03:00] el=   9s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000672 | 127.0.0.1: rc=7 code=000 ip= t=0.000121
+[2026-06-11T12:15:36-03:00] el=  12s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000787 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:15:39-03:00] el=  15s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000731 | 127.0.0.1: rc=7 code=000 ip= t=0.000128
+[2026-06-11T12:15:42-03:00] el=  18s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000497 | 127.0.0.1: rc=7 code=000 ip= t=0.000087
+[2026-06-11T12:15:45-03:00] el=  21s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000746 | 127.0.0.1: rc=7 code=000 ip= t=0.000101
+[2026-06-11T12:15:48-03:00] el=  24s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.001082 | 127.0.0.1: rc=7 code=000 ip= t=0.000120
+[2026-06-11T12:15:51-03:00] el=  27s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000729 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:15:54-03:00] el=  30s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000584 | 127.0.0.1: rc=7 code=000 ip= t=0.000080
+[2026-06-11T12:15:57-03:00] el=  33s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000907 | 127.0.0.1: rc=7 code=000 ip= t=0.000124
+[2026-06-11T12:16:00-03:00] el=  36s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000663 | 127.0.0.1: rc=7 code=000 ip= t=0.000124
+[2026-06-11T12:16:03-03:00] el=  39s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000754 | 127.0.0.1: rc=7 code=000 ip= t=0.000119
+[2026-06-11T12:16:06-03:00] el=  42s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000915 | 127.0.0.1: rc=7 code=000 ip= t=0.000111
+[2026-06-11T12:16:09-03:00] el=  45s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000597 | 127.0.0.1: rc=7 code=000 ip= t=0.000119
+[2026-06-11T12:16:12-03:00] el=  48s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000513 | 127.0.0.1: rc=7 code=000 ip= t=0.000093
+[2026-06-11T12:16:15-03:00] el=  51s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000519 | 127.0.0.1: rc=7 code=000 ip= t=0.000108
+[2026-06-11T12:16:18-03:00] el=  54s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.001013 | 127.0.0.1: rc=7 code=000 ip= t=0.000095
+[2026-06-11T12:16:21-03:00] el=  57s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000688 | 127.0.0.1: rc=7 code=000 ip= t=0.000131
+[2026-06-11T12:16:24-03:00] el=  60s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000947 | 127.0.0.1: rc=7 code=000 ip= t=0.000113
+[2026-06-11T12:16:28-03:00] el=  64s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000731 | 127.0.0.1: rc=7 code=000 ip= t=0.000127
+[2026-06-11T12:16:31-03:00] el=  67s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000619 | 127.0.0.1: rc=7 code=000 ip= t=0.000088
+[2026-06-11T12:16:34-03:00] el=  70s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000461 | 127.0.0.1: rc=7 code=000 ip= t=0.000293
+[2026-06-11T12:16:37-03:00] el=  73s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000570 | 127.0.0.1: rc=7 code=000 ip= t=0.000065
+[2026-06-11T12:16:40-03:00] el=  76s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000825 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:16:43-03:00] el=  79s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000761 | 127.0.0.1: rc=7 code=000 ip= t=0.000122
+[2026-06-11T12:16:46-03:00] el=  82s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000493 | 127.0.0.1: rc=7 code=000 ip= t=0.000066
+[2026-06-11T12:16:49-03:00] el=  85s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000643 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:16:52-03:00] el=  88s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000751 | 127.0.0.1: rc=7 code=000 ip= t=0.000121
+[2026-06-11T12:16:55-03:00] el=  91s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000529 | 127.0.0.1: rc=7 code=000 ip= t=0.000083
+[2026-06-11T12:16:58-03:00] el=  94s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000639 | 127.0.0.1: rc=7 code=000 ip= t=0.000082
+[2026-06-11T12:17:01-03:00] el=  97s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000449 | 127.0.0.1: rc=7 code=000 ip= t=0.000062
+[2026-06-11T12:17:04-03:00] el= 100s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000552 | 127.0.0.1: rc=7 code=000 ip= t=0.000081
+[2026-06-11T12:17:07-03:00] el= 103s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000525 | 127.0.0.1: rc=7 code=000 ip= t=0.000040
+[2026-06-11T12:17:10-03:00] el= 106s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000744 | 127.0.0.1: rc=7 code=000 ip= t=0.000076
+[2026-06-11T12:17:13-03:00] el= 109s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000645 | 127.0.0.1: rc=7 code=000 ip= t=0.000116
+[2026-06-11T12:17:16-03:00] el= 112s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000570 | 127.0.0.1: rc=7 code=000 ip= t=0.000076
+[2026-06-11T12:17:19-03:00] el= 115s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000919 | 127.0.0.1: rc=7 code=000 ip= t=0.000080
+[2026-06-11T12:17:22-03:00] el= 118s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000458 | 127.0.0.1: rc=7 code=000 ip= t=0.000044
+[2026-06-11T12:17:25-03:00] el= 121s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000613 | 127.0.0.1: rc=7 code=000 ip= t=0.000076
+[2026-06-11T12:17:28-03:00] el= 124s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000789 | 127.0.0.1: rc=7 code=000 ip= t=0.000111
+[2026-06-11T12:17:31-03:00] el= 127s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000401 | 127.0.0.1: rc=7 code=000 ip= t=0.000044
+[2026-06-11T12:17:34-03:00] el= 130s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000450 | 127.0.0.1: rc=7 code=000 ip= t=0.000086
+[2026-06-11T12:17:37-03:00] el= 133s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000658 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:17:40-03:00] el= 136s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000697 | 127.0.0.1: rc=7 code=000 ip= t=0.000124
+[2026-06-11T12:17:43-03:00] el= 139s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000821 | 127.0.0.1: rc=7 code=000 ip= t=0.000085
+[2026-06-11T12:17:46-03:00] el= 142s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000731 | 127.0.0.1: rc=7 code=000 ip= t=0.000059
+[2026-06-11T12:17:49-03:00] el= 145s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000603 | 127.0.0.1: rc=7 code=000 ip= t=0.000121
+[2026-06-11T12:17:52-03:00] el= 148s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.013231 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:17:55-03:00] el= 151s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000642 | 127.0.0.1: rc=7 code=000 ip= t=0.000069
+[2026-06-11T12:17:58-03:00] el= 154s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000629 | 127.0.0.1: rc=7 code=000 ip= t=0.000116
+[2026-06-11T12:18:02-03:00] el= 158s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000913 | 127.0.0.1: rc=7 code=000 ip= t=0.000138
+[2026-06-11T12:18:05-03:00] el= 161s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000663 | 127.0.0.1: rc=7 code=000 ip= t=0.000081
+[2026-06-11T12:18:08-03:00] el= 164s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000649 | 127.0.0.1: rc=7 code=000 ip= t=0.000089
+[2026-06-11T12:18:11-03:00] el= 167s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.001258 | 127.0.0.1: rc=7 code=000 ip= t=0.000041
+[2026-06-11T12:18:14-03:00] el= 170s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000479 | 127.0.0.1: rc=7 code=000 ip= t=0.000061
+[2026-06-11T12:18:17-03:00] el= 173s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000485 | 127.0.0.1: rc=7 code=000 ip= t=0.000052
+[2026-06-11T12:18:20-03:00] el= 176s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000443 | 127.0.0.1: rc=7 code=000 ip= t=0.000064
+[2026-06-11T12:18:23-03:00] el= 179s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000585 | 127.0.0.1: rc=7 code=000 ip= t=0.000092
+[2026-06-11T12:18:26-03:00] el= 182s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000619 | 127.0.0.1: rc=7 code=000 ip= t=0.000073
+[2026-06-11T12:18:29-03:00] el= 185s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000723 | 127.0.0.1: rc=7 code=000 ip= t=0.000086
+[2026-06-11T12:18:32-03:00] el= 188s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000592 | 127.0.0.1: rc=7 code=000 ip= t=0.000083
+[2026-06-11T12:18:35-03:00] el= 191s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000748 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:18:38-03:00] el= 194s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000908 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:18:41-03:00] el= 197s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000617 | 127.0.0.1: rc=7 code=000 ip= t=0.000079
+[2026-06-11T12:18:44-03:00] el= 200s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000588 | 127.0.0.1: rc=7 code=000 ip= t=0.000088
+[2026-06-11T12:18:47-03:00] el= 203s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000661 | 127.0.0.1: rc=7 code=000 ip= t=0.000083
+[2026-06-11T12:18:50-03:00] el= 206s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000807 | 127.0.0.1: rc=7 code=000 ip= t=0.000067
+[2026-06-11T12:18:53-03:00] el= 209s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000926 | 127.0.0.1: rc=7 code=000 ip= t=0.000116
+[2026-06-11T12:18:56-03:00] el= 212s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000682 | 127.0.0.1: rc=7 code=000 ip= t=0.000089
+[2026-06-11T12:18:59-03:00] el= 215s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000819 | 127.0.0.1: rc=7 code=000 ip= t=0.000079
+[2026-06-11T12:19:02-03:00] el= 218s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000563 | 127.0.0.1: rc=7 code=000 ip= t=0.000086
+[2026-06-11T12:19:05-03:00] el= 221s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000796 | 127.0.0.1: rc=7 code=000 ip= t=0.000039
+[2026-06-11T12:19:08-03:00] el= 224s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000590 | 127.0.0.1: rc=7 code=000 ip= t=0.000075
+[2026-06-11T12:19:11-03:00] el= 227s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000673 | 127.0.0.1: rc=7 code=000 ip= t=0.000085
+[2026-06-11T12:19:14-03:00] el= 230s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000619 | 127.0.0.1: rc=7 code=000 ip= t=0.000083
+[2026-06-11T12:19:17-03:00] el= 233s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000566 | 127.0.0.1: rc=7 code=000 ip= t=0.000076
+[2026-06-11T12:19:20-03:00] el= 236s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000606 | 127.0.0.1: rc=7 code=000 ip= t=0.000082
+[2026-06-11T12:19:23-03:00] el= 239s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000625 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:19:26-03:00] el= 242s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000793 | 127.0.0.1: rc=7 code=000 ip= t=0.000086
+[2026-06-11T12:19:30-03:00] el= 246s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000583 | 127.0.0.1: rc=7 code=000 ip= t=0.000088
+[2026-06-11T12:19:33-03:00] el= 249s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000821 | 127.0.0.1: rc=7 code=000 ip= t=0.000045
+[2026-06-11T12:19:36-03:00] el= 252s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000765 | 127.0.0.1: rc=7 code=000 ip= t=0.000068
+[2026-06-11T12:19:39-03:00] el= 255s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000929 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:19:42-03:00] el= 258s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000857 | 127.0.0.1: rc=7 code=000 ip= t=0.000099
+[2026-06-11T12:19:45-03:00] el= 261s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000628 | 127.0.0.1: rc=7 code=000 ip= t=0.000081
+[2026-06-11T12:19:48-03:00] el= 264s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.001047 | 127.0.0.1: rc=7 code=000 ip= t=0.000091
+[2026-06-11T12:19:51-03:00] el= 267s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000622 | 127.0.0.1: rc=7 code=000 ip= t=0.000112
+[2026-06-11T12:19:54-03:00] el= 270s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000717 | 127.0.0.1: rc=7 code=000 ip= t=0.000085
+[2026-06-11T12:19:57-03:00] el= 273s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000602 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:20:00-03:00] el= 276s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000621 | 127.0.0.1: rc=7 code=000 ip= t=0.000085
+[2026-06-11T12:20:03-03:00] el= 279s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000595 | 127.0.0.1: rc=7 code=000 ip= t=0.000081
+[2026-06-11T12:20:06-03:00] el= 282s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000579 | 127.0.0.1: rc=7 code=000 ip= t=0.000103
+[2026-06-11T12:20:09-03:00] el= 285s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000578 | 127.0.0.1: rc=7 code=000 ip= t=0.000082
+[2026-06-11T12:20:12-03:00] el= 288s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000893 | 127.0.0.1: rc=7 code=000 ip= t=0.000077
+[2026-06-11T12:20:15-03:00] el= 291s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000592 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:20:18-03:00] el= 294s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000586 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:20:21-03:00] el= 297s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000708 | 127.0.0.1: rc=7 code=000 ip= t=0.000092
+[2026-06-11T12:20:24-03:00] el= 300s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000580 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:20:27-03:00] el= 303s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000685 | 127.0.0.1: rc=7 code=000 ip= t=0.000085
+[2026-06-11T12:20:30-03:00] el= 306s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000525 | 127.0.0.1: rc=7 code=000 ip= t=0.000076
+[2026-06-11T12:20:33-03:00] el= 309s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000944 | 127.0.0.1: rc=7 code=000 ip= t=0.000082
+[2026-06-11T12:20:36-03:00] el= 312s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000595 | 127.0.0.1: rc=7 code=000 ip= t=0.000079
+[2026-06-11T12:20:39-03:00] el= 315s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000618 | 127.0.0.1: rc=7 code=000 ip= t=0.000087
+[2026-06-11T12:20:42-03:00] el= 318s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000586 | 127.0.0.1: rc=7 code=000 ip= t=0.000080
+[2026-06-11T12:20:45-03:00] el= 321s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000660 | 127.0.0.1: rc=7 code=000 ip= t=0.000092
+[2026-06-11T12:20:48-03:00] el= 324s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000603 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:20:51-03:00] el= 327s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000595 | 127.0.0.1: rc=7 code=000 ip= t=0.000082
+[2026-06-11T12:20:54-03:00] el= 330s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000618 | 127.0.0.1: rc=7 code=000 ip= t=0.000091
+[2026-06-11T12:20:57-03:00] el= 333s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000636 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:21:00-03:00] el= 336s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000688 | 127.0.0.1: rc=7 code=000 ip= t=0.000085
+[2026-06-11T12:21:04-03:00] el= 340s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000680 | 127.0.0.1: rc=7 code=000 ip= t=0.000110
+[2026-06-11T12:21:07-03:00] el= 343s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000868 | 127.0.0.1: rc=7 code=000 ip= t=0.000075
+[2026-06-11T12:21:10-03:00] el= 346s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000623 | 127.0.0.1: rc=7 code=000 ip= t=0.000090
+[2026-06-11T12:21:13-03:00] el= 349s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000648 | 127.0.0.1: rc=7 code=000 ip= t=0.000091
+[2026-06-11T12:21:16-03:00] el= 352s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000831 | 127.0.0.1: rc=7 code=000 ip= t=0.000082
+[2026-06-11T12:21:19-03:00] el= 355s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000911 | 127.0.0.1: rc=7 code=000 ip= t=0.000088
+[2026-06-11T12:21:22-03:00] el= 358s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000560 | 127.0.0.1: rc=7 code=000 ip= t=0.000093
+[2026-06-11T12:21:25-03:00] el= 361s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000588 | 127.0.0.1: rc=7 code=000 ip= t=0.000091
+[2026-06-11T12:21:28-03:00] el= 364s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000607 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:21:31-03:00] el= 367s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000622 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:21:34-03:00] el= 370s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000618 | 127.0.0.1: rc=7 code=000 ip= t=0.000075
+[2026-06-11T12:21:37-03:00] el= 373s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000676 | 127.0.0.1: rc=7 code=000 ip= t=0.000073
+[2026-06-11T12:21:40-03:00] el= 376s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000699 | 127.0.0.1: rc=7 code=000 ip= t=0.000085
+[2026-06-11T12:21:43-03:00] el= 379s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000571 | 127.0.0.1: rc=7 code=000 ip= t=0.000080
+[2026-06-11T12:21:46-03:00] el= 382s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000913 | 127.0.0.1: rc=7 code=000 ip= t=0.000099
+[2026-06-11T12:21:49-03:00] el= 385s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000661 | 127.0.0.1: rc=7 code=000 ip= t=0.000112
+[2026-06-11T12:21:52-03:00] el= 388s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000692 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:21:55-03:00] el= 391s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000948 | 127.0.0.1: rc=7 code=000 ip= t=0.000096
+[2026-06-11T12:21:58-03:00] el= 394s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000630 | 127.0.0.1: rc=7 code=000 ip= t=0.000091
+[2026-06-11T12:22:01-03:00] el= 397s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000674 | 127.0.0.1: rc=7 code=000 ip= t=0.000095
+[2026-06-11T12:22:04-03:00] el= 400s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000606 | 127.0.0.1: rc=7 code=000 ip= t=0.000094
+[2026-06-11T12:22:07-03:00] el= 403s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000859 | 127.0.0.1: rc=7 code=000 ip= t=0.000088
+[2026-06-11T12:22:10-03:00] el= 406s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000600 | 127.0.0.1: rc=7 code=000 ip= t=0.000085
+[2026-06-11T12:22:13-03:00] el= 409s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000900 | 127.0.0.1: rc=7 code=000 ip= t=0.000081
+[2026-06-11T12:22:16-03:00] el= 412s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000731 | 127.0.0.1: rc=7 code=000 ip= t=0.000083
+[2026-06-11T12:22:19-03:00] el= 415s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000701 | 127.0.0.1: rc=7 code=000 ip= t=0.000073
+[2026-06-11T12:22:22-03:00] el= 418s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000598 | 127.0.0.1: rc=7 code=000 ip= t=0.000082
+[2026-06-11T12:22:25-03:00] el= 421s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000558 | 127.0.0.1: rc=7 code=000 ip= t=0.000089
+[2026-06-11T12:22:28-03:00] el= 424s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000640 | 127.0.0.1: rc=7 code=000 ip= t=0.000088
+[2026-06-11T12:22:31-03:00] el= 427s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000620 | 127.0.0.1: rc=7 code=000 ip= t=0.000080
+[2026-06-11T12:22:35-03:00] el= 431s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000866 | 127.0.0.1: rc=7 code=000 ip= t=0.000077
+[2026-06-11T12:22:38-03:00] el= 434s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000793 | 127.0.0.1: rc=7 code=000 ip= t=0.000083
+[2026-06-11T12:22:41-03:00] el= 437s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000618 | 127.0.0.1: rc=7 code=000 ip= t=0.000077
+[2026-06-11T12:22:44-03:00] el= 440s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000663 | 127.0.0.1: rc=7 code=000 ip= t=0.000104
+[2026-06-11T12:22:47-03:00] el= 443s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000597 | 127.0.0.1: rc=7 code=000 ip= t=0.000088
+[2026-06-11T12:22:50-03:00] el= 446s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000831 | 127.0.0.1: rc=7 code=000 ip= t=0.000081
+[2026-06-11T12:22:53-03:00] el= 449s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000467 | 127.0.0.1: rc=7 code=000 ip= t=0.000062
+[2026-06-11T12:22:56-03:00] el= 452s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000618 | 127.0.0.1: rc=7 code=000 ip= t=0.000095
+[2026-06-11T12:22:59-03:00] el= 455s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000633 | 127.0.0.1: rc=7 code=000 ip= t=0.000109
+[2026-06-11T12:23:02-03:00] el= 458s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000615 | 127.0.0.1: rc=7 code=000 ip= t=0.000077
+[2026-06-11T12:23:05-03:00] el= 461s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000708 | 127.0.0.1: rc=7 code=000 ip= t=0.000080
+[2026-06-11T12:23:08-03:00] el= 464s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000597 | 127.0.0.1: rc=7 code=000 ip= t=0.000100
+[2026-06-11T12:23:11-03:00] el= 467s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000583 | 127.0.0.1: rc=7 code=000 ip= t=0.000084
+[2026-06-11T12:23:14-03:00] el= 470s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000594 | 127.0.0.1: rc=7 code=000 ip= t=0.000100
+[2026-06-11T12:23:17-03:00] el= 473s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000862 | 127.0.0.1: rc=7 code=000 ip= t=0.000077
+[2026-06-11T12:23:20-03:00] el= 476s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000474 | 127.0.0.1: rc=7 code=000 ip= t=0.000068
+[2026-06-11T12:23:23-03:00] el= 479s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000620 | 127.0.0.1: rc=7 code=000 ip= t=0.000078
+[2026-06-11T12:23:26-03:00] el= 482s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000620 | 127.0.0.1: rc=7 code=000 ip= t=0.000086
+[2026-06-11T12:23:29-03:00] el= 485s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000556 | 127.0.0.1: rc=7 code=000 ip= t=0.000094
+[2026-06-11T12:23:32-03:00] el= 488s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000656 | 127.0.0.1: rc=7 code=000 ip= t=0.000100
+[2026-06-11T12:23:35-03:00] el= 491s listen=0 addrs=[] | localhost: rc=7 code=000 ip= t=0.000650 | 127.0.0.1: rc=7 code=000 ip= t=0.000080
+[2026-06-11T12:23:38-03:00] el= 494s listen=1 addrs=[0.0.0.0:8082] | localhost: rc=0 code=200 ip=127.0.0.1 t=0.098123 | 127.0.0.1: rc=0 code=200 ip=127.0.0.1 t=0.006316
+    >>> first LISTEN at 494s on [0.0.0.0:8082]
+    >>> first HTTP 200 at 494s
+    >>> 'Uvicorn running' present in log at observed 494s (log mtime 2026-06-11 12:23:38.000000000 -0300)
+[2026-06-11T12:23:41-03:00] el= 497s listen=1 addrs=[0.0.0.0:8082] | localhost: rc=0 code=200 ip=127.0.0.1 t=0.008690 | 127.0.0.1: rc=0 code=200 ip=127.0.0.1 t=0.005809
+[2026-06-11T12:23:44-03:00] el= 500s listen=1 addrs=[0.0.0.0:8082] | localhost: rc=0 code=200 ip=127.0.0.1 t=0.008761 | 127.0.0.1: rc=0 code=200 ip=127.0.0.1 t=0.008394
+[2026-06-11T12:23:47-03:00] el= 503s listen=1 addrs=[0.0.0.0:8082] | localhost: rc=0 code=200 ip=127.0.0.1 t=0.009304 | 127.0.0.1: rc=0 code=200 ip=127.0.0.1 t=0.006528
+[2026-06-11T12:23:51-03:00] el= 507s listen=1 addrs=[0.0.0.0:8082] | localhost: rc=0 code=200 ip=127.0.0.1 t=0.008754 | 127.0.0.1: rc=0 code=200 ip=127.0.0.1 t=0.007450
+[2026-06-11T12:23:54-03:00] el= 510s listen=1 addrs=[0.0.0.0:8082] | localhost: rc=0 code=200 ip=127.0.0.1 t=0.008411 | 127.0.0.1: rc=0 code=200 ip=127.0.0.1 t=0.005504
+
+=== final ss (-ltnp) on :8082 ===
+State  Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+LISTEN 0      1024         0.0.0.0:8082      0.0.0.0:*    users:(("uvicorn",pid=3395616,fd=12))
+
+=== /proc/net/tcp  (port 1F92) ===
+      11: 00000000:1F92 00000000:0000 0A 00000000:00000000 00:00000000 00000000 5178877        0 251167406 1 00000000fbd5ece7 100 0 0 10 0               
+      69: 0100007F:BEC2 0100007F:1F92 06 00000000:00000000 03:00001632 00000000     0        0 0 3 0000000040e358e3                                      
+      78: 0100007F:E822 0100007F:1F92 06 00000000:00000000 03:0000116D 00000000     0        0 0 3 00000000c1ba4c36                                      
+      79: 0100007F:E84A 0100007F:1F92 06 00000000:00000000 03:000013D1 00000000     0        0 0 3 00000000a4967b68                                      
+      83: 0100007F:BEC6 0100007F:1F92 06 00000000:00000000 03:00001634 00000000     0        0 0 3 000000001bc43112                                      
+      84: 0100007F:E854 0100007F:1F92 06 00000000:00000000 03:000013D2 00000000     0        0 0 3 00000000a5ab5284                                      
+      85: 0100007F:BEA8 0100007F:1F92 06 00000000:00000000 03:00001502 00000000     0        0 0 3 00000000dc7a8771                                      
+      89: 0100007F:BED2 0100007F:1F92 06 00000000:00000000 03:00001764 00000000     0        0 0 3 0000000023469cb7                                      
+      95: 0100007F:E844 0100007F:1F92 06 00000000:00000000 03:000012A1 00000000     0        0 0 3 000000008efeb031                                      
+     101: 0100007F:BECA 0100007F:1F92 06 00000000:00000000 03:00001763 00000000     0        0 0 3 00000000c1ba02a8                                      
+     102: 0100007F:BEB6 0100007F:1F92 06 00000000:00000000 03:00001503 00000000     0        0 0 3 0000000031d540c4                                      
+     103: 0100007F:E83C 0100007F:1F92 06 00000000:00000000 03:000012A0 00000000     0        0 0 3 0000000019c7dcf8                                      
+     105: 0100007F:E82C 0100007F:1F92 06 00000000:00000000 03:0000116F 00000000     0        0 0 3 00000000e375c8d7                                      
+=== /proc/net/tcp6 (port 1F92) ===
+
+=== ps (uvicorn / singularity / apptainer / starter) ===
+3353183 3353147     679 14804 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=36864 /proc/self/fd/3 /dev/fd/4
+3353259 3353227     677 16528 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=40960 /proc/self/fd/3 /dev/fd/4
+3353442 3353330     674 20312 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=40960 /proc/self/fd/3 /dev/fd/4
+3353681 3353647     667  8780 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=36864 /proc/self/fd/3 /dev/fd/4
+3353781 3353743     665 23372 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=57344 /proc/self/fd/3 /dev/fd/4
+3354047 3354006     662 28876 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=61440 /proc/self/fd/3 /dev/fd/4
+3354395 3354341     659 34636 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=131072 /proc/self/fd/3 /dev/fd/4
+3354706 3354663     656 33928 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=53248 /proc/self/fd/3 /dev/fd/4
+3354989 3354940     652 32160 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=57344 /proc/self/fd/3 /dev/fd/4
+3355506 3355419     649 25420 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=53248 /proc/self/fd/3 /dev/fd/4
+3355896 3355763     646 34652 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=53248 /proc/self/fd/3 /dev/fd/4
+3356461 3356371     643 23716 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=53248 /proc/self/fd/3 /dev/fd/4
+3378305 3378266     366 53076 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=36864 /proc/self/fd/3 /dev/fd/4
+3378362 3378318     364 31624 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378364 3378362     363 121212 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378367 3378362     362 120680 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378368 3378362     362 120924 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378369 3378362     362 120892 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378370 3378362     362 120416 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378371 3378362     362 121336 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378378 3378362     362 120944 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378379 3378362     362 121360 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378380 3378362     362 121380 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378385 3378362     362 121304 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378386 3378362     362 121296 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378387 3378362     362 120936 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378389 3378362     362 121076 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378390 3378362     362 121224 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378391 3378362     362 121252 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378392 3378362     362 121160 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378406 3378362     362 121332 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378411 3378362     362 121316 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378423 3378362     362 121412 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378433 3378362     362 121004 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378490 3378362     361 121328 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378495 3378362     361 121220 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378919 3378362     361 121204 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378920 3378362     361 121096 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378921 3378362     361 121728 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3378969 3378362     361 121704 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3379017 3378362     361 121628 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3379018 3378362     361 121224 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3379066 3378362     361 121844 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3379067 3378362     361 121440 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3379115 3378362     361 122072 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3379120 3378362     361 121444 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380155 3379120     360 67364 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380156 3378386     360 67828 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380157 3378387     360 67796 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380158 3378920     360 67740 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380159 3379067     360 67920 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380161 3378378     360 66960 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380162 3378380     360 67816 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380163 3378921     360 68180 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380165 3378391     360 66988 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380166 3378368     360 67648 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380170 3378433     360 68164 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380171 3378490     360 67768 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380174 3378390     360 67060 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380177 3378423     360 67944 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380185 3378369     360 68196 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380187 3378389     360 68088 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380193 3378367     360 67676 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380194 3378371     360 67828 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380195 3379066     360 68160 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380196 3378385     360 67912 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380200 3379115     360 68656 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380203 3378370     360 67952 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380204 3379017     360 67348 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380207 3378364     360 67336 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380209 3379018     360 67400 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380210 3378919     360 67788 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380212 3378495     360 67888 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380213 3378406     360 67000 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380217 3378379     360 67120 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380218 3378392     360 67096 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380225 3378969     360 68152 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3380226 3378411     360 67732 /opt/conda/envs/nv_ingest_runtime/bin/python /opt/conda/envs/nv_ingest_runtime/bin/gunicorn nv_ingest.api.main:app -w 32 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:7670 --timeout 300 --log-level info --access-logfile /dev/null --access-logformat  --error-logfile -
+3395616 3395595      27 271244 /workspace/.venv/bin/python /workspace/.venv/bin/uvicorn nvidia_rag.ingestor_server.server:app --host 0.0.0.0 --port 8082 --workers 1
+3395629 3395595      27 23400 /usr/libexec/apptainer/bin/squashfuse_ll -f -o allow_other,ro,uid=5178877,gid=5178877,offset=36864 /proc/self/fd/3 /dev/fd/4
+
+=== SUMMARY ===
+node               : gaiab02n02   job: 360867
+first_listen       : 494s   on [0.0.0.0:8082]
+first_http_200     : 494s
+uvicorn_logged_at  : 494
+watched_for        : 510s
+end_wallclock      : 2026-06-11T12:23:54-03:00
+
+INTERPRETATION HINTS:
+ * listen=0 whole window AND 200=NEVER  -> socket never bound in window
+      (cold-start/stall, OR uvicorn never bound — cross-check log mtime).
+ * listener on [::]:8082 only + localhost rc=7 + 127.0.0.1 code=200
+      -> IPv6 (localhost->::1, uvicorn IPv4-only). (Previously deemed improbable.)
+ * listener on 0.0.0.0:8082 + BOTH curls 200 inside window
+      -> probe SHOULD have passed; the failing-run log was likely a
+         different run (truncated, no timestamp) — compare mtimes.
+ * first_200 > readiness window (INGESTOR_READY_ATTEMPTS*2s)
+      -> bound too late: timeout honestly too short for this node.
+(copied ingestor-server.log -> /u/bglq/projects/rag/rag-test/deploy/singularity/scripts/import_logs/debug-06c/ingestor-server-gaiab02n02.log)
