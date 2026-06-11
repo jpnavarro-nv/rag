@@ -148,7 +148,10 @@ while :; do
     sleep "$INTERVAL"
 done
 
-# ---- final snapshots --------------------------------------------------------
+# ---- final snapshots (also runs on Ctrl-C so the report is always complete) -
+_finalized=""
+finalize() {
+    [ -n "$_finalized" ] && return; _finalized=1
 {
     echo
     echo "=== final ss (-ltnp) on :$PORT ==="
@@ -182,11 +185,14 @@ done
     echo "      -> bound too late: timeout honestly too short for this node."
 } >> "$REPORT"
 
-# copy the run's own log (no timestamps, but mtime + 'Uvicorn running' matter)
-if [ -n "$LOGS_DIR" ] && [ -f "$LOGS_DIR/ingestor-server.log" ]; then
-    cp "$LOGS_DIR/ingestor-server.log" "$OUT_DIR/ingestor-server-${NODE}.log" 2>/dev/null || true
-    echo "(copied ingestor-server.log -> $OUT_DIR/ingestor-server-${NODE}.log)" >> "$REPORT"
-fi
+    # copy the run's own log (no timestamps, but mtime + 'Uvicorn running' matter)
+    if [ -n "$LOGS_DIR" ] && [ -f "$LOGS_DIR/ingestor-server.log" ]; then
+        cp "$LOGS_DIR/ingestor-server.log" "$OUT_DIR/ingestor-server-${NODE}.log" 2>/dev/null || true
+        echo "(copied ingestor-server.log -> $OUT_DIR/ingestor-server-${NODE}.log)" >> "$REPORT"
+    fi
+}
+trap 'echo; echo "(interrupted — writing final report)"; finalize; exit 0' INT TERM
+finalize
 
 echo
 echo "Diagnostic complete."
