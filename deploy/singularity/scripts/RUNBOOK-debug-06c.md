@@ -15,8 +15,9 @@ análise. A comunicação é só por git (sem copiar texto do cluster).
 
 ## O que decide o caso (ler antes de rodar)
 
-A janela de espera do 06 é `INGESTOR_READY_ATTEMPTS` (default **90**) × 2s =
-**180s**. A sonda é `curl -s http://localhost:8082/health`; o uvicorn faz bind em
+A janela de espera do 06 é `INGESTOR_READY_ATTEMPTS` (default **900**) × 2s =
+**1800s** (subido de 90/180s após o achado do job 360874: cold-start ~920s). A
+sonda é `curl -s http://localhost:8082/health`; o uvicorn faz bind em
 `--host 0.0.0.0 --port 8082`. Os três desfechos possíveis:
 
 - **`ss` sem listener a janela toda + ambos curls falham** → socket nunca subiu
