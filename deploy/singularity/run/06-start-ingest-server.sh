@@ -44,10 +44,20 @@ wait_for_ingestor() {
     local attempt=1
 
     echo "   ⏳ Waiting for Ingestor Server to be ready..."
+    echo "   ⏱  [$(date '+%FT%T%z')] readiness wait START (window=$((max_attempts * 2))s)"
     while [ $attempt -le $max_attempts ]; do
-        if curl -s "http://${host}:${port}/health" > /dev/null 2>&1; then
+        # Capture the probe's exit code without tripping `set -e` (|| rc=$?).
+        local rc=0
+        curl -s "http://${host}:${port}/health" > /dev/null 2>&1 || rc=$?
+        if [ $rc -eq 0 ]; then
             echo "   ✅ Ingestor Server is ready"
+            echo "   ⏱  [$(date '+%FT%T%z')] became ready at attempt $attempt (~$((attempt * 2))s after wait START)"
             return 0
+        fi
+        # Instrument: log the curl exit code periodically so a failed run shows
+        # WHY the probe failed (7=conn-refused/socket down, 6=DNS, 28=timeout).
+        if [ $((attempt % 10)) -eq 1 ]; then
+            echo "   ⏱  [$(date '+%FT%T%z')] attempt $attempt/$max_attempts curl exit=$rc"
         fi
         # Bail out if the process died while we were waiting
         if [ -f "$RAG_RUNTIME_DIR/pids/ingestor-server.pid" ]; then
@@ -63,6 +73,14 @@ wait_for_ingestor() {
     done
 
     echo "   ❌ Ingestor Server failed to become ready after $((max_attempts * 2))s"
+    # Instrument: snapshot the socket at give-up to tell "never bound in window"
+    # (no listener) apart from "bound too late" (listener present but past timeout).
+    echo "   ⏱  [$(date '+%FT%T%z')] give-up socket snapshot for :${port}:"
+    if command -v ss > /dev/null 2>&1; then
+        ss -ltnp 2>/dev/null | grep ":${port} " || echo "   (no listener on :${port})"
+    else
+        echo "   (ss not available)"
+    fi
     return 1
 }
 
@@ -196,6 +214,10 @@ singularity exec \
 
 INGESTOR_PID=$!
 echo $INGESTOR_PID > $RAG_RUNTIME_DIR/pids/ingestor-server.pid
+# Instrument: anchor the readiness window to the actual `&` launch wallclock.
+# NB: $! is the singularity WRAPPER PID, not uvicorn — container instantiation +
+# venv-bin overlay happen between this line and uvicorn binding :$INGESTOR_PORT.
+echo "   ⏱  [$(date '+%FT%T%z')] uvicorn launched (wrapper PID $INGESTOR_PID)"
 
 # Verify process started
 sleep 2
