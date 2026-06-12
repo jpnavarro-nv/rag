@@ -12,16 +12,23 @@ source "$(dirname "$0")/config.sh"
 # ==============================================================================
 # Configuration
 # ==============================================================================
+# NB: internal hosts default to 127.0.0.1, NOT localhost. On these HPC nodes
+# `getent hosts localhost` returns ::1 (IPv6) first, and the ingestor's clients
+# (minio-py/urllib3 etc.) then connect to MinIO over [::1]:9010, where the socket
+# goes CLOSE-WAIT and the client hangs on read-timeout×retries — the ~900–1850s
+# import-time stall (proven by FORENSIC DUMP, job 360948: fd=11 CLOSE-WAIT
+# [::1]:50480→[::1]:9010). All these services bind 0.0.0.0, so IPv4 127.0.0.1 is
+# always reachable and bypasses the broken ::1 path. Do not revert to localhost.
 
 INGESTOR_PORT=${INGESTOR_PORT:-8082}
-INGESTOR_HOST=${INGESTOR_HOST:-localhost}
+INGESTOR_HOST=${INGESTOR_HOST:-127.0.0.1}
 
 # Infrastructure
-MILVUS_HOST=${MILVUS_HOST:-localhost}
+MILVUS_HOST=${MILVUS_HOST:-127.0.0.1}
 MILVUS_PORT=${MILVUS_PORT:-19530}
-MINIO_HOST=${MINIO_HOST:-localhost}
+MINIO_HOST=${MINIO_HOST:-127.0.0.1}
 MINIO_PORT=${MINIO_PORT:-9010}
-REDIS_HOST=${REDIS_HOST:-localhost}
+REDIS_HOST=${REDIS_HOST:-127.0.0.1}
 REDIS_PORT=${REDIS_PORT:-6379}
 
 # NIM endpoints
@@ -215,8 +222,8 @@ MISSING_PREREQS=0
 check_prerequisite "Milvus" $MILVUS_HOST $MILVUS_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
 check_prerequisite "MinIO" $MINIO_HOST $MINIO_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
 check_prerequisite "Redis" $REDIS_HOST $REDIS_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
-check_prerequisite "Embedding NIM" localhost $EMBEDDING_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
-check_prerequisite "NV-Ingest" localhost $NVINGEST_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
+check_prerequisite "Embedding NIM" 127.0.0.1 $EMBEDDING_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
+check_prerequisite "NV-Ingest" 127.0.0.1 $NVINGEST_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
 
 if [ $MISSING_PREREQS -gt 0 ]; then
     echo ""
@@ -288,10 +295,10 @@ singularity exec \
   --env MINIO_ENDPOINT="${MINIO_HOST}:${MINIO_PORT}" \
   --env MINIO_ACCESSKEY=minioadmin \
   --env MINIO_SECRETKEY=minioadmin \
-  --env APP_EMBEDDINGS_SERVERURL="localhost:${EMBEDDING_PORT}" \
+  --env APP_EMBEDDINGS_SERVERURL="127.0.0.1:${EMBEDDING_PORT}" \
   --env APP_EMBEDDINGS_MODELNAME="nvidia/llama-3.2-nv-embedqa-1b-v2" \
   --env APP_EMBEDDINGS_DIMENSIONS=2048 \
-  --env APP_NVINGEST_MESSAGECLIENTHOSTNAME=localhost \
+  --env APP_NVINGEST_MESSAGECLIENTHOSTNAME=127.0.0.1 \
   --env APP_NVINGEST_MESSAGECLIENTPORT=$NVINGEST_PORT \
   --env APP_NVINGEST_EXTRACTTEXT=True \
   --env APP_NVINGEST_EXTRACTINFOGRAPHICS=False \
@@ -304,11 +311,11 @@ singularity exec \
   --env APP_NVINGEST_CHUNKOVERLAP=${APP_NVINGEST_CHUNKOVERLAP:-150} \
   --env APP_NVINGEST_ENABLEPDFSPLITTER=True \
   --env APP_NVINGEST_CAPTIONMODELNAME="nvidia/llama-3.1-nemotron-nano-vl-8b-v1" \
-  --env APP_NVINGEST_CAPTIONENDPOINTURL="http://localhost:${VLM_PORT}/v1/chat/completions" \
+  --env APP_NVINGEST_CAPTIONENDPOINTURL="http://127.0.0.1:${VLM_PORT}/v1/chat/completions" \
   --env APP_NVINGEST_SAVETODISK=False \
   --env ENABLE_CITATIONS=${ENABLE_CITATIONS:-True} \
   --env SUMMARY_LLM="nvidia/llama-3.3-nemotron-super-49b-v1.5" \
-  --env SUMMARY_LLM_SERVERURL="localhost:${LLM_PORT}" \
+  --env SUMMARY_LLM_SERVERURL="127.0.0.1:${LLM_PORT}" \
   --env SUMMARY_LLM_MAX_CHUNK_LENGTH=50000 \
   --env SUMMARY_CHUNK_OVERLAP=200 \
   --env LOGLEVEL=${LOGLEVEL:-INFO} \

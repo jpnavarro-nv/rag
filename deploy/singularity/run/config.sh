@@ -82,10 +82,15 @@ fi
 # ==============================================================================
 export ETCD_HOST=localhost
 export ETCD_PORT=2379
-export MINIO_HOST=localhost
+# 127.0.0.1 (not localhost): on these HPC nodes `getent hosts localhost` returns ::1
+# first, and the ingestor/rag-server MinIO+Milvus clients then connect over [::1],
+# where the socket goes CLOSE-WAIT and urllib3 hangs on read-timeout×retries — the
+# ~900–1850s ingestor startup stall (FORENSIC DUMP job 360948: CLOSE-WAIT [::1]:9010).
+# These services bind 0.0.0.0, so 127.0.0.1 is always reachable and bypasses ::1.
+export MINIO_HOST=127.0.0.1
 export MINIO_PORT=9010
 export MINIO_CONSOLE_PORT=9011
-export MILVUS_HOST=localhost
+export MILVUS_HOST=127.0.0.1
 export MILVUS_PORT=19530
 
 # ==============================================================================
