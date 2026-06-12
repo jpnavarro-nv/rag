@@ -1,8 +1,6 @@
 #!/bin/bash
-# Start Ingestor Server
-# Run after all infrastructure, Redis, NIMs, and NV-Ingest are running
-#
-# Ingestor Server is the API endpoint for document ingestion
+# Start the Ingestor Server — the API endpoint for document ingestion.
+# Run after infrastructure (01), Redis (02), NIMs (03/04) and NV-Ingest (05) are up.
 
 set -e
 
@@ -12,18 +10,13 @@ source "$(dirname "$0")/config.sh"
 # ==============================================================================
 # Configuration
 # ==============================================================================
-# NB: internal hosts default to 127.0.0.1, NOT localhost. On these HPC nodes
-# `getent hosts localhost` returns ::1 (IPv6) first, and the ingestor's clients
-# (minio-py/urllib3 etc.) then connect to MinIO over [::1]:9010, where the socket
-# goes CLOSE-WAIT and the client hangs on read-timeout×retries — the ~900–1850s
-# import-time stall (proven by FORENSIC DUMP, job 360948: fd=11 CLOSE-WAIT
-# [::1]:50480→[::1]:9010). All these services bind 0.0.0.0, so IPv4 127.0.0.1 is
-# always reachable and bypasses the broken ::1 path. Do not revert to localhost.
-
+# Internal hosts use 127.0.0.1, never `localhost`: on these nodes `getent hosts
+# localhost` returns ::1 (IPv6) first, and the MinIO/Milvus clients then connect
+# over [::1], where the socket hangs. All services bind 0.0.0.0, so 127.0.0.1 is
+# always reachable. config.sh hard-sets these (overriding any inherited value).
 INGESTOR_PORT=${INGESTOR_PORT:-8082}
 INGESTOR_HOST=${INGESTOR_HOST:-127.0.0.1}
 
-# Infrastructure
 MILVUS_HOST=${MILVUS_HOST:-127.0.0.1}
 MILVUS_PORT=${MILVUS_PORT:-19530}
 MINIO_HOST=${MINIO_HOST:-127.0.0.1}
@@ -31,103 +24,51 @@ MINIO_PORT=${MINIO_PORT:-9010}
 REDIS_HOST=${REDIS_HOST:-127.0.0.1}
 REDIS_PORT=${REDIS_PORT:-6379}
 
-# NIM endpoints
 EMBEDDING_PORT=${EMBEDDING_PORT:-9080}
 LLM_PORT=${LLM_PORT:-8999}
 VLM_PORT=${VLM_PORT:-1977}
 NVINGEST_PORT=${NVINGEST_PORT:-7670}
 
 # ==============================================================================
-# Healthcheck Function
+# Helpers
 # ==============================================================================
 
-# pgrep pattern that matches the REAL uvicorn child (python running the uvicorn
-# script) but NOT the singularity wrapper (whose cmdline has `…/uvicorn` but no
-# `…/python` before it). Used for liveness/diagnostics, not as the bail signal.
-INGESTOR_UVICORN_PAT='/workspace/.venv/bin/python.*uvicorn nvidia_rag'
-
-# One-shot forensic dump of the (alive but not-yet-bound) uvicorn child, to stdout
-# (→ rag-setup.out). Tells WHERE the import/startup is blocked — which logs alone
-# never showed. Best-effort: every tool guarded; never aborts the deploy. Why this
-# exists: the MinIO /health/ready gate passes in ~2s yet the ingestor still stalls
-# ~900–1850s before binding (jobs 360876/360921), and the bind ALWAYS eventually
-# happens (give-up probes 200). So the stall is in-process; this catches the syscall.
-dump_hung_forensics() {
-    local port=$1 uv
-    uv=$(pgrep -f "$INGESTOR_UVICORN_PAT" 2>/dev/null | head -1) || true
-    echo "   ========== FORENSIC DUMP (uvicorn travado, ainda sem bind :$port) =========="
-    if [ -z "$uv" ]; then echo "   (sem processo uvicorn — pré-exec ou já saiu)"; echo "   ============================================================"; return 0; fi
-    echo "   pid=$uv etimes=$(ps -o etimes= -p "$uv" 2>/dev/null | tr -d ' ')s state=$(ps -o stat= -p "$uv" 2>/dev/null | tr -d ' ') (D=disk/squashfuse, S=sleep/net/lock, R=cpu)"
-    echo "   wchan=$(cat /proc/$uv/wchan 2>/dev/null) (kernel: onde bloqueia)"
-    echo "   -- /proc/$uv/stack (pilha kernel) --"; cat /proc/$uv/stack 2>/dev/null | sed 's/^/     /' || echo "     (sem permissão)"
-    if command -v py-spy >/dev/null 2>&1; then
-        echo "   -- py-spy dump (pilha Python — smoking gun) --"; py-spy dump --pid "$uv" 2>&1 | sed 's/^/     /'
+check_prerequisite() {
+    local service=$1 host=$2 port=$3
+    if ! nc -z "$host" "$port" > /dev/null 2>&1; then
+        echo "   ❌ $service not reachable at $host:$port"
+        return 1
     fi
-    echo "   -- conexões TCP do pid (preso p/ MinIO :9010 / externo?) --"
-    ss -tanp 2>/dev/null | grep -E "pid=$uv" | sed 's/^/     /' || echo "     (ss sem match)"
-    if command -v strace >/dev/null 2>&1; then
-        echo "   -- strace 15s (recvfrom/connect=rede; read/openat=squashfuse; futex=lock) --"
-        timeout 15 strace -f -tt -T -p "$uv" -e trace=connect,sendto,recvfrom,read,openat,futex,poll 2>&1 | tail -35 | sed 's/^/     /'
-    fi
-    echo "   -- fds abertos relevantes (.so/gaia/socket/tmp) --"
-    ls -l /proc/$uv/fd 2>/dev/null | grep -iE 'gaia|\.so|socket|/tmp' | sed 's/^/     /'
-    echo "   ============================================================"
+    echo "   ✅ $service ready at $host:$port"
+    return 0
 }
 
+# Poll /health until the server answers. The container instantiation plus import
+# happen between launch and bind, so the default window is generous (300s); a
+# healthy start binds in seconds. The liveness bail exits the instant the server
+# dies, so the window only bounds a genuine never-binds failure.
 wait_for_ingestor() {
-    local host=$1
-    local port=$2
-    local forensic_done=""
-    # B3 — tolerate a pathologically slow but ALIVE cold start. On contended HPC
-    # nodes the ingestor took ~920s from launch to bind (see import_logs/debug-06c,
-    # job 360874: socket genuinely absent the whole 900s window, then bound clean —
-    # NOT IPv6/unreachable, confirmed against control 360867). So use a generous cap,
-    # kept safe by the liveness bail below (we exit the instant the server dies).
-    # Default 900 attempts = 1800s; override with INGESTOR_READY_ATTEMPTS.
-    # /health uses check_dependencies=False, so this only waits on the app being up.
-    local max_attempts=${INGESTOR_READY_ATTEMPTS:-900}
+    local host=$1 port=$2
+    local max_attempts=${INGESTOR_READY_ATTEMPTS:-150}   # 150 * 2s = 300s
     local attempt=1
 
     echo "   ⏳ Waiting for Ingestor Server to be ready..."
-    echo "   ⏱  [$(date '+%FT%T%z')] readiness wait START (window=$((max_attempts * 2))s)"
     while [ $attempt -le $max_attempts ]; do
-        # Capture the probe's exit code without tripping `set -e` (|| rc=$?).
+        # Capture curl's exit code without tripping `set -e`.
         local rc=0
         curl -s "http://${host}:${port}/health" > /dev/null 2>&1 || rc=$?
         if [ $rc -eq 0 ]; then
             echo "   ✅ Ingestor Server is ready"
-            echo "   ⏱  [$(date '+%FT%T%z')] became ready at attempt $attempt (~$((attempt * 2))s after wait START)"
             return 0
         fi
-        # Instrument: every ~10 attempts log the curl exit code (7=conn-refused/no
-        # listener, 6=DNS, 28=timeout) AND whether the real uvicorn child exists yet
-        # + its age. This splits "still instantiating the container" (no child) from
-        # "child alive, importing/binding slowly" (child present, etimes climbing).
-        if [ $((attempt % 10)) -eq 1 ]; then
-            local uv uv_msg="uvicorn child not present yet"
-            uv=$(pgrep -f "$INGESTOR_UVICORN_PAT" 2>/dev/null | head -1) || true
-            if [ -n "$uv" ]; then
-                uv_msg="uvicorn child pid=$uv etimes=$(ps -o etimes= -p "$uv" 2>/dev/null | tr -d ' ')s"
-            fi
-            echo "   ⏱  [$(date '+%FT%T%z')] attempt $attempt/$max_attempts curl exit=$rc; $uv_msg"
-        fi
-        # One-shot forensic dump once we're clearly stalled (default attempt 90 ≈ 180s):
-        # a fast/healthy run binds and returns long before this, so it only fires on a
-        # genuine stall — capturing the live blocking syscall/stack into rag-setup.out.
-        if [ -z "$forensic_done" ] && [ $attempt -ge "${INGESTOR_FORENSIC_AT:-90}" ]; then
-            forensic_done=1
-            dump_hung_forensics "$port"
-        fi
-        # Liveness bail: the singularity WRAPPER ($! in the pidfile) runs uvicorn in
-        # the foreground (bash -c '…; exec uvicorn'), so wrapper death == server death
-        # — exit immediately rather than burn the whole window. We bail on the wrapper,
-        # NOT on the uvicorn child's absence: the child does not exist during the
-        # multi-minute container/import startup, so its absence is normal, not death.
+        # Liveness bail: the pidfile holds the singularity wrapper PID, which runs
+        # uvicorn in the foreground — wrapper death == server death. Bail on the
+        # wrapper, not on the (still-absent) uvicorn child during startup.
         if [ -f "$RAG_RUNTIME_DIR/pids/ingestor-server.pid" ]; then
             local pid
             pid=$(cat "$RAG_RUNTIME_DIR/pids/ingestor-server.pid")
             if ! ps -p "$pid" > /dev/null 2>&1; then
-                echo "   ❌ Ingestor Server process died while waiting (wrapper PID $pid)"
+                echo "   ❌ Ingestor Server process died while waiting (PID $pid)"
                 return 1
             fi
         fi
@@ -136,118 +77,17 @@ wait_for_ingestor() {
     done
 
     echo "   ❌ Ingestor Server failed to become ready after $((max_attempts * 2))s"
-    # Instrument: classify the failure at give-up. Probe BOTH localhost and 127.0.0.1
-    # (settles any IPv4/IPv6 localhost-resolution doubt on the failing node itself),
-    # report the real uvicorn child (alive=was-slow vs gone=crashed), and snapshot the
-    # listener (present=bound-too-late vs absent=never-bound-in-window).
-    echo "   ⏱  [$(date '+%FT%T%z')] give-up diagnostics for :${port}:"
-    local rc_l=0 rc_4=0
-    curl -s "http://localhost:${port}/health" > /dev/null 2>&1 || rc_l=$?
-    curl -s "http://127.0.0.1:${port}/health" > /dev/null 2>&1 || rc_4=$?
-    echo "     probe localhost: exit=$rc_l   probe 127.0.0.1: exit=$rc_4"
-    local uv
-    uv=$(pgrep -f "$INGESTOR_UVICORN_PAT" 2>/dev/null | head -1) || true
-    if [ -n "$uv" ]; then
-        echo "     uvicorn child: pid=$uv etimes=$(ps -o etimes= -p "$uv" 2>/dev/null | tr -d ' ')s (alive — was slow, not dead)"
-    else
-        echo "     uvicorn child: none found (still pre-exec, or already gone)"
-    fi
-    if command -v ss > /dev/null 2>&1; then
-        ss -ltnp 2>/dev/null | grep ":${port} " || echo "     (no listener on :${port})"
-    else
-        echo "     (ss not available)"
-    fi
+    ss -ltnp 2>/dev/null | grep ":${port} " || echo "   (no listener on :${port})"
     return 1
 }
 
 # ==============================================================================
-# Prerequisite Checks
+# Start
 # ==============================================================================
-
-check_prerequisite() {
-    local service=$1
-    local host=$2
-    local port=$3
-
-    if ! nc -z $host $port > /dev/null 2>&1; then
-        echo "   ❌ $service not reachable at $host:$port"
-        return 1
-    fi
-    echo "   ✅ $service ready at $host:$port"
-    return 0
-}
-
-# Wait for MinIO to actually SERVE its API, not just accept TCP. `nc -z` passing
-# only means the socket is open; MinIO accepts connections well before the S3 API
-# is ready. The ingestor calls _make_bucket()/bucket_exists() AT IMPORT TIME
-# (nvidia_rag main.py, module-level), with a minio-py client whose read timeout is
-# 300s and Retry(total=5). Against a not-yet-ready MinIO that call read-times-out and
-# retries — observed ~919s before it finally succeeded ("Bucket already exists"),
-# stalling uvicorn before it binds :8082 (import_logs/debug-06c, job 360876; cause
-# confirmed by diag-import-stall.sh: transformers import ~2s, squashfuse/HF refuted).
-# CAUSA-RAIZ (provada): o ingestor (nvidia_rag) faz uma chamada MinIO BLOQUEANTE em
-# TEMPO DE IMPORT — main.py module-level _make_bucket -> bucket_exists -> _get_region ->
-# _url_open (minio/api.py). O MinIO grava em $RAG_DB_DIR/minio-data, que é Lustre/beegfs:
-# o processo sobe rápido (/minio/health/live=2s) mas a CAMADA DE OBJETO/IAM e cada operação
-# S3 fazem I/O de metadados no FS de rede — lento/errático sob contenção. minio-py tem read
-# timeout 300s × retries, então o import pendura ~900–1850s antes do uvicorn bindar :8082
-# (FORENSIC 360948 + diag-import-stall 360917 + ingestor-server-360921.log "Bucket already
-# exists" só lá pelos 1800s). /minio/health/ready MENTE (200 antes do object layer servir —
-# minio#12404), por isso o gate antigo (curl health) passava em 2s e o stall acontecia mesmo assim.
-#
-# FIX: gatear na OPERAÇÃO S3 REAL que o ingestor vai fazer, usando um cliente minio construído
-# IGUAL ao do ingestor (nvidia_rag minio_operator.py): SEM region. Assim bucket_exists() dispara
-# GetBucketLocation (_get_region -> _url_open) — a chamada EXATA da pilha do stall. (Setar region
-# faria o minio-py PULAR o GetBucketLocation, e o gate validaria um caminho que o ingestor NÃO usa —
-# furo pego por 2 validadores independentes.) Isso (a) só passa quando o object layer S3 serve a
-# chamada real, e (b) PRÉ-CRIA default-bucket/a-bucket -> a chamada do ingestor no import vira o
-# caminho rápido "Bucket already exists" (HeadBucket; o GetBucketLocation ainda roda mas é barato
-# contra MinIO local saudável). Best-effort: avisa e segue se não confirmar (B3 1800s é o backstop) —
-# nunca introduz falha dura nova. Cada tentativa é limitada (read=8s, retries off) -> o gate NUNCA
-# herda o pendura de 300s×5 do minio-py default.
-# RESSALVA: o ingestor de produção mantém timeout 300s×5; o gate reduz a janela de risco mas NÃO a
-# elimina se o MinIO ficar lento entre o gate e o import. Hardening pendente (decidir por medição):
-# overlay de minio_operator.py no SIF com region + timeout curto, OU mover minio-data p/ disco local.
-wait_for_minio_ready() {
-    local host=$1 port=$2
-    local max=${MINIO_READY_ATTEMPTS:-150}   # cada tentativa ≤~8s; ~até 20min de tolerância
-    local attempt=1
-    echo "   ⏳ Aguardando MinIO servir a API S3 DE VERDADE (HeadBucket/MakeBucket, não /health)..."
-    while [ $attempt -le $max ]; do
-        if singularity exec "$RAG_IMAGES_DIR/ingestor-server.sif" \
-              /workspace/.venv/bin/python - "$host" "$port" <<'PY' >/dev/null 2>&1
-import sys, urllib3
-from minio import Minio
-host, port = sys.argv[1], sys.argv[2]
-# IMPORTANTE: cliente construído IGUAL ao do ingestor (nvidia_rag minio_operator.py):
-# SEM region e SEM http_client custom no construtor — só injetamos o timeout curto via
-# http_client para o GATE não pendurar. NÃO setar region: assim bucket_exists() dispara
-# GetBucketLocation (_get_region/_url_open), que é EXATAMENTE a chamada da pilha do stall.
-# Se setássemos region, o minio-py PULARIA o GetBucketLocation e o gate validaria um
-# caminho que o ingestor não usa (furo pego por 2 validadores). Gatear no caminho real.
-http = urllib3.PoolManager(timeout=urllib3.Timeout(connect=3, read=8), retries=False)
-c = Minio(f"{host}:{port}", access_key="minioadmin", secret_key="minioadmin",
-          secure=False, http_client=http)
-for b in ("default-bucket", "a-bucket"):
-    if not c.bucket_exists(b):   # bucket_exists -> _get_region (GetBucketLocation) -> HeadBucket
-        c.make_bucket(b)
-print("ok")
-PY
-        then
-            echo "   ✅ MinIO S3 servindo + buckets default-bucket/a-bucket prontos (tentativa $attempt)"
-            return 0
-        fi
-        sleep 2
-        attempt=$((attempt + 1))
-    done
-    echo "   ⚠️  MinIO S3 não confirmou em $max tentativas — seguindo (janela B3 1800s é o backstop)."
-    return 0
-}
 
 echo "=== Starting Ingestor Server ==="
 echo ""
 
-# Check NGC_API_KEY
 if [ -z "$NGC_API_KEY" ]; then
     echo "❌ Error: NGC_API_KEY not set"
     exit 1
@@ -255,7 +95,6 @@ fi
 
 echo "Checking prerequisites..."
 MISSING_PREREQS=0
-
 check_prerequisite "Milvus" $MILVUS_HOST $MILVUS_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
 check_prerequisite "MinIO" $MINIO_HOST $MINIO_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
 check_prerequisite "Redis" $REDIS_HOST $REDIS_PORT || MISSING_PREREQS=$((MISSING_PREREQS + 1))
@@ -273,13 +112,9 @@ if [ $MISSING_PREREQS -gt 0 ]; then
     exit 1
 fi
 
-# MinIO TCP is open (above) but its S3 API may not be serving yet — wait for real
-# readiness so the ingestor's import-time bucket check doesn't stall on retries.
-wait_for_minio_ready $MINIO_HOST $MINIO_PORT
-
 echo ""
 
-# Check if already running
+# Skip if already running
 if [ -f $RAG_RUNTIME_DIR/pids/ingestor-server.pid ]; then
     EXISTING_PID=$(cat $RAG_RUNTIME_DIR/pids/ingestor-server.pid)
     if ps -p $EXISTING_PID > /dev/null 2>&1; then
@@ -295,7 +130,7 @@ echo "Starting Ingestor Server on port $INGESTOR_PORT..."
 
 mkdir -p $RAG_RUNTIME_DIR/ingestor-temp
 
-# Setup venv bin overlay (one-time): allows uv to create missing entry points (e.g. bulk_writer)
+# venv bin overlay (one-time): lets uv create missing entry points (e.g. bulk_writer)
 # on the writable host instead of the read-only SIF filesystem (Errno 30).
 INGESTOR_BIN_OVERLAY="$RAG_RUNTIME_DIR/ingestor-venv-bin"
 if [ ! -f "$INGESTOR_BIN_OVERLAY/uvicorn" ]; then
@@ -304,16 +139,12 @@ if [ ! -f "$INGESTOR_BIN_OVERLAY/uvicorn" ]; then
     singularity exec $RAG_IMAGES_DIR/ingestor-server.sif bash -c "tar -C /workspace/.venv/bin -czf - ." | tar -xzf - -C "$INGESTOR_BIN_OVERLAY/"
     echo "   ✅ venv bin overlay created at $INGESTOR_BIN_OVERLAY"
 fi
-# Remove bulk_writer on every startup so uv recreates it as a file (not directory).
-# bulk_writer is a PEP 660 editable stub — uv installs it as a directory, not a
-# script file, which is why rm -rf (not rm -f) is needed.
+# bulk_writer is a PEP 660 editable stub that uv installs as a directory, not a
+# file — remove it (rm -rf, not rm -f) so uv recreates it as a script on startup.
 rm -rf "$INGESTOR_BIN_OVERLAY/bulk_writer"
 
-# Air-gap hygiene (NOT the cold-start fix — that's wait_for_minio_ready above). The
-# compute node has no outbound internet; these make any stray huggingface_hub call
-# fail fast/cache-only instead of waiting on a connect timeout. diag-import-stall.sh
-# (job 360917) proved the ~931s stall was the import-time MinIO bucket check, not HF
-# (offline vars made zero difference), so keep these only as cheap defensive hardening.
+# HF_*_OFFLINE: the compute node has no outbound internet, so make any stray
+# huggingface_hub call fail fast / cache-only instead of waiting on a connect timeout.
 singularity exec \
   --bind "$INGESTOR_BIN_OVERLAY:/workspace/.venv/bin" \
   --env NGC_API_KEY=$NGC_API_KEY \
@@ -365,17 +196,15 @@ singularity exec \
   --env NV_INGEST_CONCURRENT_BATCHES=${NV_INGEST_CONCURRENT_BATCHES:-4} \
   --bind $RAG_RUNTIME_DIR/ingestor-temp:/tmp-data \
   $RAG_IMAGES_DIR/ingestor-server.sif \
-  bash -c 'echo "   ⏱  [$(date +%FT%T%z)] container entry (singularity instantiation done; pre-import)"; exec /workspace/.venv/bin/uvicorn nvidia_rag.ingestor_server.server:app --host 0.0.0.0 --port '"$INGESTOR_PORT"' --workers 1' \
+  /workspace/.venv/bin/uvicorn nvidia_rag.ingestor_server.server:app \
+    --host 0.0.0.0 --port "$INGESTOR_PORT" --workers 1 \
   > $RAG_LOGS_DIR/ingestor-server.log 2>&1 &
 
+# $! is the singularity wrapper PID (it runs uvicorn in the foreground), so the
+# liveness bail in wait_for_ingestor can watch it as a proxy for the server.
 INGESTOR_PID=$!
 echo $INGESTOR_PID > $RAG_RUNTIME_DIR/pids/ingestor-server.pid
-# Instrument: anchor the readiness window to the actual `&` launch wallclock.
-# NB: $! is the singularity WRAPPER PID, not uvicorn — container instantiation +
-# venv-bin overlay happen between this line and uvicorn binding :$INGESTOR_PORT.
-echo "   ⏱  [$(date '+%FT%T%z')] uvicorn launched (wrapper PID $INGESTOR_PID)"
 
-# Verify process started
 sleep 2
 if ps -p $INGESTOR_PID > /dev/null; then
     echo "   ✅ Ingestor Server process started (port $INGESTOR_PORT, PID $INGESTOR_PID)"
@@ -385,7 +214,6 @@ else
     exit 1
 fi
 
-# Wait for Ingestor to be ready
 if ! wait_for_ingestor $INGESTOR_HOST $INGESTOR_PORT; then
     echo "   Check logs: tail -100 $RAG_LOGS_DIR/ingestor-server.log"
     exit 1

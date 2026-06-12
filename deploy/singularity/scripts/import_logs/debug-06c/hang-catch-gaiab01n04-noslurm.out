@@ -1,8 +1,0 @@
-==============================================================
- CATCH INGESTOR HANG — pilha ao vivo do uvicorn travado
-==============================================================
-node=gaiab01n04 job=noslurm port=8082 threshold=120s wallclock=2026-06-12T15:12:42-0300
-[..] aguardando o processo uvicorn aparecer (pgrep)...
-[ok] uvicorn PID=1961166  etimes=294s
-[..] confirmando stall (vivo + porta 8082 sem bind) por 120s...
-[ok] porta 8082 JÁ tem listener — o ingestor subiu (sem stall agora). etimes=294s. Nada a capturar.

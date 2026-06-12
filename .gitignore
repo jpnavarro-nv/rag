@@ -85,15 +85,10 @@ coverage/
 .pytest_cache/
 cover/
 *.log
-# Under import_logs/ only text log files (*.log/*.out/*.err) may be committed
-# (run + Slurm logs for review). Ignore everything else there so stray
-# runtime/venv/job.env binaries copied in by accident never get tracked.
-deploy/singularity/scripts/import_logs/**
-!deploy/singularity/scripts/import_logs/
-!deploy/singularity/scripts/import_logs/**/
-!deploy/singularity/scripts/import_logs/**/*.log
-!deploy/singularity/scripts/import_logs/**/*.out
-!deploy/singularity/scripts/import_logs/**/*.err
+# import_logs/ is the importer's runtime output dir (ingest_collections.py --log-dir);
+# its contents are never tracked. Keep the dir itself via .gitkeep.
+deploy/singularity/scripts/import_logs/*
+!deploy/singularity/scripts/import_logs/.gitkeep
 # Singularity containers pulled into scripts/ (e.g. httpie_latest.sif for the
 # importer) — never commit container images.
 deploy/singularity/scripts/*.sif

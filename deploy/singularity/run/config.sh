@@ -82,26 +82,21 @@ fi
 # ==============================================================================
 export ETCD_HOST=localhost
 export ETCD_PORT=2379
-# 127.0.0.1 (not localhost): on these HPC nodes `getent hosts localhost` returns ::1
-# first, and the ingestor/rag-server MinIO+Milvus clients then connect over [::1],
-# where the socket goes CLOSE-WAIT and urllib3 hangs on read-timeout×retries — the
-# ~900–1850s ingestor startup stall (FORENSIC DUMP job 360948: CLOSE-WAIT [::1]:9010).
-# These services bind 0.0.0.0, so 127.0.0.1 is always reachable and bypasses ::1.
+# 127.0.0.1, not localhost: on these nodes `getent hosts localhost` resolves ::1
+# (IPv6) first, and the MinIO/Milvus clients then hang connecting over [::1]. All
+# services bind 0.0.0.0, so 127.0.0.1 is always reachable. These are exported (not
+# :-defaulted) so an inherited value from the login shell cannot override them.
 export MINIO_HOST=127.0.0.1
 export MINIO_PORT=9010
 export MINIO_CONSOLE_PORT=9011
 export MILVUS_HOST=127.0.0.1
 export MILVUS_PORT=19530
 
-# Hard-set (not :-default): the ingestor always runs on THIS node and the
-# readiness probe in 06 must hit the local server. submit.sh uses sbatch
-# --export=ALL, so a stale INGESTOR_HOST from the login shell (e.g. a leftover
-# `export INGESTOR_HOST=gaiabXXnYY` from a debug session) would otherwise leak
-# into the job; 06's `${INGESTOR_HOST:-127.0.0.1}` is a NO-OP when the var is
-# already set, so wait_for_ingestor would curl the WRONG node → exit=7 for
-# 1800s → teardown of a perfectly healthy server (job 360984: server up on
-# gaiab02n02, probe checking gaiab01n03). Same NO-OP trap 676b2d0 fixed for
-# MinIO/Milvus. Overriding here is the single source of truth.
+# The ingestor always runs on this node, so its readiness probe (06) must target
+# the local server. This MUST be exported here, not :-defaulted in 06: submit.sh
+# runs sbatch with --export=ALL, so any INGESTOR_HOST set in the login shell leaks
+# into the job, and `${INGESTOR_HOST:-127.0.0.1}` is a no-op when the var is already
+# set — the probe would then curl the wrong host and never see the live server.
 export INGESTOR_HOST=127.0.0.1
 
 # ==============================================================================
