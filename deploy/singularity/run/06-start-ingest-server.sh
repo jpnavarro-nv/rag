@@ -195,14 +195,19 @@ check_prerequisite() {
 # exists" só lá pelos 1800s). /minio/health/ready MENTE (200 antes do object layer servir —
 # minio#12404), por isso o gate antigo (curl health) passava em 2s e o stall acontecia mesmo assim.
 #
-# FIX DEFINITIVO: gatear na OPERAÇÃO S3 REAL que o ingestor vai fazer (HeadBucket/MakeBucket
-# dos dois buckets), usando o MESMO cliente minio do SIF, com timeout CURTO por tentativa e
-# nosso próprio retry. Isso (a) só passa quando o object layer S3 realmente serve, e (b)
-# PRÉ-CRIA default-bucket/a-bucket -> a chamada do ingestor no import vira o caminho instantâneo
-# "Bucket already exists". region="us-east-1" faz o minio-py PULAR _get_region (GetBucketLocation),
-# a chamada exata do stall. Best-effort: avisa e segue se não confirmar (B3 1800s é o backstop) —
-# nunca introduz falha dura nova. Cada tentativa é limitada (read=5s, retries off) -> o gate
-# NUNCA herda o pendura de 300s.
+# FIX: gatear na OPERAÇÃO S3 REAL que o ingestor vai fazer, usando um cliente minio construído
+# IGUAL ao do ingestor (nvidia_rag minio_operator.py): SEM region. Assim bucket_exists() dispara
+# GetBucketLocation (_get_region -> _url_open) — a chamada EXATA da pilha do stall. (Setar region
+# faria o minio-py PULAR o GetBucketLocation, e o gate validaria um caminho que o ingestor NÃO usa —
+# furo pego por 2 validadores independentes.) Isso (a) só passa quando o object layer S3 serve a
+# chamada real, e (b) PRÉ-CRIA default-bucket/a-bucket -> a chamada do ingestor no import vira o
+# caminho rápido "Bucket already exists" (HeadBucket; o GetBucketLocation ainda roda mas é barato
+# contra MinIO local saudável). Best-effort: avisa e segue se não confirmar (B3 1800s é o backstop) —
+# nunca introduz falha dura nova. Cada tentativa é limitada (read=8s, retries off) -> o gate NUNCA
+# herda o pendura de 300s×5 do minio-py default.
+# RESSALVA: o ingestor de produção mantém timeout 300s×5; o gate reduz a janela de risco mas NÃO a
+# elimina se o MinIO ficar lento entre o gate e o import. Hardening pendente (decidir por medição):
+# overlay de minio_operator.py no SIF com region + timeout curto, OU mover minio-data p/ disco local.
 wait_for_minio_ready() {
     local host=$1 port=$2
     local max=${MINIO_READY_ATTEMPTS:-150}   # cada tentativa ≤~8s; ~até 20min de tolerância
@@ -214,11 +219,17 @@ wait_for_minio_ready() {
 import sys, urllib3
 from minio import Minio
 host, port = sys.argv[1], sys.argv[2]
-http = urllib3.PoolManager(timeout=urllib3.Timeout(connect=3, read=5), retries=False)
+# IMPORTANTE: cliente construído IGUAL ao do ingestor (nvidia_rag minio_operator.py):
+# SEM region e SEM http_client custom no construtor — só injetamos o timeout curto via
+# http_client para o GATE não pendurar. NÃO setar region: assim bucket_exists() dispara
+# GetBucketLocation (_get_region/_url_open), que é EXATAMENTE a chamada da pilha do stall.
+# Se setássemos region, o minio-py PULARIA o GetBucketLocation e o gate validaria um
+# caminho que o ingestor não usa (furo pego por 2 validadores). Gatear no caminho real.
+http = urllib3.PoolManager(timeout=urllib3.Timeout(connect=3, read=8), retries=False)
 c = Minio(f"{host}:{port}", access_key="minioadmin", secret_key="minioadmin",
-          secure=False, region="us-east-1", http_client=http)
+          secure=False, http_client=http)
 for b in ("default-bucket", "a-bucket"):
-    if not c.bucket_exists(b):
+    if not c.bucket_exists(b):   # bucket_exists -> _get_region (GetBucketLocation) -> HeadBucket
         c.make_bucket(b)
 print("ok")
 PY
