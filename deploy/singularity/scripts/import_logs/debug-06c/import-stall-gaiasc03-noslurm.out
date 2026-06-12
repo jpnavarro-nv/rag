@@ -1,0 +1,121 @@
+==============================================================
+ DIAG IMPORT STALL — ingestor cold-start (A rede HF vs B squashfuse)
+==============================================================
+node            : gaiasc03   job: noslurm
+wallclock       : 2026-06-12T12:04:51-0300
+sif             : /gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+sif size        : 324M
+singularity     : /usr/bin/singularity  singularity-ce version 4.4.1-1.el8
+getent localhost: ::1             localhost localhost.localdomain localhost6 localhost6.localdomain6
+/tmp livre      : 258G de 293G
+==============================================================
+
+##### T1 — page-in: 'import transformers' (sem rede, sem MinIO) #####
+
+[T1a-lustre-cold] elapsed=4s rc=0
+    sif=/gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+    code='import transformers'  env_extra=''
+    -- imports mais pesados (cumulative, us) --
+      import time:       943 |        943 |         transformers.utils.peft_utils
+      import time:     84642 |    2240992 |       transformers.utils
+      import time:       972 |    2241964 |     transformers.utils.versions
+      import time:     21192 |    2263559 |   transformers.dependency_versions_check
+      import time:       668 |        668 |   transformers.utils.dummy_sentencepiece_and_tokenizers_objects
+      import time:       200 |        200 |   transformers.utils.dummy_mistral_common_objects
+      import time:       637 |        637 |   transformers.utils.dummy_torchvision_objects
+      import time:      2865 |       2865 |   transformers.utils.dummy_pt_objects
+      import time:       952 |        952 |   transformers.utils.dummy_tf_objects
+      import time:       617 |        617 |   transformers.utils.dummy_flax_objects
+      None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+      import time:    790626 |    3163394 | transformers
+
+[T1 copy] copiando SIF -> /tmp/ing-noslurm-1823058.sif
+[T1 copy] elapsed=1s  (324M)
+
+[T1b-tmp-local] elapsed=1s rc=0
+    sif=/tmp/ing-noslurm-1823058.sif
+    code='import transformers'  env_extra=''
+    -- imports mais pesados (cumulative, us) --
+      import time:       670 |        670 |         transformers.utils.peft_utils
+      import time:     50782 |     942230 |       transformers.utils
+      import time:       965 |     943195 |     transformers.utils.versions
+      import time:     20873 |     964468 |   transformers.dependency_versions_check
+      import time:       666 |        666 |   transformers.utils.dummy_sentencepiece_and_tokenizers_objects
+      import time:       198 |        198 |   transformers.utils.dummy_mistral_common_objects
+      import time:       623 |        623 |   transformers.utils.dummy_torchvision_objects
+      import time:      2867 |       2867 |   transformers.utils.dummy_pt_objects
+      import time:       960 |        960 |   transformers.utils.dummy_tf_objects
+      import time:       623 |        623 |   transformers.utils.dummy_flax_objects
+      None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+      import time:    398314 |    1393508 | transformers
+
+[T1c-lustre-warm] elapsed=2s rc=0
+    sif=/gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+    code='import transformers'  env_extra=''
+    -- imports mais pesados (cumulative, us) --
+      import time:      1017 |       1017 |         transformers.utils.peft_utils
+      import time:     50974 |     977114 |       transformers.utils
+      import time:       971 |     978084 |     transformers.utils.versions
+      import time:     20233 |     998716 |   transformers.dependency_versions_check
+      import time:       670 |        670 |   transformers.utils.dummy_sentencepiece_and_tokenizers_objects
+      import time:       199 |        199 |   transformers.utils.dummy_mistral_common_objects
+      import time:       623 |        623 |   transformers.utils.dummy_torchvision_objects
+      import time:      2900 |       2900 |   transformers.utils.dummy_pt_objects
+      import time:       969 |        969 |   transformers.utils.dummy_tf_objects
+      import time:       624 |        624 |   transformers.utils.dummy_flax_objects
+      None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+      import time:    430696 |    1462141 | transformers
+
+##### T2 — rede HF: 'import nvidia_rag.ingestor_server.server', baseline vs offline #####
+(obs: pode falhar/abortar se exigir MinIO/Milvus — o importtime já captura o custo dos libs)
+
+[T2a-full-baseline] elapsed=8s rc=0
+    sif=/gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+    code='import nvidia_rag.ingestor_server.server'  env_extra=''
+    -- imports mais pesados (cumulative, us) --
+      import time:       434 |        434 |           langchain_text_splitters.spacy
+      import time:      1105 |      16056 |         langchain_text_splitters
+      import time:      1106 |      59968 |         nvidia_rag.ingestor_server.nvingest
+      INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+      import time:      1613 |     126315 |         nvidia_rag.ingestor_server.task_handler
+      INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+      INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+      import time:     45505 |     248428 |       nvidia_rag.ingestor_server.main
+      import time:      1403 |    6709094 |     nvidia_rag
+      import time:        13 |    6709107 |   nvidia_rag.ingestor_server
+      import time:      4047 |       4047 |           pydantic.color
+      import time:     26247 |    6979372 | nvidia_rag.ingestor_server.server
+
+[T2b-full-offline] elapsed=8s rc=0
+    sif=/gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+    code='import nvidia_rag.ingestor_server.server'  env_extra='--env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env HF_HUB_DISABLE_TELEMETRY=1 --env HF_HUB_DISABLE_IMPLICIT_TOKEN=1'
+    -- imports mais pesados (cumulative, us) --
+      import time:       454 |        454 |           langchain_text_splitters.spacy
+      import time:      1144 |      16139 |         langchain_text_splitters
+      import time:      1113 |      58609 |         nvidia_rag.ingestor_server.nvingest
+      INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
+      import time:      1632 |     130767 |         nvidia_rag.ingestor_server.task_handler
+      INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
+      INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
+      import time:     23634 |     229729 |       nvidia_rag.ingestor_server.main
+      import time:      1498 |    6665149 |     nvidia_rag
+      import time:        18 |    6665166 |   nvidia_rag.ingestor_server
+      import time:      4071 |       4071 |           pydantic.color
+      import time:     29681 |    6942185 | nvidia_rag.ingestor_server.server
+
+##### T3 — uvicorn vivo travado (se existir agora) #####
+(nenhum uvicorn nvidia_rag rodando agora — T3 pulado)
+
+=============================== SUMÁRIO ===============================
+
+INTERPRETAÇÃO:
+ * T1a(lustre-frio) LENTO e T1b(/tmp) RÁPIDO  -> B (squashfuse/Lustre). Fix: stagear SIF em /tmp.
+   - se T1c(lustre-quente) também RÁPIDO -> era page-in frio (warmup/staging resolve).
+   - se T1c ainda LENTO -> Lustre é o gargalo mesmo quente -> staging /tmp é essencial.
+ * T1a já RÁPIDO -> cache quente; rode num nó RECÉM-ALOCADO p/ decidir.
+ * T2b(offline) MUITO mais rápido que T2a -> A (rede HF). Fix: env offline (já no working tree).
+ * T2a≈T2b (ambos ~iguais) -> env HF é no-op p/ o stall (A refutado).
+ * T3 wchan=fuse_*/read em .so do SIF -> B ; connect/socket externo -> A.
+==============================================================
+
+Relatório: /u/bglq/projects/rag/rag-test/deploy/singularity/scripts/import_logs/debug-06c/import-stall-gaiasc03-noslurm.out

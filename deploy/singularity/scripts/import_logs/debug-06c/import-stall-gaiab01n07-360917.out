@@ -1,0 +1,121 @@
+==============================================================
+ DIAG IMPORT STALL — ingestor cold-start (A rede HF vs B squashfuse)
+==============================================================
+node            : gaiab01n07   job: 360917
+wallclock       : 2026-06-12T12:08:03-0300
+sif             : /gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+sif size        : 324M
+singularity     : /usr/bin/singularity  apptainer version 1.4.5-3.el8
+getent localhost: ::1             localhost localhost.localdomain localhost6 localhost6.localdomain6
+/tmp livre      : 277G de 293G
+==============================================================
+
+##### T1 — page-in: 'import transformers' (sem rede, sem MinIO) #####
+
+[T1a-lustre-cold] elapsed=2s rc=0
+    sif=/gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+    code='import transformers'  env_extra=''
+    -- imports mais pesados (cumulative, us) --
+      import time:       717 |        717 |         transformers.utils.peft_utils
+      import time:     54222 |     901411 |       transformers.utils
+      import time:       843 |     902253 |     transformers.utils.versions
+      import time:     21988 |     924686 |   transformers.dependency_versions_check
+      import time:       400 |        400 |   transformers.utils.dummy_sentencepiece_and_tokenizers_objects
+      import time:       257 |        257 |   transformers.utils.dummy_mistral_common_objects
+      import time:       763 |        763 |   transformers.utils.dummy_torchvision_objects
+      import time:      2502 |       2502 |   transformers.utils.dummy_pt_objects
+      import time:       917 |        917 |   transformers.utils.dummy_tf_objects
+      import time:       653 |        653 |   transformers.utils.dummy_flax_objects
+      None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+      import time:    553933 |    1507828 | transformers
+
+[T1 copy] copiando SIF -> /tmp/ing-360917-1980323.sif
+[T1 copy] elapsed=0s  (324M)
+
+[T1b-tmp-local] elapsed=2s rc=0
+    sif=/tmp/ing-360917-1980323.sif
+    code='import transformers'  env_extra=''
+    -- imports mais pesados (cumulative, us) --
+      import time:       608 |        608 |         transformers.utils.peft_utils
+      import time:     43720 |     837373 |       transformers.utils
+      import time:       846 |     838218 |     transformers.utils.versions
+      import time:     23176 |     861836 |   transformers.dependency_versions_check
+      import time:       283 |        283 |   transformers.utils.dummy_sentencepiece_and_tokenizers_objects
+      import time:       263 |        263 |   transformers.utils.dummy_mistral_common_objects
+      import time:       574 |        574 |   transformers.utils.dummy_torchvision_objects
+      import time:      2505 |       2505 |   transformers.utils.dummy_pt_objects
+      import time:       942 |        942 |   transformers.utils.dummy_tf_objects
+      import time:       679 |        679 |   transformers.utils.dummy_flax_objects
+      None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+      import time:    517945 |    1405959 | transformers
+
+[T1c-lustre-warm] elapsed=2s rc=0
+    sif=/gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+    code='import transformers'  env_extra=''
+    -- imports mais pesados (cumulative, us) --
+      import time:       773 |        773 |         transformers.utils.peft_utils
+      import time:     44377 |     890753 |       transformers.utils
+      import time:       979 |     891732 |     transformers.utils.versions
+      import time:     22001 |     914185 |   transformers.dependency_versions_check
+      import time:       538 |        538 |   transformers.utils.dummy_sentencepiece_and_tokenizers_objects
+      import time:       261 |        261 |   transformers.utils.dummy_mistral_common_objects
+      import time:       766 |        766 |   transformers.utils.dummy_torchvision_objects
+      import time:      2494 |       2494 |   transformers.utils.dummy_pt_objects
+      import time:       943 |        943 |   transformers.utils.dummy_tf_objects
+      import time:       660 |        660 |   transformers.utils.dummy_flax_objects
+      None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
+      import time:    562086 |    1505355 | transformers
+
+##### T2 — rede HF: 'import nvidia_rag.ingestor_server.server', baseline vs offline #####
+(obs: pode falhar/abortar se exigir MinIO/Milvus — o importtime já captura o custo dos libs)
+
+[T2a-full-baseline] elapsed=13s rc=1
+    sif=/gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+    code='import nvidia_rag.ingestor_server.server'  env_extra=''
+    -- imports mais pesados (cumulative, us) --
+          get_minio_operator_instance()._make_bucket(
+        File "/workspace/.venv/lib/python3.13/site-packages/nvidia_rag/ingestor_server/main.py", line 90, in get_minio_operator_instance
+          MINIO_OPERATOR = get_minio_operator()
+        File "/workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/minio_operator.py", line 133, in get_minio_operator
+          minio_operator = MinioOperator(
+              endpoint=CONFIG.minio.endpoint,
+        File "/workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/minio_operator.py", line 52, in __init__
+        File "/workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/minio_operator.py", line 56, in _make_bucket
+        File "/workspace/.venv/lib/python3.13/site-packages/minio/api.py", line 697, in bucket_exists
+        File "/workspace/.venv/lib/python3.13/site-packages/minio/api.py", line 438, in _execute
+        File "/workspace/.venv/lib/python3.13/site-packages/minio/api.py", line 495, in _get_region
+        File "/workspace/.venv/lib/python3.13/site-packages/minio/api.py", line 303, in _url_open
+
+[T2b-full-offline] elapsed=12s rc=1
+    sif=/gaia/nvidia/partner/rag-test/containers/images/ingestor-server.sif
+    code='import nvidia_rag.ingestor_server.server'  env_extra='--env HF_HUB_OFFLINE=1 --env TRANSFORMERS_OFFLINE=1 --env HF_HUB_DISABLE_TELEMETRY=1 --env HF_HUB_DISABLE_IMPLICIT_TOKEN=1'
+    -- imports mais pesados (cumulative, us) --
+          get_minio_operator_instance()._make_bucket(
+        File "/workspace/.venv/lib/python3.13/site-packages/nvidia_rag/ingestor_server/main.py", line 90, in get_minio_operator_instance
+          MINIO_OPERATOR = get_minio_operator()
+        File "/workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/minio_operator.py", line 133, in get_minio_operator
+          minio_operator = MinioOperator(
+              endpoint=CONFIG.minio.endpoint,
+        File "/workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/minio_operator.py", line 52, in __init__
+        File "/workspace/.venv/lib/python3.13/site-packages/nvidia_rag/utils/minio_operator.py", line 56, in _make_bucket
+        File "/workspace/.venv/lib/python3.13/site-packages/minio/api.py", line 697, in bucket_exists
+        File "/workspace/.venv/lib/python3.13/site-packages/minio/api.py", line 438, in _execute
+        File "/workspace/.venv/lib/python3.13/site-packages/minio/api.py", line 495, in _get_region
+        File "/workspace/.venv/lib/python3.13/site-packages/minio/api.py", line 303, in _url_open
+
+##### T3 — uvicorn vivo travado (se existir agora) #####
+(nenhum uvicorn nvidia_rag rodando agora — T3 pulado)
+
+=============================== SUMÁRIO ===============================
+
+INTERPRETAÇÃO:
+ * T1a(lustre-frio) LENTO e T1b(/tmp) RÁPIDO  -> B (squashfuse/Lustre). Fix: stagear SIF em /tmp.
+   - se T1c(lustre-quente) também RÁPIDO -> era page-in frio (warmup/staging resolve).
+   - se T1c ainda LENTO -> Lustre é o gargalo mesmo quente -> staging /tmp é essencial.
+ * T1a já RÁPIDO -> cache quente; rode num nó RECÉM-ALOCADO p/ decidir.
+ * T2b(offline) MUITO mais rápido que T2a -> A (rede HF). Fix: env offline (já no working tree).
+ * T2a≈T2b (ambos ~iguais) -> env HF é no-op p/ o stall (A refutado).
+ * T3 wchan=fuse_*/read em .so do SIF -> B ; connect/socket externo -> A.
+==============================================================
+
+Relatório: /u/bglq/projects/rag/rag-test/deploy/singularity/scripts/import_logs/debug-06c/import-stall-gaiab01n07-360917.out
