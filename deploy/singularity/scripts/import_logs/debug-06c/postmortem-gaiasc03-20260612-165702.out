@@ -1,0 +1,10 @@
+=== 20260612-165702  node=gaiasc03 ===
+--- uvicorn vivos ---
+none
+--- LISTEN 8082 ---
+none
+--- LISTEN minio/milvus ---
+LISTEN 0      1024       127.0.0.1:9010       0.0.0.0:*    users:(("minio",pid=1496837,fd=7))
+LISTEN 0      1024               *:9010             *:*    users:(("minio",pid=1496837,fd=8))
+LISTEN 0      1024           [::1]:9010          [::]:*    users:(("minio",pid=1496837,fd=9))
+--- dmesg OOM (se houver) ---
