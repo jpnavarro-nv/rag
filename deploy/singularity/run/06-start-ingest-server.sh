@@ -39,9 +39,38 @@ NVINGEST_PORT=${NVINGEST_PORT:-7670}
 # `…/python` before it). Used for liveness/diagnostics, not as the bail signal.
 INGESTOR_UVICORN_PAT='/workspace/.venv/bin/python.*uvicorn nvidia_rag'
 
+# One-shot forensic dump of the (alive but not-yet-bound) uvicorn child, to stdout
+# (→ rag-setup.out). Tells WHERE the import/startup is blocked — which logs alone
+# never showed. Best-effort: every tool guarded; never aborts the deploy. Why this
+# exists: the MinIO /health/ready gate passes in ~2s yet the ingestor still stalls
+# ~900–1850s before binding (jobs 360876/360921), and the bind ALWAYS eventually
+# happens (give-up probes 200). So the stall is in-process; this catches the syscall.
+dump_hung_forensics() {
+    local port=$1 uv
+    uv=$(pgrep -f "$INGESTOR_UVICORN_PAT" 2>/dev/null | head -1) || true
+    echo "   ========== FORENSIC DUMP (uvicorn travado, ainda sem bind :$port) =========="
+    if [ -z "$uv" ]; then echo "   (sem processo uvicorn — pré-exec ou já saiu)"; echo "   ============================================================"; return 0; fi
+    echo "   pid=$uv etimes=$(ps -o etimes= -p "$uv" 2>/dev/null | tr -d ' ')s state=$(ps -o stat= -p "$uv" 2>/dev/null | tr -d ' ') (D=disk/squashfuse, S=sleep/net/lock, R=cpu)"
+    echo "   wchan=$(cat /proc/$uv/wchan 2>/dev/null) (kernel: onde bloqueia)"
+    echo "   -- /proc/$uv/stack (pilha kernel) --"; cat /proc/$uv/stack 2>/dev/null | sed 's/^/     /' || echo "     (sem permissão)"
+    if command -v py-spy >/dev/null 2>&1; then
+        echo "   -- py-spy dump (pilha Python — smoking gun) --"; py-spy dump --pid "$uv" 2>&1 | sed 's/^/     /'
+    fi
+    echo "   -- conexões TCP do pid (preso p/ MinIO :9010 / externo?) --"
+    ss -tanp 2>/dev/null | grep -E "pid=$uv" | sed 's/^/     /' || echo "     (ss sem match)"
+    if command -v strace >/dev/null 2>&1; then
+        echo "   -- strace 15s (recvfrom/connect=rede; read/openat=squashfuse; futex=lock) --"
+        timeout 15 strace -f -tt -T -p "$uv" -e trace=connect,sendto,recvfrom,read,openat,futex,poll 2>&1 | tail -35 | sed 's/^/     /'
+    fi
+    echo "   -- fds abertos relevantes (.so/gaia/socket/tmp) --"
+    ls -l /proc/$uv/fd 2>/dev/null | grep -iE 'gaia|\.so|socket|/tmp' | sed 's/^/     /'
+    echo "   ============================================================"
+}
+
 wait_for_ingestor() {
     local host=$1
     local port=$2
+    local forensic_done=""
     # B3 — tolerate a pathologically slow but ALIVE cold start. On contended HPC
     # nodes the ingestor took ~920s from launch to bind (see import_logs/debug-06c,
     # job 360874: socket genuinely absent the whole 900s window, then bound clean —
@@ -74,6 +103,13 @@ wait_for_ingestor() {
                 uv_msg="uvicorn child pid=$uv etimes=$(ps -o etimes= -p "$uv" 2>/dev/null | tr -d ' ')s"
             fi
             echo "   ⏱  [$(date '+%FT%T%z')] attempt $attempt/$max_attempts curl exit=$rc; $uv_msg"
+        fi
+        # One-shot forensic dump once we're clearly stalled (default attempt 90 ≈ 180s):
+        # a fast/healthy run binds and returns long before this, so it only fires on a
+        # genuine stall — capturing the live blocking syscall/stack into rag-setup.out.
+        if [ -z "$forensic_done" ] && [ $attempt -ge "${INGESTOR_FORENSIC_AT:-90}" ]; then
+            forensic_done=1
+            dump_hung_forensics "$port"
         fi
         # Liveness bail: the singularity WRAPPER ($! in the pidfile) runs uvicorn in
         # the foreground (bash -c '…; exec uvicorn'), so wrapper death == server death
