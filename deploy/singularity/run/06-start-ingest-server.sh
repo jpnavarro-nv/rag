@@ -185,25 +185,62 @@ check_prerequisite() {
 # retries — observed ~919s before it finally succeeded ("Bucket already exists"),
 # stalling uvicorn before it binds :8082 (import_logs/debug-06c, job 360876; cause
 # confirmed by diag-import-stall.sh: transformers import ~2s, squashfuse/HF refuted).
-# Gating here removes the race at the source. Best-effort: if /minio/health/ready
-# never answers (unexpected build/path) we warn and proceed — the B3 readiness window
-# is the backstop — so this never introduces a new hard failure.
+# CAUSA-RAIZ (provada): o ingestor (nvidia_rag) faz uma chamada MinIO BLOQUEANTE em
+# TEMPO DE IMPORT — main.py module-level _make_bucket -> bucket_exists -> _get_region ->
+# _url_open (minio/api.py). O MinIO grava em $RAG_DB_DIR/minio-data, que é Lustre/beegfs:
+# o processo sobe rápido (/minio/health/live=2s) mas a CAMADA DE OBJETO/IAM e cada operação
+# S3 fazem I/O de metadados no FS de rede — lento/errático sob contenção. minio-py tem read
+# timeout 300s × retries, então o import pendura ~900–1850s antes do uvicorn bindar :8082
+# (FORENSIC 360948 + diag-import-stall 360917 + ingestor-server-360921.log "Bucket already
+# exists" só lá pelos 1800s). /minio/health/ready MENTE (200 antes do object layer servir —
+# minio#12404), por isso o gate antigo (curl health) passava em 2s e o stall acontecia mesmo assim.
+#
+# FIX: gatear na OPERAÇÃO S3 REAL que o ingestor vai fazer, usando um cliente minio construído
+# IGUAL ao do ingestor (nvidia_rag minio_operator.py): SEM region. Assim bucket_exists() dispara
+# GetBucketLocation (_get_region -> _url_open) — a chamada EXATA da pilha do stall. (Setar region
+# faria o minio-py PULAR o GetBucketLocation, e o gate validaria um caminho que o ingestor NÃO usa —
+# furo pego por 2 validadores independentes.) Isso (a) só passa quando o object layer S3 serve a
+# chamada real, e (b) PRÉ-CRIA default-bucket/a-bucket -> a chamada do ingestor no import vira o
+# caminho rápido "Bucket already exists" (HeadBucket; o GetBucketLocation ainda roda mas é barato
+# contra MinIO local saudável). Best-effort: avisa e segue se não confirmar (B3 1800s é o backstop) —
+# nunca introduz falha dura nova. Cada tentativa é limitada (read=8s, retries off) -> o gate NUNCA
+# herda o pendura de 300s×5 do minio-py default.
+# RESSALVA: o ingestor de produção mantém timeout 300s×5; o gate reduz a janela de risco mas NÃO a
+# elimina se o MinIO ficar lento entre o gate e o import. Hardening pendente (decidir por medição):
+# overlay de minio_operator.py no SIF com region + timeout curto, OU mover minio-data p/ disco local.
 wait_for_minio_ready() {
     local host=$1 port=$2
-    local max=${MINIO_READY_ATTEMPTS:-90}   # ~180s se o curl falha rápido; até ~630s se pendurar (max-time 5 + sleep 2)
-    local attempt=1 rc
-    echo "   ⏳ Aguardando MinIO servir a API (readiness, não só TCP aberto)..."
+    local max=${MINIO_READY_ATTEMPTS:-150}   # cada tentativa ≤~8s; ~até 20min de tolerância
+    local attempt=1
+    echo "   ⏳ Aguardando MinIO servir a API S3 DE VERDADE (HeadBucket/MakeBucket, não /health)..."
     while [ $attempt -le $max ]; do
-        rc=0
-        curl -sf -o /dev/null --max-time 5 "http://${host}:${port}/minio/health/ready" 2>/dev/null || rc=$?
-        if [ $rc -eq 0 ]; then
-            echo "   ✅ MinIO pronto (API servindo) em ${host}:${port} (~$((attempt * 2))s)"
+        if singularity exec "$RAG_IMAGES_DIR/ingestor-server.sif" \
+              /workspace/.venv/bin/python - "$host" "$port" <<'PY' >/dev/null 2>&1
+import sys, urllib3
+from minio import Minio
+host, port = sys.argv[1], sys.argv[2]
+# IMPORTANTE: cliente construído IGUAL ao do ingestor (nvidia_rag minio_operator.py):
+# SEM region e SEM http_client custom no construtor — só injetamos o timeout curto via
+# http_client para o GATE não pendurar. NÃO setar region: assim bucket_exists() dispara
+# GetBucketLocation (_get_region/_url_open), que é EXATAMENTE a chamada da pilha do stall.
+# Se setássemos region, o minio-py PULARIA o GetBucketLocation e o gate validaria um
+# caminho que o ingestor não usa (furo pego por 2 validadores). Gatear no caminho real.
+http = urllib3.PoolManager(timeout=urllib3.Timeout(connect=3, read=8), retries=False)
+c = Minio(f"{host}:{port}", access_key="minioadmin", secret_key="minioadmin",
+          secure=False, http_client=http)
+for b in ("default-bucket", "a-bucket"):
+    if not c.bucket_exists(b):   # bucket_exists -> _get_region (GetBucketLocation) -> HeadBucket
+        c.make_bucket(b)
+print("ok")
+PY
+        then
+            echo "   ✅ MinIO S3 servindo + buckets default-bucket/a-bucket prontos (tentativa $attempt)"
             return 0
         fi
         sleep 2
         attempt=$((attempt + 1))
     done
-    echo "   ⚠️  MinIO não confirmou /minio/health/ready em $((max * 2))s — seguindo mesmo assim (janela B3 tolera o atraso)."
+    echo "   ⚠️  MinIO S3 não confirmou em $max tentativas — seguindo (janela B3 1800s é o backstop)."
     return 0
 }
 
