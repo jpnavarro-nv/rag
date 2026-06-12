@@ -1,4 +1,5 @@
 INFO:    Environment variable SINGULARITY_TMPDIR is set, but APPTAINER_TMPDIR is preferred
+   ⏱  [2026-06-11T16:04:58-0300] container entry (singularity instantiation done; pre-import)
 /workspace/.venv/lib/python3.13/site-packages/pydantic/_internal/_fields.py:198: UserWarning: Field name "schema" in "MetadataSchema" shadows an attribute in parent "BaseModel"
   warnings.warn(
 None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be available and only tokenizers, configuration and file/data utilities can be used.
@@ -7,7 +8,13 @@ INFO:nvidia_rag.utils.llm:Using prompts config file from: /workspace/.venv/lib/p
 INFO:nvidia_rag.ingestor_server.task_handler:Redis backend is disabled
 INFO:nvidia_rag.utils.minio_operator:Bucket already exists: default-bucket
 INFO:nvidia_rag.utils.minio_operator:Bucket already exists: a-bucket
-INFO:     Started server process [3738969]
+INFO:     Started server process [3491019]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8082 (Press CTRL+C to quit)
+INFO:nvidia_rag.ingestor_server.server:Checking service health...
+INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
+INFO:     127.0.0.1:41716 - "GET /health HTTP/1.1" 200 OK
+INFO:nvidia_rag.ingestor_server.server:Checking service health...
+INFO:nvidia_rag.ingestor_server.server:Skipping dependency health checks as check_dependencies=False
+INFO:     127.0.0.1:41724 - "GET /health HTTP/1.1" 200 OK
