@@ -31,7 +31,10 @@ export SINGULARITY_CACHEDIR="$RAG_CACHE_DIR"
 # ==============================================================================
 # Persistent databases (shared across all exec sessions)
 # ==============================================================================
-export RAG_DB_DIR="$RAG_BASE_DIR/db"
+# Default lives under $RAG_BASE_DIR (network FS, e.g. /gaia). Overridable by env
+# so an experiment can pin the DB layer (MinIO/Milvus/etcd) to node-local disk
+# (e.g. RAG_DB_DIR=/tmp/rag-db) to isolate network-FS I/O latency. Unset = unchanged.
+export RAG_DB_DIR="${RAG_DB_DIR:-$RAG_BASE_DIR/db}"
 export RAG_MILVUS_DATA_DIR="$RAG_DB_DIR/milvus-data"
 export RAG_MILVUS_CONFIG_DIR="$RAG_DB_DIR/milvus-configs"
 export RAG_ETCD_DATA_DIR="$RAG_DB_DIR/etcd-data"
