@@ -185,25 +185,51 @@ check_prerequisite() {
 # retries — observed ~919s before it finally succeeded ("Bucket already exists"),
 # stalling uvicorn before it binds :8082 (import_logs/debug-06c, job 360876; cause
 # confirmed by diag-import-stall.sh: transformers import ~2s, squashfuse/HF refuted).
-# Gating here removes the race at the source. Best-effort: if /minio/health/ready
-# never answers (unexpected build/path) we warn and proceed — the B3 readiness window
-# is the backstop — so this never introduces a new hard failure.
+# CAUSA-RAIZ (provada): o ingestor (nvidia_rag) faz uma chamada MinIO BLOQUEANTE em
+# TEMPO DE IMPORT — main.py module-level _make_bucket -> bucket_exists -> _get_region ->
+# _url_open (minio/api.py). O MinIO grava em $RAG_DB_DIR/minio-data, que é Lustre/beegfs:
+# o processo sobe rápido (/minio/health/live=2s) mas a CAMADA DE OBJETO/IAM e cada operação
+# S3 fazem I/O de metadados no FS de rede — lento/errático sob contenção. minio-py tem read
+# timeout 300s × retries, então o import pendura ~900–1850s antes do uvicorn bindar :8082
+# (FORENSIC 360948 + diag-import-stall 360917 + ingestor-server-360921.log "Bucket already
+# exists" só lá pelos 1800s). /minio/health/ready MENTE (200 antes do object layer servir —
+# minio#12404), por isso o gate antigo (curl health) passava em 2s e o stall acontecia mesmo assim.
+#
+# FIX DEFINITIVO: gatear na OPERAÇÃO S3 REAL que o ingestor vai fazer (HeadBucket/MakeBucket
+# dos dois buckets), usando o MESMO cliente minio do SIF, com timeout CURTO por tentativa e
+# nosso próprio retry. Isso (a) só passa quando o object layer S3 realmente serve, e (b)
+# PRÉ-CRIA default-bucket/a-bucket -> a chamada do ingestor no import vira o caminho instantâneo
+# "Bucket already exists". region="us-east-1" faz o minio-py PULAR _get_region (GetBucketLocation),
+# a chamada exata do stall. Best-effort: avisa e segue se não confirmar (B3 1800s é o backstop) —
+# nunca introduz falha dura nova. Cada tentativa é limitada (read=5s, retries off) -> o gate
+# NUNCA herda o pendura de 300s.
 wait_for_minio_ready() {
     local host=$1 port=$2
-    local max=${MINIO_READY_ATTEMPTS:-90}   # ~180s se o curl falha rápido; até ~630s se pendurar (max-time 5 + sleep 2)
-    local attempt=1 rc
-    echo "   ⏳ Aguardando MinIO servir a API (readiness, não só TCP aberto)..."
+    local max=${MINIO_READY_ATTEMPTS:-150}   # cada tentativa ≤~8s; ~até 20min de tolerância
+    local attempt=1
+    echo "   ⏳ Aguardando MinIO servir a API S3 DE VERDADE (HeadBucket/MakeBucket, não /health)..."
     while [ $attempt -le $max ]; do
-        rc=0
-        curl -sf -o /dev/null --max-time 5 "http://${host}:${port}/minio/health/ready" 2>/dev/null || rc=$?
-        if [ $rc -eq 0 ]; then
-            echo "   ✅ MinIO pronto (API servindo) em ${host}:${port} (~$((attempt * 2))s)"
+        if singularity exec "$RAG_IMAGES_DIR/ingestor-server.sif" \
+              /workspace/.venv/bin/python - "$host" "$port" <<'PY' >/dev/null 2>&1
+import sys, urllib3
+from minio import Minio
+host, port = sys.argv[1], sys.argv[2]
+http = urllib3.PoolManager(timeout=urllib3.Timeout(connect=3, read=5), retries=False)
+c = Minio(f"{host}:{port}", access_key="minioadmin", secret_key="minioadmin",
+          secure=False, region="us-east-1", http_client=http)
+for b in ("default-bucket", "a-bucket"):
+    if not c.bucket_exists(b):
+        c.make_bucket(b)
+print("ok")
+PY
+        then
+            echo "   ✅ MinIO S3 servindo + buckets default-bucket/a-bucket prontos (tentativa $attempt)"
             return 0
         fi
         sleep 2
         attempt=$((attempt + 1))
     done
-    echo "   ⚠️  MinIO não confirmou /minio/health/ready em $((max * 2))s — seguindo mesmo assim (janela B3 tolera o atraso)."
+    echo "   ⚠️  MinIO S3 não confirmou em $max tentativas — seguindo (janela B3 1800s é o backstop)."
     return 0
 }
 
