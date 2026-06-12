@@ -93,6 +93,17 @@ export MINIO_CONSOLE_PORT=9011
 export MILVUS_HOST=127.0.0.1
 export MILVUS_PORT=19530
 
+# Hard-set (not :-default): the ingestor always runs on THIS node and the
+# readiness probe in 06 must hit the local server. submit.sh uses sbatch
+# --export=ALL, so a stale INGESTOR_HOST from the login shell (e.g. a leftover
+# `export INGESTOR_HOST=gaiabXXnYY` from a debug session) would otherwise leak
+# into the job; 06's `${INGESTOR_HOST:-127.0.0.1}` is a NO-OP when the var is
+# already set, so wait_for_ingestor would curl the WRONG node → exit=7 for
+# 1800s → teardown of a perfectly healthy server (job 360984: server up on
+# gaiab02n02, probe checking gaiab01n03). Same NO-OP trap 676b2d0 fixed for
+# MinIO/Milvus. Overriding here is the single source of truth.
+export INGESTOR_HOST=127.0.0.1
+
 # ==============================================================================
 # MinIO Credentials
 # ==============================================================================
