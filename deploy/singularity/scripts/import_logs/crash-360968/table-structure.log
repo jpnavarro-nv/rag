@@ -1,0 +1,191 @@
+INFO:    Environment variable SINGULARITY_TMPDIR is set, but APPTAINER_TMPDIR is preferred
+
+=====================================
+== NVIDIA NIM for Object Detection ==
+=====================================
+
+NVIDIA Release 1.5.0
+Model: nvidia/nemoretriever-table-structure-v1
+
+Container image Copyright (c) 2016-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+The NIM container is governed by the NVIDIA Software License Agreement (found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/) and Product-Specific Terms for AI Products (found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/); and the use of this model is governed by the NVIDIA Community Model License (found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-community-models-license/).
+
+A copy of this license can be found under /opt/nim/LICENSE.
+Third Party Software Attributions and Licenses can be found under /opt/nim/acknowledgements.txt.
+
+NOTE: CUDA Forward Compatibility mode ENABLED.
+  Using CUDA 13.0 driver version 580.65.06 with kernel driver version 550.90.07.
+  See https://docs.nvidia.com/deploy/cuda-compatibility/ for details.
+
+Overriding NIM_LOG_LEVEL: replacing NIM_LOG_LEVEL=unset with NIM_LOG_LEVEL=INFO
+HF_HOME is set to /opt/nim/.cache/huggingface
+INFO 2026-06-12 17:34:42.054 __init__.py:413] Appending: /opt/nim to PYTHONPATH: ['/opt/nim/start_server.d', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/local/lib/python3.12/dist-packages', '/usr/lib/python3/dist-packages']
+NIM_MODEL_PROFILE is set to 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:42.858 __init__.py:413] Appending: /opt/nim to PYTHONPATH: ['/opt/nim/start_server.d', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/local/lib/python3.12/dist-packages', '/usr/lib/python3/dist-packages']
+INFO 2026-06-12 17:34:52.674 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:52.675 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:52.676 nim_sdk.py:299] Using the profile selected by the profile selector: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:52.676 nim_sdk.py:308] Downloading manifest profile: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:52.735 lib.rs:203] File: metadata.json found in cache: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/metadata.json"
+INFO 2026-06-12 17:34:52.736 public.rs:52] Skipping download, using cached copy of file: metadata.json at path: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/metadata.json"
+INFO 2026-06-12 17:34:52.749 lib.rs:203] File: checksums.blake3 found in cache: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/checksums.blake3"
+INFO 2026-06-12 17:34:52.750 public.rs:52] Skipping download, using cached copy of file: checksums.blake3 at path: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/checksums.blake3"
+INFO 2026-06-12 17:34:52.757 lib.rs:203] File: model.plan found in cache: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/model.plan"
+INFO 2026-06-12 17:34:52.757 public.rs:52] Skipping download, using cached copy of file: model.plan at path: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/model.plan"
+INFO 2026-06-12 17:34:52.757 nim_sdk.py:328] Using the workspace specified during init: /opt/nim/workspace
+INFO 2026-06-12 17:34:52.758 nim_sdk.py:341] Materializing workspace to: /opt/nim/workspace
+NIM_TRITON_EXTRA_ARGS is set to --cuda-memory-pool-byte-size=0:402663424.0 --backend-config=tensorrt,version-compatible=true --grpc-port=8017
+INFO 2026-06-12 17:34:56.469 __init__.py:413] Appending: /opt/nim to PYTHONPATH: ['/usr/local/bin', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/usr/local/lib/python3.12/dist-packages', '/usr/lib/python3/dist-packages']
+INFO 2026-06-12 17:34:56.550 start_server.py:45] Starting nimlib 0.9.16 nim_sdk 0.8.6
+INFO 2026-06-12 17:34:56.551 standard_files.py:95] NIM VERSION:
+1.5.0
+INFO 2026-06-12 17:34:56.552 standard_files.py:95] NIM banner.txt:
+The NIM container is governed by the NVIDIA Software License Agreement (found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-license-agreement/) and Product-Specific Terms for AI Products (found at https://www.nvidia.com/en-us/agreements/enterprise-software/product-specific-terms-for-ai-products/); and the use of this model is governed by the NVIDIA Community Model License (found at https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-community-models-license/).
+
+A copy of this license can be found under /opt/nim/LICENSE.
+INFO 2026-06-12 17:34:56.553 standard_files.py:95] NIM NOTICE:
+Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+LicenseRef-NvidiaProprietary
+
+NVIDIA CORPORATION, its affiliates and licensors retain all intellectual property and proprietary rights in and to this material, related documentation and any modifications thereto. Any use, reproduction, disclosure or distribution of this material and related documentation without an express license agreement from NVIDIA CORPORATION or its affiliates are strictly prohibited.
+This NIM container is governed by the NVIDIA AI Product Agreement here:
+https://www.nvidia.com/en-us/data-center/products/nvidia-ai-enterprise/eula/.
+A copy of this license can be found under /opt/nim/LICENSE.
+
+The use of this model is governed by the AI Foundation Models Community License
+here: https://docs.nvidia.com/ai-foundation-models-community-license.pdf.
+
+
+INFO 2026-06-12 17:34:57.175 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:57.175 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:57.176 nim_sdk.py:299] Using the profile selected by the profile selector: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:57.176 nim_sdk.py:308] Downloading manifest profile: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:57.187 lib.rs:203] File: metadata.json found in cache: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/metadata.json"
+INFO 2026-06-12 17:34:57.188 public.rs:52] Skipping download, using cached copy of file: metadata.json at path: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/metadata.json"
+INFO 2026-06-12 17:34:57.196 lib.rs:203] File: model.plan found in cache: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/model.plan"
+INFO 2026-06-12 17:34:57.196 public.rs:52] Skipping download, using cached copy of file: model.plan at path: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/model.plan"
+INFO 2026-06-12 17:34:57.203 lib.rs:203] File: checksums.blake3 found in cache: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/checksums.blake3"
+INFO 2026-06-12 17:34:57.203 public.rs:52] Skipping download, using cached copy of file: checksums.blake3 at path: "/opt/nim/.cache/ngc/hub/models--nim--nvidia--nemoretriever-table-structure-v1/snapshots/a100x1-trt-fp16-xhthg4bgca/checksums.blake3"
+INFO 2026-06-12 17:34:57.204 nim_sdk.py:328] Using the workspace specified during init: /opt/nim/workspace
+INFO 2026-06-12 17:34:57.307 nimutils.py:197] Starting Triton server: /usr/local/lib/python3.12/dist-packages/nimlib/triton_start.sh -m /opt/nim/workspace -d - -h 8040 -p 8041 -l 0 -x --cuda-memory-pool-byte-size=0:402663424.0 --backend-config=tensorrt,version-compatible=true --grpc-port=8017
+INFO 2026-06-12 17:34:57.310 nimutils.py:224] Starting NIM inference server
+INFO 2026-06-12 17:34:57.395 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:57.395 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:57.397 http_api.py:52] Serving endpoints:
+  0.0.0.0:8016/v1/triton-inference-statistics (GET)
+  0.0.0.0:8016/v1/infer (POST)
+  0.0.0.0:8016/v1/health/live (GET)
+  0.0.0.0:8016/v1/health/ready (GET)
+  0.0.0.0:8016/v1/metrics (GET)
+  0.0.0.0:8016/v1/license (GET)
+  0.0.0.0:8016/v1/metadata (GET)
+  0.0.0.0:8016/v1/manifest (GET)
+INFO 2026-06-12 17:34:57.397 http_api.py:73] {'message': 'Starting HTTP Inference server', 'port': 8016, 'workers_count': 16, 'host': '0.0.0.0', 'log_level': 'info', 'SSL': 'disabled'}
+INFO 2026-06-12 17:34:58.408 nimutils.py:74] Running: tritonserver --model-repository /opt/nim/workspace --http-port 8040 --metrics-port 8041  --log-verbose 0  --cuda-memory-pool-byte-size=0:402663424.0 --backend-config=tensorrt,version-compatible=true --grpc-port=8017
+INFO 2026-06-12 17:34:58.411 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.411 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.413 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.414 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.432 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.432 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.436 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.437 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.437 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.437 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.439 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.440 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.440 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.440 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.440 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.441 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.442 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.443 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.443 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.443 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.443 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.443 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.716 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.717 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.729 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.729 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.729 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.730 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.734 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.734 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:58.767 profiles.py:98] Registered custom profile selectors: []
+INFO 2026-06-12 17:34:58.767 profiles.py:208] Matched profile_id in manifest from env NIM_MODEL_PROFILE to: 495980e0b97395173bd2ddce9f7dec2851c654643e3bdb91c4d8fc24047c4d6a
+INFO 2026-06-12 17:34:59.155 nimutils.py:74] I0612 20:34:59.155497 2077608 pinned_memory_manager.cc:277] "Pinned memory pool is created at '0x14b2ac000000' with size 268435456"
+INFO 2026-06-12 17:34:59.156 nimutils.py:74] I0612 20:34:59.155581 2077608 cuda_memory_manager.cc:107] "CUDA memory pool is created on device 0 with size 402663424"
+INFO 2026-06-12 17:34:59.177 nimutils.py:74] I0612 20:34:59.177053 2077608 model_lifecycle.cc:473] "loading: yolox_post:1"
+INFO 2026-06-12 17:34:59.177 nimutils.py:74] I0612 20:34:59.177339 2077608 model_lifecycle.cc:473] "loading: yolox_pre:1"
+INFO 2026-06-12 17:34:59.178 nimutils.py:74] I0612 20:34:59.177593 2077608 model_lifecycle.cc:473] "loading: yolox:1"
+INFO 2026-06-12 17:34:59.245 nimutils.py:74] I0612 20:34:59.245855 2077608 tensorrt.cc:65] "TRITONBACKEND_Initialize: tensorrt"
+INFO 2026-06-12 17:34:59.246 nimutils.py:74] I0612 20:34:59.245877 2077608 tensorrt.cc:75] "Triton TRITONBACKEND API version: 1.19"
+INFO 2026-06-12 17:34:59.246 nimutils.py:74] I0612 20:34:59.245881 2077608 tensorrt.cc:81] "'tensorrt' TRITONBACKEND API version: 1.19"
+INFO 2026-06-12 17:34:59.246 nimutils.py:74] I0612 20:34:59.245884 2077608 tensorrt.cc:105] "backend configuration:\n{\"cmdline\":{\"auto-complete-config\":\"true\",\"backend-directory\":\"/opt/tritonserver/backends\",\"min-compute-capability\":\"6.000000\",\"version-compatible\":\"true\",\"default-max-batch-size\":\"4\"}}"
+INFO 2026-06-12 17:34:59.248 nimutils.py:74] I0612 20:34:59.248024 2077608 tensorrt.cc:231] "TRITONBACKEND_ModelInitialize: yolox (version 1)"
+INFO 2026-06-12 17:34:59.421 nimutils.py:74] I0612 20:34:59.421680 2077608 logging.cc:46] "Loaded engine size: 240 MiB"
+INFO 2026-06-12 17:34:59.550 nimutils.py:74] I0612 20:34:59.550754 2077608 logging.cc:46] "Loaded engine size: 240 MiB"
+INFO 2026-06-12 17:34:59.766 nimutils.py:74] I0612 20:34:59.766360 2077608 model_state.cc:322] "'execution_context_allocation_strategy' set to 'ON_PROFILE_CHANGE' for model instance 'yolox'"
+INFO 2026-06-12 17:34:59.767 nimutils.py:74] I0612 20:34:59.767095 2077608 tensorrt.cc:297] "TRITONBACKEND_ModelInstanceInitialize: yolox_0_0 (GPU device 0)"
+INFO 2026-06-12 17:34:59.894 nimutils.py:74] I0612 20:34:59.894840 2077608 logging.cc:46] "Loaded engine size: 240 MiB"
+INFO 2026-06-12 17:35:00.020 nimutils.py:74] I0612 20:35:00.020077 2077608 logging.cc:46] "Loaded engine size: 240 MiB"
+INFO 2026-06-12 17:35:00.165 nimutils.py:74] I0612 20:35:00.165287 2077608 logging.cc:46] "[MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +1, GPU +66, now: CPU 3, GPU 175 (MiB)"
+INFO 2026-06-12 17:35:00.165 nimutils.py:74] I0612 20:35:00.165321 2077608 logging.cc:46] "Switching optimization profile from: 0 to 7. Please ensure there are no enqueued operations pending in this context prior to switching profiles"
+INFO 2026-06-12 17:35:00.258 nimutils.py:74] I0612 20:35:00.258452 2077608 instance_state.cc:186] "Created instance yolox_0_0 on GPU 0 with stream priority 0 and optimization profile 7[7];"
+INFO 2026-06-12 17:35:00.260 nimutils.py:74] I0612 20:35:00.260265 2077608 model_lifecycle.cc:849] "successfully loaded 'yolox'"
+INFO 2026-06-12 17:35:04.904 nimutils.py:74] I0612 20:35:04.903863 2077608 python_be.cc:2289] "TRITONBACKEND_ModelInstanceInitialize: yolox_pre_0_0 (GPU device 0)"
+INFO 2026-06-12 17:35:04.906 nimutils.py:74] I0612 20:35:04.906152 2077608 python_be.cc:2289] "TRITONBACKEND_ModelInstanceInitialize: yolox_post_0_0 (GPU device 0)"
+INFO 2026-06-12 17:35:08.287 nimutils.py:74] I0612 20:35:08.287066 2077608 model_lifecycle.cc:849] "successfully loaded 'yolox_pre'"
+INFO 2026-06-12 17:35:08.293 nimutils.py:74] I0612 20:35:08.293546 2077608 model_lifecycle.cc:849] "successfully loaded 'yolox_post'"
+INFO 2026-06-12 17:35:08.295 nimutils.py:74] I0612 20:35:08.295024 2077608 model_lifecycle.cc:473] "loading: yolox_ensemble:1"
+INFO 2026-06-12 17:35:08.295 nimutils.py:74] I0612 20:35:08.295239 2077608 model_lifecycle.cc:849] "successfully loaded 'yolox_ensemble'"
+INFO 2026-06-12 17:35:08.295 nimutils.py:74] I0612 20:35:08.295283 2077608 server.cc:611]
+INFO 2026-06-12 17:35:08.296 nimutils.py:74] +------------------+------+
+INFO 2026-06-12 17:35:08.296 nimutils.py:74] | Repository Agent | Path |
+INFO 2026-06-12 17:35:08.296 nimutils.py:74] +------------------+------+
+INFO 2026-06-12 17:35:08.296 nimutils.py:74] +------------------+------+
+INFO 2026-06-12 17:35:08.296 nimutils.py:74] 
+INFO 2026-06-12 17:35:08.297 nimutils.py:74] I0612 20:35:08.295316 2077608 server.cc:638]
+INFO 2026-06-12 17:35:08.297 nimutils.py:74] +----------+-----------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+INFO 2026-06-12 17:35:08.297 nimutils.py:74] | Backend  | Path                                                      | Config                                                                                                                                                                                    |
+INFO 2026-06-12 17:35:08.297 nimutils.py:74] +----------+-----------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+INFO 2026-06-12 17:35:08.297 nimutils.py:74] | tensorrt | /opt/tritonserver/backends/tensorrt/libtriton_tensorrt.so | {"cmdline":{"auto-complete-config":"true","backend-directory":"/opt/tritonserver/backends","min-compute-capability":"6.000000","version-compatible":"true","default-max-batch-size":"4"}} |
+INFO 2026-06-12 17:35:08.297 nimutils.py:74] | python   | /opt/tritonserver/backends/python/libtriton_python.so     | {"cmdline":{"auto-complete-config":"true","backend-directory":"/opt/tritonserver/backends","min-compute-capability":"6.000000","default-max-batch-size":"4"}}                             |
+INFO 2026-06-12 17:35:08.297 nimutils.py:74] +----------+-----------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+INFO 2026-06-12 17:35:08.298 nimutils.py:74] 
+INFO 2026-06-12 17:35:08.298 nimutils.py:74] I0612 20:35:08.295348 2077608 server.cc:681]
+INFO 2026-06-12 17:35:08.298 nimutils.py:74] +----------------+---------+--------+
+INFO 2026-06-12 17:35:08.298 nimutils.py:74] | Model          | Version | Status |
+INFO 2026-06-12 17:35:08.298 nimutils.py:74] +----------------+---------+--------+
+INFO 2026-06-12 17:35:08.298 nimutils.py:74] | yolox          | 1       | READY  |
+INFO 2026-06-12 17:35:08.298 nimutils.py:74] | yolox_ensemble | 1       | READY  |
+INFO 2026-06-12 17:35:08.299 nimutils.py:74] | yolox_post     | 1       | READY  |
+INFO 2026-06-12 17:35:08.299 nimutils.py:74] | yolox_pre      | 1       | READY  |
+INFO 2026-06-12 17:35:08.299 nimutils.py:74] +----------------+---------+--------+
+INFO 2026-06-12 17:35:08.299 nimutils.py:74] 
+INFO 2026-06-12 17:35:08.460 nimutils.py:74] I0612 20:35:08.460056 2077608 metrics.cc:889] "Collecting metrics for GPU 0: NVIDIA A100-SXM4-80GB"
+INFO 2026-06-12 17:35:08.473 nimutils.py:74] I0612 20:35:08.473673 2077608 metrics.cc:782] "Collecting CPU metrics"
+INFO 2026-06-12 17:35:08.474 nimutils.py:74] I0612 20:35:08.473834 2077608 tritonserver.cc:2598]
+INFO 2026-06-12 17:35:08.474 nimutils.py:74] +----------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+INFO 2026-06-12 17:35:08.475 nimutils.py:74] | Option                           | Value                                                                                                                                                                                                           |
+INFO 2026-06-12 17:35:08.475 nimutils.py:74] +----------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+INFO 2026-06-12 17:35:08.475 nimutils.py:74] | server_id                        | triton                                                                                                                                                                                                          |
+INFO 2026-06-12 17:35:08.475 nimutils.py:74] | server_version                   | 2.60.0                                                                                                                                                                                                          |
+INFO 2026-06-12 17:35:08.476 nimutils.py:74] | server_extensions                | classification sequence model_repository model_repository(unload_dependents) schedule_policy model_configuration system_shared_memory cuda_shared_memory binary_tensor_data parameters statistics trace logging |
+INFO 2026-06-12 17:35:08.476 nimutils.py:74] | model_repository_path[0]         | /opt/nim/workspace                                                                                                                                                                                              |
+INFO 2026-06-12 17:35:08.476 nimutils.py:74] | model_control_mode               | MODE_NONE                                                                                                                                                                                                       |
+INFO 2026-06-12 17:35:08.476 nimutils.py:74] | strict_model_config              | 0                                                                                                                                                                                                               |
+INFO 2026-06-12 17:35:08.476 nimutils.py:74] | model_config_name                |                                                                                                                                                                                                                 |
+INFO 2026-06-12 17:35:08.477 nimutils.py:74] | rate_limit                       | OFF                                                                                                                                                                                                             |
+INFO 2026-06-12 17:35:08.477 nimutils.py:74] | pinned_memory_pool_byte_size     | 268435456                                                                                                                                                                                                       |
+INFO 2026-06-12 17:35:08.477 nimutils.py:74] | cuda_memory_pool_byte_size{0}    | 402663424                                                                                                                                                                                                       |
+INFO 2026-06-12 17:35:08.477 nimutils.py:74] | min_supported_compute_capability | 6.0                                                                                                                                                                                                             |
+INFO 2026-06-12 17:35:08.477 nimutils.py:74] | strict_readiness                 | 1                                                                                                                                                                                                               |
+INFO 2026-06-12 17:35:08.478 nimutils.py:74] | exit_timeout                     | 30                                                                                                                                                                                                              |
+INFO 2026-06-12 17:35:08.478 nimutils.py:74] | cache_enabled                    | 0                                                                                                                                                                                                               |
+INFO 2026-06-12 17:35:08.478 nimutils.py:74] +----------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+INFO 2026-06-12 17:35:08.478 nimutils.py:74] 
+INFO 2026-06-12 17:35:08.514 nimutils.py:74] I0612 20:35:08.513979 2077608 grpc_server.cc:2562] "Started GRPCInferenceService at 0.0.0.0:8017"
+INFO 2026-06-12 17:35:08.514 nimutils.py:74] I0612 20:35:08.514149 2077608 http_server.cc:4789] "Started HTTPService at 0.0.0.0:8040"
+INFO 2026-06-12 17:35:08.556 nimutils.py:74] I0612 20:35:08.556303 2077608 http_server.cc:358] "Started Metrics Service at 0.0.0.0:8041"

@@ -1,0 +1,288 @@
+INFO:    Environment variable SINGULARITY_TMPDIR is set, but APPTAINER_TMPDIR is preferred
+INFO 06-12 17:35:01 [__init__.py:256] Automatically detected platform cuda.
+2026-06-12 17:35:16,476 - INFO - flashinfer.jit: Prebuilt kernels not found, using JIT backend
+[TensorRT-LLM] TensorRT-LLM version: 0.18.2+2d8bfc2f
+WARNING:sglang.srt.layers.attention.triton_ops.decode_attention:The following error message 'operation scheduled before its operands' can be ignored.
+INFO 2026-06-12 17:35:26.420 ngc_profile.py:282] Running NIM without LoRA. Only looking for compatible profiles that do not support LoRA.
+INFO 2026-06-12 17:35:26.421 ngc_profile.py:284] Detected 1 compatible profile(s).
+INFO 2026-06-12 17:35:26.421 ngc_injector.py:148] Valid profile: 308eb4483d24f2e7f53a75d669cacd83539f3415167733accfea1a5efe6986aa (tensorrt_llm-trtllm_buildable-bf16-tp1-pp1) on GPUs [0]
+INFO 2026-06-12 17:35:26.422 ngc_injector.py:299] Selected profile: 308eb4483d24f2e7f53a75d669cacd83539f3415167733accfea1a5efe6986aa (tensorrt_llm-trtllm_buildable-bf16-tp1-pp1)
+INFO 2026-06-12 17:35:26.422 ngc_injector.py:318] Profile metadata: llm_engine: tensorrt_llm
+INFO 2026-06-12 17:35:26.423 ngc_injector.py:318] Profile metadata: pp: 1
+INFO 2026-06-12 17:35:26.423 ngc_injector.py:318] Profile metadata: precision: bf16
+INFO 2026-06-12 17:35:26.423 ngc_injector.py:318] Profile metadata: tp: 1
+INFO 2026-06-12 17:35:26.423 ngc_injector.py:318] Profile metadata: trtllm_buildable: true
+INFO 2026-06-12 17:35:26.626 args.py:314] No tool_use_config_v2.json found, disabling tool calling
+INFO 2026-06-12 17:35:26.633 launch.py:673] running command ['/opt/nim/llm/.venv/bin/python3', '-m', 'nim_llm_sdk.entrypoints.openai.api_server', '--port', '1977', '--served-model-name', 'nvidia/llama-3.1-nemotron-nano-vl-8b-v1', '--async-engine-args', '{"model": "/tmp/LLM-eoqzxvhh", "served_model_name": ["nvidia/llama-3.1-nemotron-nano-vl-8b-v1"], "tokenizer": "/tmp/LLM-eoqzxvhh", "hf_config_path": null, "task": "auto", "skip_tokenizer_init": false, "tokenizer_mode": "auto", "trust_remote_code": false, "allowed_local_media_path": null, "download_dir": null, "load_format": "auto", "config_format": "auto", "dtype": "bfloat16", "kv_cache_dtype": "auto", "seed": 0, "max_model_len": null, "distributed_executor_backend": "mp", "pipeline_parallel_size": 1, "tensor_parallel_size": 1, "enable_expert_parallel": false, "max_parallel_loading_workers": null, "block_size": null, "enable_prefix_caching": false, "disable_sliding_window": false, "use_v2_block_manager": true, "swap_space": 4, "cpu_offload_gb": 0, "gpu_memory_utilization": 0.9, "max_num_batched_tokens": null, "max_num_partial_prefills": 1, "max_long_partial_prefills": 1, "long_prefill_token_threshold": 0, "max_num_seqs": 256, "max_logprobs": 20, "disable_log_stats": false, "revision": null, "code_revision": null, "rope_scaling": null, "rope_theta": null, "hf_overrides": null, "tokenizer_revision": null, "quantization": null, "enforce_eager": false, "max_seq_len_to_capture": 8192, "disable_custom_all_reduce": false, "tokenizer_pool_size": 0, "tokenizer_pool_type": "ray", "tokenizer_pool_extra_config": null, "limit_mm_per_prompt": null, "mm_processor_kwargs": null, "disable_mm_preprocessor_cache": false, "enable_lora": false, "enable_lora_bias": false, "enable_dora": false, "max_loras": 8, "max_lora_rank": 32, "enable_prompt_adapter": false, "max_prompt_adapters": 1, "max_prompt_adapter_token": 0, "peft_source": null, "peft_refresh_interval": null, "fully_sharded_loras": false, "lora_extra_vocab_size": 256, "long_lora_scaling_factors": null, "lora_dtype": "auto", "max_cpu_loras": 16, "device": "auto", "num_scheduler_steps": 1, "multi_step_stream_outputs": true, "ray_workers_use_nsight": false, "num_gpu_blocks_override": null, "num_lookahead_slots": 0, "model_loader_extra_config": null, "ignore_patterns": [], "preemption_mode": null, "scheduler_delay_factor": 0.0, "enable_chunked_prefill": null, "guided_decoding_backend": "xgrammar", "logits_processor_pattern": null, "speculative_model": null, "speculative_model_quantization": null, "speculative_draft_tensor_parallel_size": null, "num_speculative_tokens": null, "speculative_disable_mqa_scorer": false, "speculative_max_model_len": null, "speculative_disable_by_batch_size": null, "ngram_prompt_lookup_max": null, "ngram_prompt_lookup_min": null, "spec_decoding_acceptance_method": "rejection_sampler", "typical_acceptance_sampler_posterior_threshold": null, "typical_acceptance_sampler_posterior_alpha": null, "qlora_adapter_name_or_path": null, "disable_logprobs_during_spec_decoding": null, "show_hidden_metrics_for_version": null, "otlp_traces_endpoint": null, "collect_detailed_traces": null, "disable_async_output_proc": false, "scheduling_policy": "fcfs", "scheduler_cls": "vllm.core.scheduler.Scheduler", "override_neuron_config": null, "override_pooler_config": null, "compilation_config": null, "worker_cls": "auto", "worker_extension_cls": "", "kv_transfer_config": null, "generation_config": null, "override_generation_config": null, "enable_sleep_mode": false, "model_impl": "auto", "calculate_kv_scales": false, "additional_config": null, "enable_reasoning": false, "reasoning_parser": null, "disable_log_requests": true, "tllm_buildable": true, "tllm_engine_config_json_str": null, "tllm_ckpt_config_json_str": null, "tllm_runtime_config_json_str": null, "checkpoint_type": "hf", "profile_id": "308eb4483d24f2e7f53a75d669cacd83539f3415167733accfea1a5efe6986aa", "selected_gpus": [{"name": "NVIDIA A100-SXM4-80GB", "device_index": 0, "device_id": "20b2:10de", "total_memory": 84974239744, "free_memory": 84974239744, "used_memory": 0, "reserved_memory": 0, "compute_capability": [8, 0]}], "comm_orchestrator": false, "hf_config": null}']
+INFO 06-12 17:35:35 [__init__.py:256] Automatically detected platform cuda.
+2026-06-12 17:35:40,856 - INFO - flashinfer.jit: Prebuilt kernels not found, using JIT backend
+[TensorRT-LLM] TensorRT-LLM version: 0.18.2+2d8bfc2f
+WARNING:sglang.srt.layers.attention.triton_ops.decode_attention:The following error message 'operation scheduled before its operands' can be ignored.
+INFO 2026-06-12 17:35:49.295 __init__.py:413] Appending: /opt/nim to PYTHONPATH: ['/u/bglq/projects/rag/rag-test/deploy/singularity/run', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/opt/nim/llm/.venv/lib/python3.12/site-packages', '/opt/nim/llm', '/opt/nim/llm/.venv/lib/python3.12/site-packages/setuptools/_vendor', '/tmp/tmpb5yx8uh6']
+INFO:nimlib:Appending: /opt/nim to PYTHONPATH: ['/u/bglq/projects/rag/rag-test/deploy/singularity/run', '/usr/lib/python312.zip', '/usr/lib/python3.12', '/usr/lib/python3.12/lib-dynload', '/opt/nim/llm/.venv/lib/python3.12/site-packages', '/opt/nim/llm', '/opt/nim/llm/.venv/lib/python3.12/site-packages/setuptools/_vendor', '/tmp/tmpb5yx8uh6']
+INFO 2026-06-12 17:35:49.569 dynamic_module_loader.py:99] Loading dynamic modules from /opt/nim/llm/nim_llm_sdk/model_specific_modules
+INFO 2026-06-12 17:35:49.571 dynamic_module_loader.py:109] Attempting to register dynamic module /opt/nim/llm/nim_llm_sdk/model_specific_modules/llama_3_1_nemotron_nano_vl_8b_v1
+INFO 2026-06-12 17:35:49.572 dynamic_module_loader.py:71] Using model type 'Llama_Nemotron_Nano_VL' from /opt/nim/llm/nim_llm_sdk/model_specific_modules/llama_3_1_nemotron_nano_vl_8b_v1
+/opt/nim/llm/.venv/lib/python3.12/site-packages/timm/models/registry.py:4: FutureWarning: Importing from timm.models.registry is deprecated, please import via timm.models
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.models", FutureWarning)
+/opt/nim/llm/.venv/lib/python3.12/site-packages/timm/models/layers/__init__.py:48: FutureWarning: Importing from timm.models.layers is deprecated, please import via timm.layers
+  warnings.warn(f"Importing from {__name__} is deprecated, please import via timm.layers", FutureWarning)
+INFO 2026-06-12 17:35:49.630 dynamic_module_loader.py:81] Registered AutoConfig for configuration.Llama_Nemotron_Nano_VL_Config
+INFO 2026-06-12 17:35:49.633 dynamic_module_loader.py:95] Registered AutoModel for modeling.Llama_Nemotron_Nano_VL
+INFO 2026-06-12 17:35:49.635 dynamic_module_loader.py:95] Registered AutoModelForCausalLM for modeling.Llama_Nemotron_Nano_VL
+INFO 2026-06-12 17:35:49.636 dynamic_module_loader.py:95] Registered AutoImageProcessor for image_processing.LlamaNemotronNanoVLImageProcessor
+INFO 2026-06-12 17:35:49.637 dynamic_module_loader.py:109] Attempting to register dynamic module /opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files
+INFO 2026-06-12 17:35:49.638 dynamic_module_loader.py:71] Using model type 'RADIOModel' from /opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files
+INFO 2026-06-12 17:35:49.639 dynamic_module_loader.py:81] Registered AutoConfig for hf_model.RADIOConfig
+INFO 2026-06-12 17:35:49.641 dynamic_module_loader.py:95] Registered AutoModel for hf_model.RADIOModel
+INFO 2026-06-12 17:35:50.11 api_server.py:888] NIM LLM API version 1.3.1
+INFO 2026-06-12 17:35:50.43 api_server.py:928] the number of selected_gpus is 1
+INFO 2026-06-12 17:35:50.43 utils.py:170] Using provided selected GPUs list [0]
+INFO 2026-06-12 17:35:50.43 api_server.py:930] mpi_local_rank is 0
+INFO 2026-06-12 17:35:50.44 api_server.py:931] mpi_world_size is 1
+INFO 2026-06-12 17:35:50.66 dynamic_module_loader.py:99] Loading dynamic modules from /opt/nim/llm/nim_llm_sdk/model_specific_modules
+INFO 2026-06-12 17:35:50.68 dynamic_module_loader.py:109] Attempting to register dynamic module /opt/nim/llm/nim_llm_sdk/model_specific_modules/llama_3_1_nemotron_nano_vl_8b_v1
+INFO 2026-06-12 17:35:50.68 dynamic_module_loader.py:71] Using model type 'Llama_Nemotron_Nano_VL' from /opt/nim/llm/nim_llm_sdk/model_specific_modules/llama_3_1_nemotron_nano_vl_8b_v1
+INFO 2026-06-12 17:35:50.69 dynamic_module_loader.py:81] Registered AutoConfig for configuration.Llama_Nemotron_Nano_VL_Config
+INFO 2026-06-12 17:35:50.71 dynamic_module_loader.py:95] Registered AutoModel for modeling.Llama_Nemotron_Nano_VL
+INFO 2026-06-12 17:35:50.73 dynamic_module_loader.py:95] Registered AutoModelForCausalLM for modeling.Llama_Nemotron_Nano_VL
+INFO 2026-06-12 17:35:50.74 dynamic_module_loader.py:95] Registered AutoImageProcessor for image_processing.LlamaNemotronNanoVLImageProcessor
+INFO 2026-06-12 17:35:50.74 dynamic_module_loader.py:109] Attempting to register dynamic module /opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files
+INFO 2026-06-12 17:35:50.75 dynamic_module_loader.py:71] Using model type 'RADIOModel' from /opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files
+INFO 2026-06-12 17:35:50.76 dynamic_module_loader.py:81] Registered AutoConfig for hf_model.RADIOConfig
+INFO 2026-06-12 17:35:50.77 dynamic_module_loader.py:95] Registered AutoModel for hf_model.RADIOModel
+INFO 2026-06-12 17:35:50.78 build_utils.py:492] Initializing default constrained build and runtime configs using engine args...
+INFO 2026-06-12 17:36:03.427 config.py:576] This model supports multiple tasks: {'embed', 'classify', 'generate', 'reward', 'score'}. Defaulting to 'generate'.
+INFO 2026-06-12 17:36:03.978 config.py:576] This model supports multiple tasks: {'embed', 'classify', 'generate', 'reward', 'score'}. Defaulting to 'generate'.
+INFO 2026-06-12 17:36:03.983 async_trtllm_engine.py:81] Initializing an LLM engine (v1.3.1) with config: model='/tmp/LLM-eoqzxvhh', speculative_config=None, tokenizer='/tmp/LLM-eoqzxvhh', tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=False, dtype=torch.bfloat16, max_seq_len=16384, download_dir=None, load_format=LoadFormat.AUTO, tensor_parallel_size=1, disable_custom_all_reduce=False, quantization=None, enforce_eager=False, kv_cache_dtype=auto, device_config=cuda, decoding_config=DecodingConfig(guided_decoding_backend='xgrammar', reasoning_backend=None), seed=0)
+INFO 2026-06-12 17:36:04.407 utils.py:325] Building vision engine with config ConstrainedTrtConfig(max_batch_size=4, is_hf_ckpt=False)
+INFO 2026-06-12 17:36:04.424 modeling.py:58] num_image_token: 256
+INFO 2026-06-12 17:36:04.425 modeling.py:59] ps_version: v2
+WARNING 2026-06-12 17:36:04.468 _builder.py:350] No pretrained configuration specified for vit_huge_patch16_224 model. Using a default. Please add a config to the model pretrained_cfg registry or pass explicitly.
+WARNING 2026-06-12 17:36:07.183 modeling_utils.py:4932] Some weights of Llama_Nemotron_Nano_VL were not initialized from the model checkpoint at /tmp/LLM-eoqzxvhh and are newly initialized: ['vision_model.radio_model.summary_idxs']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
+[06/12/2026-17:36:09] [TRT] [I] Exporting onnx to /tmp/tmpkne5glw4/onnx/model.onnx
+/opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files/radio_model.py:158: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  if res_step is not None and (x.shape[-2] % res_step != 0 or x.shape[-1] % res_step != 0):
+/opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files/vit_patch_generator.py:193: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  if (self.num_rows, self.num_cols) == input_dims:
+/opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files/vit_patch_generator.py:244: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  max_dim = max(input_dims)
+/opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files/vit_patch_generator.py:199: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  if input_dims[0] < pos_embed.shape[-2]:
+/opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files/vit_patch_generator.py:201: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  if input_dims[1] < pos_embed.shape[-1]:
+/opt/nim/llm/nim_llm_sdk/model_specific_modules/radio_files/vit_patch_generator.py:251: TracerWarning: Converting a tensor to a Python boolean might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  if pos_embed.shape[-2:] != input_dims:
+/opt/nim/llm/.venv/lib/python3.12/site-packages/tensorrt_llm/tools/multimodal_builder.py:1302: TracerWarning: Converting a tensor to a Python integer might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  h = w = int(vit_embeds.shape[1] ** 0.5)
+/opt/nim/llm/.venv/lib/python3.12/site-packages/tensorrt_llm/tools/multimodal_builder.py:1286: TracerWarning: Converting a tensor to a Python integer might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  x = x.view(n, w, int(h * scale_factor), int(c / scale_factor))
+/opt/nim/llm/.venv/lib/python3.12/site-packages/tensorrt_llm/tools/multimodal_builder.py:1290: TracerWarning: Converting a tensor to a Python integer might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  x = x.view(n, int(h * scale_factor), int(w * scale_factor),
+/opt/nim/llm/.venv/lib/python3.12/site-packages/tensorrt_llm/tools/multimodal_builder.py:1291: TracerWarning: Converting a tensor to a Python integer might cause the trace to be incorrect. We can't record the data flow of Python values, so this value will be treated as a constant in the future. This means that the trace might not generalize to other inputs!
+  int(c / (scale_factor * scale_factor)))
+[06/12/2026-17:36:17] [TRT] [I] Building TRT engine to /tmp/tmpkne5glw4/visual_encoder.engine
+[06/12/2026-17:36:17] [TRT] [I] [MemUsageChange] Init CUDA: CPU -2, GPU +0, now: CPU 895, GPU 3712 (MiB)
+[06/12/2026-17:36:32] [TRT] [I] [MemUsageChange] Init builder kernel library: CPU +2486, GPU +380, now: CPU 3554, GPU 4092 (MiB)
+[06/12/2026-17:36:33] [TRT] [I] Succeeded parsing /tmp/tmpkne5glw4/onnx/model.onnx
+[06/12/2026-17:36:33] [TRT] [I] Processed input sizes [3, 512, 512]
+[06/12/2026-17:36:33] [TRT] [I] Global timing cache in use. Profiling results in this builder pass will be stored.
+[06/12/2026-17:36:33] [TRT] [I] Compiler backend is used during engine build.
+[06/12/2026-17:36:58] [TRT] [I] Detected 1 inputs and 1 output network tensors.
+[06/12/2026-17:36:58] [TRT] [I] Total Host Persistent Memory: 160 bytes
+[06/12/2026-17:36:58] [TRT] [I] Total Device Persistent Memory: 0 bytes
+[06/12/2026-17:36:58] [TRT] [I] Max Scratch Memory: 90750976 bytes
+[06/12/2026-17:36:58] [TRT] [I] [BlockAssignment] Started assigning block shifts. This will take 3 steps to complete.
+[06/12/2026-17:36:58] [TRT] [I] [BlockAssignment] Algorithm ShiftNTopDown took 2.25079ms to assign 2 blocks to 3 nodes requiring 93372416 bytes.
+[06/12/2026-17:36:58] [TRT] [I] Total Activation Memory: 93372416 bytes
+[06/12/2026-17:36:59] [TRT] [I] Total Weights Memory: 1420763526 bytes
+[06/12/2026-17:36:59] [TRT] [I] Compiler backend is used during engine execution.
+[06/12/2026-17:36:59] [TRT] [I] Engine generation completed in 25.706 seconds.
+[06/12/2026-17:36:59] [TRT] [I] [MemUsageStats] Peak memory usage of TRT CPU/GPU memory allocators: CPU 0 MiB, GPU 1378 MiB
+[06/12/2026-17:36:59] [TRT] [I] Succeeded building /tmp/tmpkne5glw4/visual_encoder.engine in 26 s
+INFO 2026-06-12 17:37:01.122 build_utils.py:398] Total time of converting and building vision TRT engine: 56.71 s
+WARNING 2026-06-12 17:37:02.501 logging.py:328] Using a slow image processor as `use_fast` is unset and a slow processor was saved with this model. `use_fast=True` will be the default behavior in v4.52, even if the model was saved with a slow processor. This will result in minor differences in outputs. You'll still be able to use a slow processor with `use_fast=False`.
+INFO 2026-06-12 17:37:02.503 utils.py:768] Beginning Vision Model Warmup
+INFO 2026-06-12 17:37:03.758 utils.py:791] Vision Model Warmup Complete
+INFO 2026-06-12 17:37:03.759 utils.py:755] Memory reserved to PyTorch pool: 1998585856
+INFO 2026-06-12 17:37:03.764 utils.py:236] Building rank 0 with config ConstrainedTrtllmConfig(dtype='bfloat16', pp_size=1, tp_size=1, max_batch_size=64, max_seq_len=16384, max_num_tokens=8192, gather_generation_logits=False, gather_context_logits=False, lora=ConstrainedTrtllmLoraConfig(enable=False, modules=['attn_q', 'attn_k', 'attn_v', 'attn_dense', 'mlp_h_to_4h', 'mlp_4h_to_h', 'mlp_gate', 'moe_h_to_4h', 'moe_4h_to_h', 'moe_gate'], max_rank=32), quant_config=None, gpus_per_node=1, hf_config=LlamaConfig {
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 128000,
+  "eos_token_id": [
+    128001,
+    128008,
+    128009
+  ],
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 4096,
+  "initializer_range": 0.02,
+  "intermediate_size": 14336,
+  "max_position_embeddings": 131072,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 32,
+  "num_hidden_layers": 32,
+  "num_key_value_heads": 8,
+  "pretraining_tp": 1,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": {
+    "factor": 8.0,
+    "high_freq_factor": 4.0,
+    "low_freq_factor": 1.0,
+    "original_max_position_embeddings": 8192,
+    "rope_type": "llama3"
+  },
+  "rope_theta": 500000.0,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.3",
+  "use_cache": true,
+  "vocab_size": 128512
+}
+, max_prompt_embedding_table_size=13644, max_encoder_input_len=None)
+INFO 2026-06-12 17:37:03.765 utils.py:249] Building a TRT-LLM engine from a checkpoint for rank 0 with config ConstrainedTrtllmConfig(dtype='bfloat16', pp_size=1, tp_size=1, max_batch_size=64, max_seq_len=16384, max_num_tokens=8192, gather_generation_logits=False, gather_context_logits=False, lora=ConstrainedTrtllmLoraConfig(enable=False, modules=['attn_q', 'attn_k', 'attn_v', 'attn_dense', 'mlp_h_to_4h', 'mlp_4h_to_h', 'mlp_gate', 'moe_h_to_4h', 'moe_4h_to_h', 'moe_gate'], max_rank=32), quant_config=None, gpus_per_node=1, hf_config=LlamaConfig {
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 128000,
+  "eos_token_id": [
+    128001,
+    128008,
+    128009
+  ],
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 4096,
+  "initializer_range": 0.02,
+  "intermediate_size": 14336,
+  "max_position_embeddings": 131072,
+  "mlp_bias": false,
+  "model_type": "llama",
+  "num_attention_heads": 32,
+  "num_hidden_layers": 32,
+  "num_key_value_heads": 8,
+  "pretraining_tp": 1,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": {
+    "factor": 8.0,
+    "high_freq_factor": 4.0,
+    "low_freq_factor": 1.0,
+    "original_max_position_embeddings": 8192,
+    "rope_type": "llama3"
+  },
+  "rope_theta": 500000.0,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.3",
+  "use_cache": true,
+  "vocab_size": 128512
+}
+, max_prompt_embedding_table_size=13644, max_encoder_input_len=None)
+INFO 2026-06-12 17:37:03.767 build_utils.py:199] Detected model architecture: Llama_Nemotron_Nano_VL
+0it [00:00, ?it/s]6it [00:00, 38.67it/s]13it [00:00, 52.06it/s]27it [00:00, 66.92it/s]41it [00:00, 79.66it/s]55it [00:00, 84.51it/s]69it [00:00, 89.60it/s]78it [00:00, 85.32it/s]87it [00:01, 82.15it/s]96it [00:01, 84.13it/s]105it [00:01, 73.86it/s]118it [00:01, 78.66it/s]132it [00:01, 84.46it/s]146it [00:01, 84.51it/s]160it [00:02, 81.93it/s]174it [00:02, 82.53it/s]188it [00:02, 84.77it/s]202it [00:02, 85.29it/s]216it [00:02, 85.27it/s]230it [00:02, 84.01it/s]
+INFO 2026-06-12 17:37:06.623 build_utils.py:325] Total time of reading and converting rank0 checkpoint: 2.86 s
+INFO 2026-06-12 17:38:55.664 build_utils.py:335] Total time of building rank0 engine: 109.04 s
+INFO 2026-06-12 17:38:57.529 utils.py:528] Running a TRT-LLM engine for rank 0 with runtime config: RunTimeTrtllmConfig(dtype='bfloat16', pp_size=1, tp_size=1, max_batch_size=64, max_seq_len=16384, max_num_tokens=8192, gather_generation_logits=False, gather_context_logits=False, lora=ConstrainedTrtllmLoraConfig(enable=False, modules=['attn_q', 'attn_k', 'attn_v', 'attn_dense', 'mlp_h_to_4h', 'mlp_4h_to_h', 'mlp_gate', 'moe_h_to_4h', 'moe_4h_to_h', 'moe_gate'], max_rank=32), quant_config=None, gpus_per_node=1, hf_config=PretrainedConfig {
+  "architectures": [
+    "LlamaForCausalLM"
+  ],
+  "attention_bias": false,
+  "attention_dropout": 0.0,
+  "bos_token_id": 128000,
+  "eos_token_id": [
+    128001,
+    128008,
+    128009
+  ],
+  "head_dim": 128,
+  "hidden_act": "silu",
+  "hidden_size": 4096,
+  "initializer_range": 0.02,
+  "intermediate_size": 14336,
+  "max_position_embeddings": 131072,
+  "mlp_bias": false,
+  "num_attention_heads": 32,
+  "num_hidden_layers": 32,
+  "num_key_value_heads": 8,
+  "pretraining_tp": 1,
+  "rms_norm_eps": 1e-05,
+  "rope_scaling": {
+    "factor": 8.0,
+    "high_freq_factor": 4.0,
+    "low_freq_factor": 1.0,
+    "original_max_position_embeddings": 8192,
+    "rope_type": "llama3"
+  },
+  "rope_theta": 500000.0,
+  "tie_word_embeddings": false,
+  "torch_dtype": "bfloat16",
+  "transformers_version": "4.51.3",
+  "use_cache": true,
+  "vocab_size": 128512
+}
+, max_prompt_embedding_table_size=13644, max_encoder_input_len=None, num_layers=32, num_heads=32, num_kv_heads=8, head_size=128, inter_size=14336, hidden_size=4096, reward_model=False, reward_string=None, reward_logits_range=[], kvcache_free_memory_fraction=0.9, medusa_choices=None, multi_block_mode=True, cuda_graph_mode=True, cuda_graph_cache_size=1, lookahead_config=None, scheduler_policy='guarantee_no_evict', enable_chunked_context=True, cross_kv_cache_fraction=None, cross_to_self_layers_ratio=0.5, cross_attention_layers=None)
+INFO 2026-06-12 17:38:57.530 utils.py:170] Using provided selected GPUs list [0]
+INFO 2026-06-12 17:38:57.530 utils.py:550] Using 0 bytes of gpu memory for PEFT cache
+INFO 2026-06-12 17:38:57.531 utils.py:555] Engine size in bytes 16276022308
+INFO 2026-06-12 17:38:57.531 utils.py:559] available device memory 82912608256
+INFO 2026-06-12 17:38:57.532 utils.py:570] Setting free_gpu_memory_fraction to 0.9
+WARNING 2026-06-12 17:38:57.532 utils.py:585] Setting NIM_NUM_KV_CACHE_SEQ_LENS overrides the default KV cache allocation logic and may result in degraded performance or memory errors.
+INFO 2026-06-12 17:39:00.993 api_server.py:229] Available routes are:
+INFO 2026-06-12 17:39:00.993 api_server.py:237] Route: /openapi.json, Methods: GET, HEAD
+INFO 2026-06-12 17:39:00.994 api_server.py:237] Route: /docs, Methods: GET, HEAD
+INFO 2026-06-12 17:39:00.994 api_server.py:237] Route: /docs/oauth2-redirect, Methods: GET, HEAD
+INFO 2026-06-12 17:39:00.994 api_server.py:237] Route: /v1/chat/completions, Methods: POST
+INFO 2026-06-12 17:39:00.994 api_server.py:237] Route: /v1/completions, Methods: POST
+INFO 2026-06-12 17:39:00.994 api_server.py:237] Route: /v1/health/ready, Methods: GET
+INFO 2026-06-12 17:39:00.995 api_server.py:237] Route: /v1/health/live, Methods: GET
+INFO 2026-06-12 17:39:00.995 api_server.py:237] Route: /v1/models, Methods: GET
+INFO 2026-06-12 17:39:00.995 api_server.py:237] Route: /v1/metadata, Methods: GET
+INFO 2026-06-12 17:39:00.995 api_server.py:237] Route: /v1/version, Methods: GET
+INFO 2026-06-12 17:39:00.995 api_server.py:237] Route: /v1/health/live, Methods: GET
+INFO 2026-06-12 17:39:00.996 api_server.py:237] Route: /v1/health/ready, Methods: GET
+INFO 2026-06-12 17:39:00.996 api_server.py:237] Route: /v1/metrics, Methods: GET
+INFO 2026-06-12 17:39:00.996 api_server.py:237] Route: /v1/license, Methods: GET
+INFO 2026-06-12 17:39:00.996 api_server.py:237] Route: /v1/metadata, Methods: GET
+INFO 2026-06-12 17:39:00.996 api_server.py:237] Route: /v1/manifest, Methods: GET
+INFO 2026-06-12 17:39:01.59 server.py:82] Started server process [2072434]
+INFO 2026-06-12 17:39:01.59 on.py:48] Waiting for application startup.
+INFO 2026-06-12 17:39:01.71 on.py:62] Application startup complete.
+INFO 2026-06-12 17:39:01.74 server.py:214] Uvicorn running on http://0.0.0.0:1977 (Press CTRL+C to quit)
+INFO 2026-06-12 17:39:02.56 api_server.py:418] An example cURL request:
+curl -X 'POST' \
+  'http://0.0.0.0:1977/v1/chat/completions' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "model": "nvidia/llama-3.1-nemotron-nano-vl-8b-v1",
+    "messages": [
+      {
+        "role":"user",
+        "content": [
+          {
+            "type": "image_url",
+            "image_url":
+              {
+                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+              }
+          },
+          {
+            "type": "text",
+            "text": "What is in this image?"
+          }
+        ]
+      }
+    ],
+    "max_tokens": 128,
+    "stream": true
+  }'
+
+INFO 2026-06-12 17:39:05.706 httptools_impl.py:481] ::1:40900 - "GET /v1/health/ready HTTP/1.1" 200
