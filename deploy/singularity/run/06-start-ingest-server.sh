@@ -134,6 +134,36 @@ check_prerequisite() {
     return 0
 }
 
+# Wait for MinIO to actually SERVE its API, not just accept TCP. `nc -z` passing
+# only means the socket is open; MinIO accepts connections well before the S3 API
+# is ready. The ingestor calls _make_bucket()/bucket_exists() AT IMPORT TIME
+# (nvidia_rag main.py, module-level), with a minio-py client whose read timeout is
+# 300s and Retry(total=5). Against a not-yet-ready MinIO that call read-times-out and
+# retries — observed ~919s before it finally succeeded ("Bucket already exists"),
+# stalling uvicorn before it binds :8082 (import_logs/debug-06c, job 360876; cause
+# confirmed by diag-import-stall.sh: transformers import ~2s, squashfuse/HF refuted).
+# Gating here removes the race at the source. Best-effort: if /minio/health/ready
+# never answers (unexpected build/path) we warn and proceed — the B3 readiness window
+# is the backstop — so this never introduces a new hard failure.
+wait_for_minio_ready() {
+    local host=$1 port=$2
+    local max=${MINIO_READY_ATTEMPTS:-90}   # ~180s se o curl falha rápido; até ~630s se pendurar (max-time 5 + sleep 2)
+    local attempt=1 rc
+    echo "   ⏳ Aguardando MinIO servir a API (readiness, não só TCP aberto)..."
+    while [ $attempt -le $max ]; do
+        rc=0
+        curl -sf -o /dev/null --max-time 5 "http://${host}:${port}/minio/health/ready" 2>/dev/null || rc=$?
+        if [ $rc -eq 0 ]; then
+            echo "   ✅ MinIO pronto (API servindo) em ${host}:${port} (~$((attempt * 2))s)"
+            return 0
+        fi
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    echo "   ⚠️  MinIO não confirmou /minio/health/ready em $((max * 2))s — seguindo mesmo assim (janela B3 tolera o atraso)."
+    return 0
+}
+
 echo "=== Starting Ingestor Server ==="
 echo ""
 
@@ -162,6 +192,10 @@ if [ $MISSING_PREREQS -gt 0 ]; then
     echo "   - 05-start-nv-ingest-ms.sh"
     exit 1
 fi
+
+# MinIO TCP is open (above) but its S3 API may not be serving yet — wait for real
+# readiness so the ingestor's import-time bucket check doesn't stall on retries.
+wait_for_minio_ready $MINIO_HOST $MINIO_PORT
 
 echo ""
 
@@ -195,10 +229,19 @@ fi
 # script file, which is why rm -rf (not rm -f) is needed.
 rm -rf "$INGESTOR_BIN_OVERLAY/bulk_writer"
 
+# Air-gap hygiene (NOT the cold-start fix — that's wait_for_minio_ready above). The
+# compute node has no outbound internet; these make any stray huggingface_hub call
+# fail fast/cache-only instead of waiting on a connect timeout. diag-import-stall.sh
+# (job 360917) proved the ~931s stall was the import-time MinIO bucket check, not HF
+# (offline vars made zero difference), so keep these only as cheap defensive hardening.
 singularity exec \
   --bind "$INGESTOR_BIN_OVERLAY:/workspace/.venv/bin" \
   --env NGC_API_KEY=$NGC_API_KEY \
   --env NVIDIA_API_KEY=$NGC_API_KEY \
+  --env HF_HUB_OFFLINE=1 \
+  --env TRANSFORMERS_OFFLINE=1 \
+  --env HF_HUB_DISABLE_TELEMETRY=1 \
+  --env HF_HUB_DISABLE_IMPLICIT_TOKEN=1 \
   --env APP_VECTORSTORE_URL="http://${MILVUS_HOST}:${MILVUS_PORT}" \
   --env APP_VECTORSTORE_NAME=milvus \
   --env APP_VECTORSTORE_SEARCHTYPE=${APP_VECTORSTORE_SEARCHTYPE:-dense} \
